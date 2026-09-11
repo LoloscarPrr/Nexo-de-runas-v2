@@ -35,7 +35,6 @@ jobs:
       - name: Install Android export dependencies
         shell: bash
         run: |
-          yes | sdkmanager --licenses >/dev/null
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "cmdline-tools;latest"
 
       - name: Export with Godot 4.3
