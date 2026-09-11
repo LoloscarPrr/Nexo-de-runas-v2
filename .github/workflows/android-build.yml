@@ -59,13 +59,14 @@ jobs:
       - name: Verify APK
         shell: bash
         run: |
-          test -f build/Nexo-de-Runas-v2-debug.apk
-          ls -lh build/Nexo-de-Runas-v2-debug.apk
+          APK_PATH="$(find build -type f -name '*.apk' -print -quit)"
+          test -n "$APK_PATH"
+          ls -lh "$APK_PATH"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Nexo-de-Runas-v2-debug
-          path: build/Nexo-de-Runas-v2-debug.apk
+          path: build/**/*.apk
           if-no-files-found: error
           retention-days: 30
