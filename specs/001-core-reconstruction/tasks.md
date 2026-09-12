@@ -8,8 +8,11 @@
 
 ## Fase 1 — Shell y navegación
 - [ ] T101 Construir menú principal fiel al mockup.
-- [ ] T102 Restaurar botones Constructor de mazo, Batalla vs CPU y Batalla local.
-- [ ] T103 Crear navegación estable entre pantallas sin recargar estado innecesariamente.
+  - [x] T101a Eliminar pantalla gris y crear shell visual visible.
+  - [x] T101b Forzar Android horizontal 1280×720.
+  - [ ] T101c Convergencia visual final contra el mockup aprobado.
+- [x] T102 Restaurar botones Constructor de mazo, Batalla vs CPU y Batalla local.
+- [x] T103 Crear navegación estable entre pantallas sin recargar estado innecesariamente.
 
 ## Fase 2 — Cartas y datos
 - [ ] T201 Crear `CardData` con nombre, arte, recurso, coste, ataque, salud y sello.
