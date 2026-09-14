@@ -21,8 +21,8 @@ var continue_button: Button
 func _ready() -> void:
 	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_LANDSCAPE)
 	_build_background()
-	_build_campaign()
 	_build_menu()
+	_build_campaign()
 	_show(menu_screen)
 
 func _build_background() -> void:
@@ -45,7 +45,7 @@ func _build_background() -> void:
 func _build_campaign() -> void:
 	campaign_screen = CampaignViewScript.new()
 	campaign_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	campaign_screen.connect("exit_requested", _show.bind(menu_screen))
+	campaign_screen.connect("exit_requested", _return_to_menu)
 	add_child(campaign_screen)
 
 func _build_menu() -> void:
@@ -93,10 +93,13 @@ func _continue_game() -> void:
 	campaign_screen.continue_game()
 	_show(campaign_screen)
 
+func _return_to_menu() -> void:
+	_show(menu_screen)
+
 func _show(target: Control) -> void:
 	menu_screen.visible = target == menu_screen
 	campaign_screen.visible = target == campaign_screen
-	if target == menu_screen and continue_button != null:
+	if target == menu_screen and continue_button != null and campaign_screen != null:
 		continue_button.disabled = not campaign_screen.has_save()
 
 func _menu_button(title_text: String, subtitle_text: String) -> Button:
