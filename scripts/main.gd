@@ -5,6 +5,7 @@ extends Control
 
 const CardCatalogScript = preload("res://scripts/domain/card_catalog.gd")
 const CampaignViewScript = preload("res://scripts/ui/campaign_view.gd")
+const CardViewScript = preload("res://scripts/ui/card_view.gd")
 
 const BG := Color8(8, 8, 7)
 const PANEL := Color8(27, 23, 17)
@@ -14,10 +15,10 @@ const MUTED := Color8(157, 146, 121)
 const ACCENT := Color8(190, 139, 57)
 const ACCENT_DARK := Color8(83, 55, 25)
 const BORDER := Color8(112, 82, 42)
-const BLOOD := Color8(126, 38, 34)
-const BONE := Color8(180, 170, 137)
-const ENERGY := Color8(58, 124, 137)
-const RUNE := Color8(112, 67, 143)
+const BLOOD := Color8(154, 52, 45)
+const BONE := Color8(205, 194, 156)
+const ENERGY := Color8(71, 152, 169)
+const RUNE := Color8(145, 86, 180)
 
 var menu_screen: Control
 var deck_screen: Control
@@ -27,6 +28,7 @@ var collection_grid: GridContainer
 var deck_grid: GridContainer
 var deck_counter: Label
 var style_label: Label
+var style_tabs: Dictionary = {}
 var selected_style := "Bestias"
 var deck_ids: Array[String] = []
 var cards = CardCatalogScript.CARDS.duplicate(true)
@@ -50,94 +52,140 @@ func _build_background() -> void:
 func _screen_margin() -> MarginContainer:
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 42)
-	margin.add_theme_constant_override("margin_right", 42)
-	margin.add_theme_constant_override("margin_top", 26)
-	margin.add_theme_constant_override("margin_bottom", 26)
+	margin.add_theme_constant_override("margin_left", 28)
+	margin.add_theme_constant_override("margin_right", 28)
+	margin.add_theme_constant_override("margin_top", 22)
+	margin.add_theme_constant_override("margin_bottom", 22)
 	return margin
 
 func _build_menu() -> void:
 	menu_screen = _screen_margin()
 	add_child(menu_screen)
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _panel_style(PANEL, BORDER, 3, 8))
-	menu_screen.add_child(panel)
 	var root := VBoxContainer.new()
 	root.alignment = BoxContainer.ALIGNMENT_CENTER
-	root.add_theme_constant_override("separation", 17)
-	panel.add_child(root)
-	root.add_child(_label("NEXO DE RUNAS", 50, INK, HORIZONTAL_ALIGNMENT_CENTER))
-	root.add_child(_label("ELIGE TU PRÓXIMO MOVIMIENTO", 18, ACCENT, HORIZONTAL_ALIGNMENT_CENTER))
-	var deck_button := _wide_button("CONSTRUCTOR DE MAZO")
+	root.add_theme_constant_override("separation", 14)
+	menu_screen.add_child(root)
+
+	var top_rule := HSeparator.new()
+	top_rule.custom_minimum_size = Vector2(780, 4)
+	root.add_child(top_rule)
+	root.add_child(_label("NEXO DE RUNAS", 48, INK, HORIZONTAL_ALIGNMENT_CENTER))
+	root.add_child(_label("◆  ELIGE TU PRÓXIMO MOVIMIENTO  ◆", 16, ACCENT, HORIZONTAL_ALIGNMENT_CENTER))
+
+	var actions := VBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	actions.add_theme_constant_override("separation", 10)
+	root.add_child(actions)
+
+	var deck_button := _menu_button("▦   CONSTRUCTOR DE MAZO", "Ordena tu colección y prepara un mazo libre")
 	deck_button.pressed.connect(_open_deck)
-	root.add_child(deck_button)
-	var campaign := _wide_button("CAMPAÑA · ACTO 1")
+	actions.add_child(deck_button)
+	var campaign := _menu_button("◇   CAMPAÑA · ACTO 1", "Expedición, mapa, encuentros y combate contra CPU")
 	campaign.pressed.connect(_open_campaign)
-	root.add_child(campaign)
-	var local := _wide_button("BATALLA LOCAL")
+	actions.add_child(campaign)
+	var local := _menu_button("⌁   BATALLA LOCAL", "Duelo en la misma red · próximamente")
 	local.pressed.connect(_open_detail.bind("BATALLA LOCAL", "La conexión Wi-Fi llegará después de estabilizar el combate y la primera expedición offline."))
-	root.add_child(local)
+	actions.add_child(local)
+
+	var bottom_rule := HSeparator.new()
+	bottom_rule.custom_minimum_size = Vector2(780, 4)
+	root.add_child(bottom_rule)
+
+func _menu_button(title_text: String, subtitle_text: String) -> Button:
+	var button := Button.new()
+	button.text = "%s\n%s" % [title_text, subtitle_text]
+	button.custom_minimum_size = Vector2(760, 78)
+	button.focus_mode = Control.FOCUS_NONE
+	button.add_theme_font_size_override("font_size", 17)
+	button.add_theme_color_override("font_color", INK)
+	button.add_theme_color_override("font_hover_color", INK)
+	button.add_theme_stylebox_override("normal", _panel_style(PANEL_ALT, BORDER, 2, 2))
+	button.add_theme_stylebox_override("hover", _panel_style(PANEL, ACCENT, 3, 2))
+	button.add_theme_stylebox_override("pressed", _panel_style(ACCENT_DARK, ACCENT, 3, 2))
+	return button
 
 func _build_deck_builder() -> void:
 	deck_screen = _screen_margin()
 	add_child(deck_screen)
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 10)
+	root.add_theme_constant_override("separation", 8)
 	deck_screen.add_child(root)
+
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 14)
 	root.add_child(header)
-	var back := _small_button("‹ VOLVER", 150)
+	var back := _small_button("‹ VOLVER", 132)
 	back.pressed.connect(_show.bind(menu_screen))
 	header.add_child(back)
-	var title := _label("CONSTRUCTOR DE MAZO", 32, INK, HORIZONTAL_ALIGNMENT_LEFT)
+	var title := _label("CONSTRUCTOR DE MAZO", 30, INK, HORIZONTAL_ALIGNMENT_LEFT)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
-	deck_counter = _label("", 20, ACCENT, HORIZONTAL_ALIGNMENT_RIGHT)
-	deck_counter.custom_minimum_size = Vector2(170, 44)
+	deck_counter = _label("", 18, ACCENT, HORIZONTAL_ALIGNMENT_RIGHT)
+	deck_counter.custom_minimum_size = Vector2(145, 42)
+	deck_counter.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	header.add_child(deck_counter)
 
+	var tab_panel := PanelContainer.new()
+	tab_panel.add_theme_stylebox_override("panel", _panel_style(PANEL_ALT, BORDER, 1, 2))
+	root.add_child(tab_panel)
 	var tabs := HBoxContainer.new()
+	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
 	tabs.add_theme_constant_override("separation", 8)
-	root.add_child(tabs)
+	tab_panel.add_child(tabs)
 	for style in ["Bestias", "No-muertos", "Tecnología", "Magia"]:
-		var tab := _small_button(style.to_upper(), 195)
+		var tab := _small_button(style.to_upper(), 180)
 		tab.pressed.connect(_select_style.bind(style))
 		tabs.add_child(tab)
-	style_label = _label("", 15, MUTED, HORIZONTAL_ALIGNMENT_LEFT)
+		style_tabs[style] = tab
+
+	style_label = _label("", 13, MUTED, HORIZONTAL_ALIGNMENT_LEFT)
+	style_label.custom_minimum_size.y = 22
 	root.add_child(style_label)
 
 	var columns := HBoxContainer.new()
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	columns.add_theme_constant_override("separation", 18)
+	columns.add_theme_constant_override("separation", 12)
 	root.add_child(columns)
-	var collection_panel := _section_panel("COLECCIÓN · TOCA PARA AÑADIR")
+
+	var collection_panel := _section_panel("COLECCIÓN", "TOCA UNA CARTA PARA AÑADIRLA")
 	collection_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	columns.add_child(collection_panel)
+	var collection_scroll := ScrollContainer.new()
+	collection_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	collection_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	collection_panel.get_node("Box").add_child(collection_scroll)
 	collection_grid = GridContainer.new()
-	collection_grid.columns = 3
+	collection_grid.columns = 4
+	collection_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	collection_grid.add_theme_constant_override("h_separation", 10)
 	collection_grid.add_theme_constant_override("v_separation", 10)
-	collection_panel.get_node("Box").add_child(collection_grid)
+	collection_scroll.add_child(collection_grid)
 
-	var deck_panel := _section_panel("TU MAZO · TOCA PARA QUITAR")
-	deck_panel.custom_minimum_size = Vector2(375, 0)
+	var deck_panel := _section_panel("TU MAZO", "TOCA UNA CARTA PARA QUITARLA")
+	deck_panel.custom_minimum_size = Vector2(330, 0)
 	columns.add_child(deck_panel)
+	var deck_scroll := ScrollContainer.new()
+	deck_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	deck_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	deck_panel.get_node("Box").add_child(deck_scroll)
 	deck_grid = GridContainer.new()
 	deck_grid.columns = 2
-	deck_grid.add_theme_constant_override("h_separation", 9)
-	deck_grid.add_theme_constant_override("v_separation", 9)
-	deck_panel.get_node("Box").add_child(deck_grid)
+	deck_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	deck_grid.add_theme_constant_override("h_separation", 8)
+	deck_grid.add_theme_constant_override("v_separation", 8)
+	deck_scroll.add_child(deck_grid)
 	_refresh_cards()
 
-func _section_panel(title_text: String) -> PanelContainer:
+func _section_panel(title_text: String, hint_text := "") -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _panel_style(PANEL_ALT, BORDER, 2, 4))
+	panel.add_theme_stylebox_override("panel", _panel_style(PANEL_ALT, BORDER, 2, 2))
 	var box := VBoxContainer.new()
 	box.name = "Box"
-	box.add_theme_constant_override("separation", 8)
+	box.add_theme_constant_override("separation", 6)
 	panel.add_child(box)
-	box.add_child(_label(title_text, 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label(title_text, 17, INK, HORIZONTAL_ALIGNMENT_CENTER))
+	if not hint_text.is_empty():
+		box.add_child(_label(hint_text, 10, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	return panel
 
 func _build_detail() -> void:
@@ -188,33 +236,37 @@ func _refresh_cards() -> void:
 		child.queue_free()
 	for child in deck_grid.get_children():
 		child.queue_free()
+
+	var available := 0
 	for card in cards:
 		if card.style == selected_style and not deck_ids.has(card.id):
 			collection_grid.add_child(_card_view(card, false))
+			available += 1
 	for card_id in deck_ids:
 		var card = _find_card(card_id)
 		if not card.is_empty():
 			deck_grid.add_child(_card_view(card, true))
-	deck_counter.text = "%d / 20 CARTAS" % deck_ids.size()
-	style_label.text = "ESTILO: %s · el mazo libre permanece separado del mazo de campaña" % selected_style.to_upper()
+
+	deck_counter.text = "%d / 20" % deck_ids.size()
+	style_label.text = "%s  ·  %d disponibles  ·  mazo libre separado de campaña" % [selected_style.to_upper(), available]
+	_refresh_style_tabs()
+
+func _refresh_style_tabs() -> void:
+	for style in style_tabs:
+		var tab: Button = style_tabs[style]
+		if style == selected_style:
+			tab.add_theme_stylebox_override("normal", _panel_style(PANEL, _style_color(style), 3, 2))
+		else:
+			tab.add_theme_stylebox_override("normal", _panel_style(PANEL_ALT, BORDER, 2, 2))
 
 func _card_view(card: Dictionary, in_deck: bool) -> Button:
-	var button := Button.new()
-	button.custom_minimum_size = Vector2(155, 205)
-	button.focus_mode = Control.FOCUS_NONE
-	button.text = "%s\n\n%s\n\n%s\n%s\n⚔ %d     ♥ %d" % [card.name, card.glyph, card.cost, card.seal, card.atk, card.hp]
-	button.add_theme_font_size_override("font_size", 15)
-	button.add_theme_color_override("font_color", INK)
-	button.add_theme_color_override("font_hover_color", Color.WHITE)
-	var tint := _resource_color(str(card.get("resource", "none")))
-	button.add_theme_stylebox_override("normal", _panel_style(PANEL, tint, 3, 3))
-	button.add_theme_stylebox_override("hover", _panel_style(Color8(42, 34, 24), ACCENT, 4, 3))
-	button.add_theme_stylebox_override("pressed", _panel_style(ACCENT_DARK, ACCENT, 4, 3))
+	var view = CardViewScript.new()
+	view.configure(card, in_deck, in_deck)
 	if in_deck:
-		button.pressed.connect(_remove_card.bind(card.id))
+		view.pressed.connect(_remove_card.bind(str(card.id)))
 	else:
-		button.pressed.connect(_add_card.bind(card.id))
-	return button
+		view.pressed.connect(_add_card.bind(str(card.id)))
+	return view
 
 func _add_card(card_id: String) -> void:
 	if deck_ids.size() < 20 and not deck_ids.has(card_id):
@@ -228,12 +280,12 @@ func _remove_card(card_id: String) -> void:
 func _find_card(card_id: String) -> Dictionary:
 	return CardCatalogScript.find_by_id(card_id)
 
-func _resource_color(resource: String) -> Color:
-	match resource:
-		"blood": return BLOOD
-		"bones": return BONE
-		"energy": return ENERGY
-		"runes": return RUNE
+func _style_color(style: String) -> Color:
+	match style:
+		"Bestias": return BLOOD
+		"No-muertos": return BONE
+		"Tecnología": return ENERGY
+		"Magia": return RUNE
 		_: return BORDER
 
 func _show(target: Control) -> void:
@@ -259,13 +311,14 @@ func _wide_button(text_value: String) -> Button:
 func _small_button(text_value: String, width: int) -> Button:
 	var button := Button.new()
 	button.text = text_value
-	button.custom_minimum_size = Vector2(width, 44)
+	button.custom_minimum_size = Vector2(width, 42)
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_font_size_override("font_size", 16)
+	button.add_theme_font_size_override("font_size", 15)
 	button.add_theme_color_override("font_color", INK)
-	button.add_theme_stylebox_override("normal", _panel_style(PANEL_ALT, BORDER, 2, 3))
-	button.add_theme_stylebox_override("hover", _panel_style(Color8(38, 31, 22), ACCENT, 2, 3))
-	button.add_theme_stylebox_override("pressed", _panel_style(ACCENT_DARK, ACCENT, 2, 3))
+	button.add_theme_color_override("font_hover_color", INK)
+	button.add_theme_stylebox_override("normal", _panel_style(PANEL_ALT, BORDER, 2, 2))
+	button.add_theme_stylebox_override("hover", _panel_style(PANEL, ACCENT, 2, 2))
+	button.add_theme_stylebox_override("pressed", _panel_style(ACCENT_DARK, ACCENT, 2, 2))
 	return button
 
 func _panel_style(color: Color, border_color: Color, width: int, radius: int) -> StyleBoxFlat:
@@ -282,6 +335,6 @@ func _panel_style(color: Color, border_color: Color, width: int, radius: int) ->
 	style.corner_radius_bottom_right = radius
 	style.content_margin_left = 10
 	style.content_margin_right = 10
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
+	style.content_margin_top = 7
+	style.content_margin_bottom = 7
 	return style
