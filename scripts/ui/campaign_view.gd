@@ -6,30 +6,42 @@ const CampaignStateScript = preload("res://scripts/domain/campaign_state.gd")
 const CampaignSaveScript = preload("res://scripts/domain/campaign_save.gd")
 const BattleStateScript = preload("res://scripts/domain/battle_state.gd")
 const CardCatalogScript = preload("res://scripts/domain/card_catalog.gd")
+const CardViewScript = preload("res://scripts/ui/card_view.gd")
 
-const PANEL := Color8(27, 23, 17)
-const PANEL_ALT := Color8(18, 16, 13)
-const INK := Color8(230, 220, 190)
-const MUTED := Color8(157, 146, 121)
-const ACCENT := Color8(190, 139, 57)
-const ACCENT_DARK := Color8(83, 55, 25)
-const BORDER := Color8(112, 82, 42)
-const DANGER := Color8(140, 54, 45)
-const SUCCESS := Color8(88, 125, 72)
+const CABIN := Color8(19, 14, 10)
+const WOOD := Color8(37, 27, 18)
+const WOOD_DEEP := Color8(24, 17, 12)
+const PAPER := Color8(93, 73, 45)
+const INK := Color8(232, 218, 180)
+const MUTED := Color8(157, 139, 105)
+const AMBER := Color8(188, 126, 57)
+const BLOOD := Color8(135, 42, 34)
+const BONE := Color8(207, 195, 158)
+const EDGE := Color8(78, 55, 31)
+const DANGER := Color8(151, 55, 45)
+const SUCCESS := Color8(118, 133, 80)
 
 var state
 var battle_state
 var active_battle_node := ""
 var selected_hand_index := -1
+var selected_sacrifices: Array[int] = []
+
+func has_save() -> bool:
+	return CampaignSaveScript.exists()
+
+func start_new_game() -> void:
+	_start_new()
+
+func continue_game() -> void:
+	_continue_run()
 
 func open_launcher() -> void:
 	_clear_screen()
 	var box := _screen_box()
-	box.add_child(_label("CAMPAÑA · ACTO 1", 38, INK, HORIZONTAL_ALIGNMENT_CENTER))
-	var subtitle := _label("EXPEDICIÓN OFFLINE · MAPA, EVENTOS Y COMBATE", 17, ACCENT, HORIZONTAL_ALIGNMENT_CENTER)
-	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(subtitle)
-	box.add_child(_spacer(12))
+	box.add_child(_label("LA CABAÑA", 38, INK, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("La madera cruje. Algo espera al otro lado de la mesa.", 16, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_spacer(14))
 	var new_game := _wide_button("NUEVA PARTIDA")
 	new_game.pressed.connect(_start_new)
 	box.add_child(new_game)
@@ -37,11 +49,9 @@ func open_launcher() -> void:
 	continue_button.disabled = not CampaignSaveScript.exists()
 	continue_button.pressed.connect(_continue_run)
 	box.add_child(continue_button)
-	var back := _wide_button("VOLVER AL MENÚ")
+	var back := _wide_button("ABANDONAR LA CABAÑA")
 	back.pressed.connect(_exit_to_menu)
 	box.add_child(back)
-	var status := "Guardado detectado." if CampaignSaveScript.exists() else "Aún no existe una expedición guardada."
-	box.add_child(_label(status, 14, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 
 func _start_new() -> void:
 	state = CampaignStateScript.new()
@@ -67,33 +77,34 @@ func _show_map() -> void:
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 12)
 	box.add_child(header)
-	var back := _small_button("‹ CAMPAÑA", 160)
-	back.pressed.connect(open_launcher)
-	header.add_child(back)
-	var title := _label("MAPA DE LA EXPEDICIÓN", 28, INK, HORIZONTAL_ALIGNMENT_LEFT)
+	var leave := _small_button("‹ MENÚ", 130)
+	leave.pressed.connect(_exit_to_menu)
+	header.add_child(leave)
+	var title := _label("EL MAPA SOBRE LA MESA", 27, INK, HORIZONTAL_ALIGNMENT_LEFT)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
-	var stats := _label("MAZO %d · VICTORIAS %d" % [state.deck_ids.size(), state.victories], 15, ACCENT, HORIZONTAL_ALIGNMENT_RIGHT)
-	stats.custom_minimum_size = Vector2(260, 40)
+	var stats := _label("MAZO %d · VICTORIAS %d" % [state.deck_ids.size(), state.victories], 14, AMBER, HORIZONTAL_ALIGNMENT_RIGHT)
+	stats.custom_minimum_size = Vector2(245, 40)
 	header.add_child(stats)
-	box.add_child(_label("Toca únicamente los nodos conectados con tu posición actual.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+
+	box.add_child(_label("La tinta marca dos senderos. Solo puedes avanzar por una ruta conectada.", 14, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_spacer(4))
-	box.add_child(_map_node_button("start", "◆ INICIO"))
+	box.add_child(_map_node_button("start", "INICIO DEL SENDERO"))
 	box.add_child(_connector("╲                         ╱"))
 	var branch := HBoxContainer.new()
 	branch.alignment = BoxContainer.ALIGNMENT_CENTER
 	branch.add_theme_constant_override("separation", 90)
-	branch.add_child(_map_node_button("choice_left", "◈ ELECCIÓN · HUESOS"))
-	branch.add_child(_map_node_button("choice_right", "◈ ELECCIÓN · ENERGÍA"))
+	branch.add_child(_map_node_button("choice_left", "ELECCIÓN DE BESTIA"))
+	branch.add_child(_map_node_button("choice_right", "ELECCIÓN DE COSTE"))
 	box.add_child(branch)
 	box.add_child(_connector("╲                         ╱"))
-	box.add_child(_map_node_button("battle_1", "⚔ COMBATE DEL BOSQUE"))
+	box.add_child(_map_node_button("battle_1", "COMBATE DEL BOSQUE"))
 	box.add_child(_connector("│"))
-	box.add_child(_map_node_button("campfire_1", "♨ FOGATA"))
+	box.add_child(_map_node_button("campfire_1", "FOGATA"))
 	box.add_child(_connector("│"))
-	box.add_child(_map_node_button("gate_1", "⬡ UMBRAL DE LA REGIÓN"))
+	box.add_child(_map_node_button("gate_1", "SENDERO HACIA EL JEFE"))
 	var current := state.get_node(state.current_node)
-	box.add_child(_label("POSICIÓN: %s" % str(current.get("title", state.current_node)), 16, ACCENT, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("ESTÁS EN: %s" % str(current.get("title", state.current_node)), 15, AMBER, HORIZONTAL_ALIGNMENT_CENTER))
 
 func _map_node_button(node_id: String, text_value: String) -> Button:
 	var button := _small_button(text_value, 390)
@@ -101,19 +112,19 @@ func _map_node_button(node_id: String, text_value: String) -> Button:
 	var is_resolved: bool = state != null and state.resolved_nodes.has(node_id)
 	var accessible: bool = state != null and state.can_enter(node_id)
 	if is_current:
-		button.text = "▶ %s" % text_value
+		button.text = "› %s" % text_value
 		button.disabled = true
-		button.add_theme_stylebox_override("disabled", _panel_style(ACCENT_DARK, ACCENT, 3, 4))
+		button.add_theme_stylebox_override("disabled", _panel_style(PAPER, AMBER, 3, 2))
 	elif is_resolved:
 		button.text = "✓ %s" % text_value
 		button.disabled = true
-		button.add_theme_stylebox_override("disabled", _panel_style(PANEL_ALT, SUCCESS, 2, 4))
+		button.add_theme_stylebox_override("disabled", _panel_style(WOOD_DEEP, SUCCESS, 2, 2))
 	elif accessible:
 		button.pressed.connect(_enter_node.bind(node_id))
-		button.add_theme_stylebox_override("normal", _panel_style(PANEL, ACCENT, 3, 4))
+		button.add_theme_stylebox_override("normal", _panel_style(WOOD, AMBER, 2, 2))
 	else:
 		button.disabled = true
-		button.add_theme_stylebox_override("disabled", _panel_style(PANEL_ALT, BORDER, 1, 4))
+		button.add_theme_stylebox_override("disabled", _panel_style(WOOD_DEEP, EDGE, 1, 2))
 	return button
 
 func _enter_node(node_id: String) -> void:
@@ -135,13 +146,13 @@ func _enter_node(node_id: String) -> void:
 func _show_choice(node_id: String) -> void:
 	_clear_screen()
 	var box := _screen_box()
-	box.add_child(_label("ELECCIÓN DE CARTA", 34, INK, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_label("Escoge una. La carta se incorpora al mazo de esta expedición.", 16, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("TRES CARTAS ESPERAN", 32, INK, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("Solo una puede acompañarte. Las otras volverán a la oscuridad.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	var ids: Array[String]
 	if node_id == "choice_left":
-		ids = ["esqueleto", "sepulturero", "mox_rubi"]
+		ids = ["gorrion", "puercoespin", "topo"]
 	else:
-		ids = ["automata", "conducto", "francotirador"]
+		ids = ["zarigueya", "coyote", "vibora"]
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 18)
@@ -163,6 +174,7 @@ func _claim_choice(node_id: String, card_id: String) -> void:
 func _start_battle(node_id: String) -> void:
 	active_battle_node = node_id
 	selected_hand_index = -1
+	selected_sacrifices.clear()
 	battle_state = BattleStateScript.new()
 	battle_state.setup(state.deck_ids)
 	_render_battle()
@@ -171,68 +183,142 @@ func _render_battle() -> void:
 	_clear_screen()
 	var box := _screen_box()
 	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 12)
+	header.add_theme_constant_override("separation", 10)
 	box.add_child(header)
-	var abandon := _small_button("‹ MAPA", 130)
+	var abandon := _small_button("‹ MAPA", 120)
 	abandon.pressed.connect(_show_map)
 	header.add_child(abandon)
-	var title := _label("COMBATE DEL BOSQUE · TURNO %d" % battle_state.turn, 24, INK, HORIZONTAL_ALIGNMENT_LEFT)
+	var title := _label("LA MESA · TURNO %d" % battle_state.turn, 22, INK, HORIZONTAL_ALIGNMENT_LEFT)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
-	var resources := _label("⚙ %d/%d   ☠ %d   BALANZA %+d" % [battle_state.energy, battle_state.max_energy, battle_state.bones, battle_state.scale], 16, ACCENT, HORIZONTAL_ALIGNMENT_RIGHT)
-	resources.custom_minimum_size = Vector2(330, 40)
+	var resources := _label("HUESOS %d · ARDILLAS %d · BALANZA %+d" % [battle_state.bones, battle_state.squirrel_pile_count, battle_state.scale], 14, AMBER, HORIZONTAL_ALIGNMENT_RIGHT)
+	resources.custom_minimum_size = Vector2(360, 38)
 	header.add_child(resources)
-	box.add_child(_label("ENEMIGO", 14, DANGER, HORIZONTAL_ALIGNMENT_CENTER))
+
+	box.add_child(_label("SU LADO", 12, DANGER, HORIZONTAL_ALIGNMENT_CENTER))
 	var enemy_grid := GridContainer.new()
 	enemy_grid.columns = 4
-	enemy_grid.add_theme_constant_override("h_separation", 10)
+	enemy_grid.add_theme_constant_override("h_separation", 8)
 	box.add_child(enemy_grid)
 	for lane_index in range(4):
-		enemy_grid.add_child(_battle_slot(battle_state.enemy_lanes[lane_index], false, lane_index))
+		enemy_grid.add_child(_battle_slot(battle_state.enemy_lanes[lane_index], false, lane_index, false))
+
 	box.add_child(_connector("────────────────────────────────────────────────────────────"))
 	var player_grid := GridContainer.new()
 	player_grid.columns = 4
-	player_grid.add_theme_constant_override("h_separation", 10)
+	player_grid.add_theme_constant_override("h_separation", 8)
 	box.add_child(player_grid)
 	for lane_index in range(4):
-		var slot := _battle_slot(battle_state.player_lanes[lane_index], true, lane_index)
-		slot.pressed.connect(_play_selected_to_lane.bind(lane_index))
+		var slot := _battle_slot(battle_state.player_lanes[lane_index], true, lane_index, selected_sacrifices.has(lane_index))
+		slot.pressed.connect(_on_player_lane_pressed.bind(lane_index))
 		player_grid.add_child(slot)
-	box.add_child(_label("TU LADO", 14, SUCCESS, HORIZONTAL_ALIGNMENT_CENTER))
-	var status := _label(battle_state.last_message, 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
-	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(_label("TU LADO", 12, SUCCESS, HORIZONTAL_ALIGNMENT_CENTER))
+
+	var status_text := battle_state.last_message
+	if selected_hand_index >= 0:
+		var blood_cost: int = battle_state.blood_cost_for(selected_hand_index)
+		if blood_cost > 0:
+			status_text = "%s  ·  SACRIFICIOS %d/%d" % [status_text, selected_sacrifices.size(), blood_cost]
+	var status := _label(status_text, 14, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	status.custom_minimum_size.y = 34
 	box.add_child(status)
-	var hand_row := HBoxContainer.new()
-	hand_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	hand_row.add_theme_constant_override("separation", 8)
-	box.add_child(hand_row)
-	for hand_index in range(battle_state.hand.size()):
-		var card_id: String = battle_state.hand[hand_index]
-		var card_button := _hand_card_button(card_id, hand_index == selected_hand_index)
-		card_button.pressed.connect(_select_hand.bind(hand_index))
-		hand_row.add_child(card_button)
-	if battle_state.hand.is_empty():
-		hand_row.add_child(_label("MANO VACÍA", 14, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	var end_turn := _wide_button("TERMINAR TURNO")
-	end_turn.custom_minimum_size.y = 50
+
+	if battle_state.needs_draw():
+		var draw_row := HBoxContainer.new()
+		draw_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		draw_row.add_theme_constant_override("separation", 14)
+		box.add_child(draw_row)
+		var draw_deck := _small_button("ROBAR DEL MAZO", 260)
+		draw_deck.disabled = battle_state.draw_pile.is_empty()
+		draw_deck.pressed.connect(_draw_regular)
+		draw_row.add_child(draw_deck)
+		var draw_squirrel := _small_button("ROBAR ARDILLA", 260)
+		draw_squirrel.disabled = battle_state.squirrel_pile_count <= 0
+		draw_squirrel.pressed.connect(_draw_squirrel)
+		draw_row.add_child(draw_squirrel)
+	else:
+		var hand_row := HBoxContainer.new()
+		hand_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		hand_row.add_theme_constant_override("separation", 8)
+		box.add_child(hand_row)
+		for hand_index in range(battle_state.hand.size()):
+			var card_id: String = battle_state.hand[hand_index]
+			var card_button := _hand_card_button(card_id, hand_index == selected_hand_index)
+			card_button.pressed.connect(_select_hand.bind(hand_index))
+			hand_row.add_child(card_button)
+		if battle_state.hand.is_empty():
+			hand_row.add_child(_label("TU MANO ESTÁ VACÍA", 13, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+
+	var actions := HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	actions.add_theme_constant_override("separation", 10)
+	box.add_child(actions)
+	if not selected_sacrifices.is_empty():
+		var cancel := _small_button("CANCELAR SACRIFICIOS", 250)
+		cancel.pressed.connect(_cancel_sacrifices)
+		actions.add_child(cancel)
+	var end_turn := _small_button("HACER SONAR LA CAMPANA", 300)
 	end_turn.pressed.connect(_end_battle_turn)
-	box.add_child(end_turn)
+	actions.add_child(end_turn)
 
 func _select_hand(hand_index: int) -> void:
-	selected_hand_index = hand_index
+	if selected_hand_index == hand_index:
+		selected_hand_index = -1
+		selected_sacrifices.clear()
+		battle_state.last_message = "Cancelaste la carta seleccionada."
+	else:
+		selected_hand_index = hand_index
+		selected_sacrifices.clear()
+		var card := CardCatalogScript.find_by_id(battle_state.hand[hand_index])
+		var blood_cost := battle_state.blood_cost_for(hand_index)
+		if blood_cost > 0:
+			battle_state.last_message = "%s exige %d sacrificio(s). Toca tus criaturas." % [str(card.get("name", "La carta")), blood_cost]
+		else:
+			battle_state.last_message = "Toca la casilla donde quieres jugar %s." % str(card.get("name", "la carta"))
 	_render_battle()
 
-func _play_selected_to_lane(lane_index: int) -> void:
+func _on_player_lane_pressed(lane_index: int) -> void:
 	if selected_hand_index < 0:
-		battle_state.last_message = "Primero toca una carta de tu mano."
+		battle_state.last_message = "Primero elige una carta de tu mano."
 		_render_battle()
 		return
-	if battle_state.play_card(selected_hand_index, lane_index):
+	var blood_cost: int = battle_state.blood_cost_for(selected_hand_index)
+	if blood_cost > 0 and selected_sacrifices.size() < blood_cost:
+		if battle_state.player_lanes[lane_index] == null:
+			battle_state.last_message = "Necesitas marcar criaturas vivas para el sacrificio."
+			_render_battle()
+			return
+		if selected_sacrifices.has(lane_index):
+			selected_sacrifices.erase(lane_index)
+		else:
+			selected_sacrifices.append(lane_index)
+		if selected_sacrifices.size() == blood_cost:
+			battle_state.last_message = "La Sangre está lista. Toca la casilla donde colocarás la carta."
+		else:
+			battle_state.last_message = "Marca %d sacrificio(s) más." % (blood_cost - selected_sacrifices.size())
+		_render_battle()
+		return
+	if battle_state.play_card(selected_hand_index, lane_index, selected_sacrifices):
 		selected_hand_index = -1
+		selected_sacrifices.clear()
+	_render_battle()
+
+func _cancel_sacrifices() -> void:
+	selected_sacrifices.clear()
+	battle_state.last_message = "Los sacrificios fueron cancelados."
+	_render_battle()
+
+func _draw_regular() -> void:
+	battle_state.draw_from_deck()
+	_render_battle()
+
+func _draw_squirrel() -> void:
+	battle_state.draw_squirrel()
 	_render_battle()
 
 func _end_battle_turn() -> void:
 	selected_hand_index = -1
+	selected_sacrifices.clear()
 	var result: String = battle_state.end_turn()
 	if result == "victory":
 		_show_battle_reward()
@@ -246,13 +332,13 @@ func _end_battle_turn() -> void:
 func _show_battle_reward() -> void:
 	_clear_screen()
 	var box := _screen_box()
-	box.add_child(_label("VICTORIA", 38, SUCCESS, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_label("La balanza cedió. Elige una recompensa antes de volver al mapa.", 16, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("LA BALANZA CEDE", 36, SUCCESS, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("Tu oponente empuja tres cartas hacia ti. Elige una.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 18)
 	box.add_child(row)
-	for card_id in ["esqueleto", "automata", "francotirador"]:
+	for card_id in ["gorrion", "puercoespin", "coyote"]:
 		row.add_child(_choice_card_button(card_id, _claim_battle_reward.bind(card_id)))
 
 func _claim_battle_reward(card_id: String) -> void:
@@ -267,33 +353,33 @@ func _claim_battle_reward(card_id: String) -> void:
 func _show_defeat() -> void:
 	_clear_screen()
 	var box := _screen_box()
-	box.add_child(_label("LA BALANZA CAYÓ", 38, DANGER, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_label("El nodo no se resuelve y no se entrega recompensa. Puedes volver al mapa e intentarlo otra vez.", 17, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	var retry := _wide_button("REINTENTAR COMBATE")
+	box.add_child(_label("TU VELA SE APAGA", 36, DANGER, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("La balanza cayó del lado equivocado. Este prototipo aún permite volver al mapa; las vidas y la derrota de campaña llegarán con la siguiente capa del Acto 1.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	var retry := _wide_button("VOLVER A LA MESA")
 	retry.pressed.connect(_start_battle.bind(active_battle_node))
 	box.add_child(retry)
-	var map_button := _wide_button("VOLVER AL MAPA")
+	var map_button := _wide_button("REGRESAR AL MAPA")
 	map_button.pressed.connect(_show_map)
 	box.add_child(map_button)
 
 func _show_campfire(node_id: String) -> void:
 	_clear_screen()
 	var box := _screen_box()
-	box.add_child(_label("FOGATA", 36, ACCENT, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_label("Primera versión del evento: la fogata estabiliza la expedición y abre el siguiente tramo. Las mejoras de estadísticas llegarán en la fase de encuentros.", 16, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	var continue_button := _wide_button("AVIVAR LA FOGATA")
+	box.add_child(_label("UNA FOGATA ENTRE LOS ÁRBOLES", 34, AMBER, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("Figuras hambrientas observan tus cartas desde el otro lado del fuego. En esta primera transición la fogata abre el sendero; la mejora con riesgo se implementará en la siguiente fase.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	var continue_button := _wide_button("ACERCARTE AL FUEGO")
 	continue_button.pressed.connect(_resolve_simple_node.bind(node_id))
 	box.add_child(continue_button)
-	var back := _wide_button("VOLVER AL MAPA")
+	var back := _wide_button("ALEJARTE")
 	back.pressed.connect(_show_map)
 	box.add_child(back)
 
 func _show_region_gate(node_id: String) -> void:
 	_clear_screen()
 	var box := _screen_box()
-	box.add_child(_label("UMBRAL DE LA REGIÓN", 36, INK, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_label("Llegaste al final de la primera vertical slice: mapa → elección → combate real → recompensa → mapa → guardado. Los jefes, puzzles y regiones completas siguen pendientes.", 17, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	var finish := _wide_button("MARCAR TRAMO COMPLETADO")
+	box.add_child(_label("ALGO TE ESPERA MÁS ADELANTE", 34, INK, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("La primera ruta Acto 1 ya conecta elección, sacrificios, combate, recompensa y fogata. El siguiente hito es reemplazar este umbral por el primer jefe con fases reales.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	var finish := _wide_button("MARCAR EL SENDERO")
 	finish.pressed.connect(_resolve_simple_node.bind(node_id))
 	box.add_child(finish)
 	var back := _wide_button("VOLVER AL MAPA")
@@ -308,57 +394,54 @@ func _resolve_simple_node(node_id: String) -> void:
 
 func _choice_card_button(card_id: String, callback: Callable) -> Button:
 	var card := CardCatalogScript.find_by_id(card_id)
-	var button := Button.new()
-	button.custom_minimum_size = Vector2(250, 230)
-	button.focus_mode = Control.FOCUS_NONE
-	button.text = "%s\n\n%s\n%s\n\n%s\n⚔ %d     ♥ %d" % [str(card.get("name", card_id)), str(card.get("glyph", "?")), str(card.get("cost", "")), str(card.get("seal", "")), int(card.get("atk", 0)), int(card.get("hp", 0))]
-	button.add_theme_font_size_override("font_size", 16)
-	button.add_theme_color_override("font_color", INK)
-	button.add_theme_stylebox_override("normal", _panel_style(PANEL, _resource_color(str(card.get("resource", "none"))), 3, 4))
-	button.add_theme_stylebox_override("pressed", _panel_style(ACCENT_DARK, ACCENT, 4, 4))
-	button.pressed.connect(callback)
-	return button
+	var view = CardViewScript.new()
+	view.configure(card, false, false)
+	view.pressed.connect(callback)
+	return view
 
 func _hand_card_button(card_id: String, selected: bool) -> Button:
 	var card := CardCatalogScript.find_by_id(card_id)
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(165, 92)
+	button.custom_minimum_size = Vector2(155, 78)
 	button.focus_mode = Control.FOCUS_NONE
-	button.text = "%s%s\n%s · ⚔%d ♥%d" % ["▶ " if selected else "", str(card.get("name", card_id)), str(card.get("cost", "")), int(card.get("atk", 0)), int(card.get("hp", 0))]
-	button.add_theme_font_size_override("font_size", 13)
+	button.text = "%s%s\n%s · %d / %d" % ["› " if selected else "", str(card.get("name", card_id)), str(card.get("cost", "")), int(card.get("atk", 0)), int(card.get("hp", 0))]
+	button.add_theme_font_size_override("font_size", 12)
 	button.add_theme_color_override("font_color", INK)
-	var border_color := ACCENT if selected else _resource_color(str(card.get("resource", "none")))
-	button.add_theme_stylebox_override("normal", _panel_style(PANEL, border_color, 3 if selected else 2, 3))
-	button.add_theme_stylebox_override("pressed", _panel_style(ACCENT_DARK, ACCENT, 3, 3))
+	var border_color := BLOOD if selected else _resource_color(str(card.get("resource", "none")))
+	button.add_theme_stylebox_override("normal", _panel_style(WOOD_DEEP, border_color, 3 if selected else 2, 2))
+	button.add_theme_stylebox_override("pressed", _panel_style(PAPER, AMBER, 3, 2))
 	return button
 
-func _battle_slot(unit, player_side: bool, lane_index: int) -> Button:
+func _battle_slot(unit, player_side: bool, lane_index: int, sacrifice_marked: bool) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(255, 92)
+	button.custom_minimum_size = Vector2(245, 82)
 	button.focus_mode = Control.FOCUS_NONE
 	if unit == null:
-		button.text = "CASILLA %d\n— VACÍA —" % (lane_index + 1)
+		button.text = "CARRIL %d\nVACÍO" % (lane_index + 1)
 		button.add_theme_color_override("font_color", MUTED)
-		button.add_theme_stylebox_override("normal", _panel_style(PANEL_ALT, BORDER, 1, 3))
+		button.add_theme_stylebox_override("normal", _panel_style(WOOD_DEEP, EDGE, 1, 2))
 	else:
 		var card := CardCatalogScript.find_by_id(str(unit.get("id", "")))
-		button.text = "%s  %s\n⚔ %d     ♥ %d" % [str(card.get("glyph", "?")), str(card.get("name", "CARTA")), int(card.get("atk", 0)), int(unit.get("hp", 0))]
+		button.text = "%s\n%d / %d" % [str(card.get("name", "CARTA")), int(card.get("atk", 0)), int(unit.get("hp", 0))]
 		button.add_theme_color_override("font_color", INK)
 		var border_color := SUCCESS if player_side else DANGER
-		button.add_theme_stylebox_override("normal", _panel_style(PANEL, border_color, 2, 3))
-	button.add_theme_font_size_override("font_size", 14)
+		if sacrifice_marked:
+			border_color = BLOOD
+			button.text = "SACRIFICAR\n%s · %d / %d" % [str(card.get("name", "CARTA")), int(card.get("atk", 0)), int(unit.get("hp", 0))]
+		button.add_theme_stylebox_override("normal", _panel_style(WOOD, border_color, 3 if sacrifice_marked else 2, 2))
+	button.add_theme_font_size_override("font_size", 13)
 	return button
 
 func _screen_box() -> VBoxContainer:
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 42)
-	margin.add_theme_constant_override("margin_right", 42)
-	margin.add_theme_constant_override("margin_top", 24)
-	margin.add_theme_constant_override("margin_bottom", 24)
+	margin.add_theme_constant_override("margin_left", 38)
+	margin.add_theme_constant_override("margin_right", 38)
+	margin.add_theme_constant_override("margin_top", 22)
+	margin.add_theme_constant_override("margin_bottom", 22)
 	add_child(margin)
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _panel_style(PANEL, BORDER, 3, 8))
+	panel.add_theme_stylebox_override("panel", _panel_style(CABIN, EDGE, 2, 2))
 	margin.add_child(panel)
 	var box := VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -372,7 +455,7 @@ func _clear_screen() -> void:
 		child.queue_free()
 
 func _connector(text_value: String) -> Label:
-	return _label(text_value, 17, BORDER, HORIZONTAL_ALIGNMENT_CENTER)
+	return _label(text_value, 16, EDGE, HORIZONTAL_ALIGNMENT_CENTER)
 
 func _spacer(height: int) -> Control:
 	var spacer := Control.new()
@@ -390,29 +473,28 @@ func _label(text_value: String, size: int, color: Color, align: HorizontalAlignm
 
 func _wide_button(text_value: String) -> Button:
 	var button := _small_button(text_value, 620)
-	button.custom_minimum_size.y = 60
-	button.add_theme_font_size_override("font_size", 20)
+	button.custom_minimum_size.y = 58
+	button.add_theme_font_size_override("font_size", 19)
 	return button
 
 func _small_button(text_value: String, width: int) -> Button:
 	var button := Button.new()
 	button.text = text_value
-	button.custom_minimum_size = Vector2(width, 44)
+	button.custom_minimum_size = Vector2(width, 42)
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_font_size_override("font_size", 15)
+	button.add_theme_font_size_override("font_size", 14)
 	button.add_theme_color_override("font_color", INK)
 	button.add_theme_color_override("font_disabled_color", MUTED)
-	button.add_theme_stylebox_override("normal", _panel_style(PANEL_ALT, BORDER, 2, 3))
-	button.add_theme_stylebox_override("pressed", _panel_style(ACCENT_DARK, ACCENT, 2, 3))
+	button.add_theme_stylebox_override("normal", _panel_style(WOOD_DEEP, EDGE, 2, 2))
+	button.add_theme_stylebox_override("hover", _panel_style(WOOD, AMBER, 2, 2))
+	button.add_theme_stylebox_override("pressed", _panel_style(PAPER, AMBER, 2, 2))
 	return button
 
 func _resource_color(resource: String) -> Color:
 	match resource:
-		"blood": return Color8(126, 38, 34)
-		"bones": return Color8(180, 170, 137)
-		"energy": return Color8(58, 124, 137)
-		"runes": return Color8(112, 67, 143)
-		_: return BORDER
+		"blood": return BLOOD
+		"bones": return BONE
+		_: return AMBER
 
 func _panel_style(color: Color, border_color: Color, width: int, radius: int) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
