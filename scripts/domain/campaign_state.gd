@@ -1,15 +1,15 @@
 class_name CampaignState
 extends RefCounted
 
-const SAVE_VERSION := 1
-const STARTER_DECK := ["automata", "automata", "conducto", "conducto", "esqueleto", "esqueleto", "mox_rubi"]
+const SAVE_VERSION := 2
+const STARTER_DECK := ["armino", "lobo", "rana_toro"]
 const MAP_NODES := {
-	"start": {"title":"INICIO", "type":"start", "next":["choice_left", "choice_right"]},
-	"choice_left": {"title":"ELECCIÓN · HUESOS", "type":"choice", "next":["battle_1"]},
-	"choice_right": {"title":"ELECCIÓN · ENERGÍA", "type":"choice", "next":["battle_1"]},
+	"start": {"title":"LA SENDA", "type":"start", "next":["choice_left", "choice_right"]},
+	"choice_left": {"title":"ELECCIÓN DE BESTIA", "type":"choice", "next":["battle_1"]},
+	"choice_right": {"title":"ELECCIÓN DE COSTE", "type":"choice", "next":["battle_1"]},
 	"battle_1": {"title":"COMBATE DEL BOSQUE", "type":"battle", "next":["campfire_1"]},
 	"campfire_1": {"title":"FOGATA", "type":"campfire", "next":["gate_1"]},
-	"gate_1": {"title":"UMBRAL DE LA REGIÓN", "type":"end", "next":[]}
+	"gate_1": {"title":"SENDERO HACIA EL JEFE", "type":"end", "next":[]}
 }
 
 var version := SAVE_VERSION
