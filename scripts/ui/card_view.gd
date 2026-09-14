@@ -1,16 +1,18 @@
-class_name RuneCardView
+class_name ActOneCardView
 extends Button
 
-const BG := Color8(24, 21, 16)
-const BG_PRESSED := Color8(52, 42, 27)
-const INK := Color8(236, 225, 194)
-const MUTED := Color8(165, 153, 126)
-const DARK := Color8(10, 9, 7)
-const BLOOD := Color8(154, 52, 45)
-const BONE := Color8(205, 194, 156)
-const ENERGY := Color8(71, 152, 169)
-const RUNE := Color8(145, 86, 180)
-const NEUTRAL := Color8(132, 95, 48)
+## Vista transitoria de carta para el rumbo Acto 1.
+## Evita colores/facciones del Acto 2 y aproxima papel envejecido sobre mesa oscura.
+const PAPER := Color8(91, 74, 48)
+const PAPER_PRESSED := Color8(111, 87, 53)
+const PAPER_DARK := Color8(46, 37, 25)
+const INK := Color8(235, 222, 184)
+const MUTED := Color8(180, 164, 126)
+const SHADOW := Color8(18, 14, 10)
+const BLOOD := Color8(148, 47, 38)
+const BONE := Color8(211, 199, 162)
+const NEUTRAL := Color8(161, 125, 73)
+const EDGE := Color8(54, 40, 24)
 
 var card: Dictionary = {}
 var compact := false
@@ -28,10 +30,9 @@ func configure(card_data: Dictionary, is_in_deck := false, compact_mode := false
 	_build_contents()
 
 func _apply_theme() -> void:
-	var tint := resource_color(str(card.get("resource", "none")))
-	add_theme_stylebox_override("normal", _style(BG, tint, 3))
-	add_theme_stylebox_override("hover", _style(BG, tint.lightened(0.12), 3))
-	add_theme_stylebox_override("pressed", _style(BG_PRESSED, tint.lightened(0.20), 4))
+	add_theme_stylebox_override("normal", _style(PAPER_DARK, EDGE, 3))
+	add_theme_stylebox_override("hover", _style(PAPER, NEUTRAL, 3))
+	add_theme_stylebox_override("pressed", _style(PAPER_PRESSED, BLOOD, 4))
 	add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 func _build_contents() -> void:
@@ -57,41 +58,47 @@ func _build_contents() -> void:
 	title.custom_minimum_size.y = 22 if compact else 26
 	root.add_child(title)
 
-	var cost := _label(str(card.get("cost", "NINGUNO")), 10 if compact else 12, resource_color(str(card.get("resource", "none"))), HORIZONTAL_ALIGNMENT_CENTER)
+	var cost := _label(str(card.get("cost", "SIN COSTE")), 10 if compact else 12, resource_color(str(card.get("resource", "none"))), HORIZONTAL_ALIGNMENT_CENTER)
 	root.add_child(cost)
 
 	var portrait := PanelContainer.new()
 	portrait.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	portrait.custom_minimum_size.y = 72 if compact else 104
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	portrait.add_theme_stylebox_override("panel", _style(DARK, resource_color(str(card.get("resource", "none"))).darkened(0.28), 2))
+	portrait.add_theme_stylebox_override("panel", _style(SHADOW, EDGE, 2))
 	root.add_child(portrait)
 
 	var portrait_stack := VBoxContainer.new()
 	portrait_stack.alignment = BoxContainer.ALIGNMENT_CENTER
 	portrait_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	portrait.add_child(portrait_stack)
-	var glyph := _label(str(card.get("glyph", "◆")), 40 if compact else 58, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	var glyph := _label(str(card.get("glyph", "?")), 38 if compact else 54, INK, HORIZONTAL_ALIGNMENT_CENTER)
 	glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	glyph.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	portrait_stack.add_child(glyph)
 
-	var seal_panel := PanelContainer.new()
-	seal_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	seal_panel.add_theme_stylebox_override("panel", _style(Color8(15, 13, 10), resource_color(str(card.get("resource", "none"))).darkened(0.15), 1))
-	root.add_child(seal_panel)
-	var seal := _label("◈  %s" % str(card.get("seal", "SIN SELLO")), 10 if compact else 12, INK, HORIZONTAL_ALIGNMENT_CENTER)
-	seal.custom_minimum_size.y = 24 if compact else 28
-	seal.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	seal_panel.add_child(seal)
+	var seal_text := str(card.get("seal", "NINGUNO"))
+	if seal_text != "NINGUNO":
+		var seal_panel := PanelContainer.new()
+		seal_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		seal_panel.add_theme_stylebox_override("panel", _style(Color8(31, 24, 17), EDGE, 1))
+		root.add_child(seal_panel)
+		var seal := _label(seal_text, 9 if compact else 11, INK, HORIZONTAL_ALIGNMENT_CENTER)
+		seal.custom_minimum_size.y = 22 if compact else 26
+		seal.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		seal_panel.add_child(seal)
+	else:
+		var blank := Control.new()
+		blank.custom_minimum_size.y = 23 if compact else 27
+		root.add_child(blank)
 
 	var stats := HBoxContainer.new()
 	stats.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(stats)
-	var attack := _label("⚔  %d" % int(card.get("atk", 0)), 16 if compact else 20, INK, HORIZONTAL_ALIGNMENT_LEFT)
+	var attack := _label("%d" % int(card.get("atk", 0)), 19 if compact else 25, INK, HORIZONTAL_ALIGNMENT_LEFT)
 	attack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	stats.add_child(attack)
-	var health := _label("%d  ♥" % int(card.get("hp", 0)), 16 if compact else 20, INK, HORIZONTAL_ALIGNMENT_RIGHT)
+	var health := _label("%d" % int(card.get("hp", 0)), 19 if compact else 25, INK, HORIZONTAL_ALIGNMENT_RIGHT)
 	health.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	stats.add_child(health)
 
@@ -131,6 +138,4 @@ static func resource_color(resource: String) -> Color:
 	match resource:
 		"blood": return BLOOD
 		"bones": return BONE
-		"energy": return ENERGY
-		"runes": return RUNE
 		_: return NEUTRAL
