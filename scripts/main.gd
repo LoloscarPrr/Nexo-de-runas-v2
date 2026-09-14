@@ -1,7 +1,10 @@
 extends Control
 
-## Nexo de Runas V2 — Fase 1B.
-## Constructor de mazo táctil y primer componente reutilizable de carta.
+## Nexo de Runas V2 — vertical slice de campaña.
+## Menú, constructor táctil y primera expedición offline jugable.
+
+const CardCatalogScript = preload("res://scripts/domain/card_catalog.gd")
+const CampaignViewScript = preload("res://scripts/ui/campaign_view.gd")
 
 const BG := Color8(8, 8, 7)
 const PANEL := Color8(27, 23, 17)
@@ -19,27 +22,14 @@ const RUNE := Color8(112, 67, 143)
 var menu_screen: Control
 var deck_screen: Control
 var detail_screen: Control
+var campaign_screen
 var collection_grid: GridContainer
 var deck_grid: GridContainer
 var deck_counter: Label
 var style_label: Label
 var selected_style := "Bestias"
 var deck_ids: Array[String] = []
-
-var cards := [
-	{"id":"lobo","name":"LOBO","style":"Bestias","cost":"2 SANGRE","atk":3,"hp":2,"seal":"FEROCIDAD","glyph":"◢"},
-	{"id":"alce","name":"ALCE","style":"Bestias","cost":"3 SANGRE","atk":3,"hp":5,"seal":"CORREDOR","glyph":"♞"},
-	{"id":"cuervo","name":"CUERVO","style":"Bestias","cost":"2 SANGRE","atk":2,"hp":3,"seal":"AÉREO","glyph":"◆"},
-	{"id":"esqueleto","name":"ESQUELETO","style":"No-muertos","cost":"1 HUESO","atk":1,"hp":1,"seal":"FRÁGIL","glyph":"☠"},
-	{"id":"sepulturero","name":"SEPULTURERO","style":"No-muertos","cost":"2 HUESOS","atk":0,"hp":3,"seal":"EXHUMAR","glyph":"✚"},
-	{"id":"zombi","name":"ZOMBI","style":"No-muertos","cost":"5 HUESOS","atk":2,"hp":2,"seal":"TENAZ","glyph":"☩"},
-	{"id":"automata","name":"AUTÓMATA","style":"Tecnología","cost":"3 ENERGÍA","atk":1,"hp":2,"seal":"CONDUCTOR","glyph":"▣"},
-	{"id":"francotirador","name":"BOT TIRADOR","style":"Tecnología","cost":"4 ENERGÍA","atk":2,"hp":1,"seal":"APUNTAR","glyph":"⌖"},
-	{"id":"conducto","name":"CONDUCTO","style":"Tecnología","cost":"2 ENERGÍA","atk":0,"hp":3,"seal":"CIRCUITO","glyph":"⌁"},
-	{"id":"mox_rubi","name":"MOX RUBÍ","style":"Magia","cost":"NINGUNO","atk":0,"hp":1,"seal":"RUBÍ","glyph":"♦"},
-	{"id":"aprendiz","name":"APRENDIZ","style":"Magia","cost":"1 RUNA","atk":1,"hp":2,"seal":"HECHIZO","glyph":"✦"},
-	{"id":"guardian","name":"GUARDIÁN MOX","style":"Magia","cost":"2 RUNAS","atk":2,"hp":3,"seal":"GUARDIA","glyph":"⬡"}
-]
+var cards = CardCatalogScript.CARDS.duplicate(true)
 
 func _ready() -> void:
 	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_LANDSCAPE)
@@ -47,6 +37,7 @@ func _ready() -> void:
 	_build_menu()
 	_build_deck_builder()
 	_build_detail()
+	_build_campaign()
 	_show(menu_screen)
 
 func _build_background() -> void:
@@ -80,11 +71,11 @@ func _build_menu() -> void:
 	var deck_button := _wide_button("CONSTRUCTOR DE MAZO")
 	deck_button.pressed.connect(_open_deck)
 	root.add_child(deck_button)
-	var cpu := _wide_button("BATALLA VS CPU")
-	cpu.pressed.connect(_open_detail.bind("BATALLA VS CPU", "El combate se conectará al mismo mazo que prepares aquí."))
-	root.add_child(cpu)
+	var campaign := _wide_button("CAMPAÑA · ACTO 1")
+	campaign.pressed.connect(_open_campaign)
+	root.add_child(campaign)
 	var local := _wide_button("BATALLA LOCAL")
-	local.pressed.connect(_open_detail.bind("BATALLA LOCAL", "La conexión Wi-Fi llegará después de estabilizar el combate contra CPU."))
+	local.pressed.connect(_open_detail.bind("BATALLA LOCAL", "La conexión Wi-Fi llegará después de estabilizar el combate y la primera expedición offline."))
 	root.add_child(local)
 
 func _build_deck_builder() -> void:
@@ -167,9 +158,19 @@ func _build_detail() -> void:
 	back.pressed.connect(_show.bind(menu_screen))
 	box.add_child(back)
 
+func _build_campaign() -> void:
+	campaign_screen = CampaignViewScript.new()
+	campaign_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	campaign_screen.connect("exit_requested", _show.bind(menu_screen))
+	add_child(campaign_screen)
+
 func _open_deck() -> void:
 	_refresh_cards()
 	_show(deck_screen)
+
+func _open_campaign() -> void:
+	campaign_screen.open_launcher()
+	_show(campaign_screen)
 
 func _open_detail(title_text: String, body_text: String) -> void:
 	detail_screen.get_node("VBoxContainer/Title").text = title_text
@@ -195,19 +196,17 @@ func _refresh_cards() -> void:
 		if not card.is_empty():
 			deck_grid.add_child(_card_view(card, true))
 	deck_counter.text = "%d / 20 CARTAS" % deck_ids.size()
-	style_label.text = "ESTILO: %s · las cartas ya comparten el componente que usará la batalla" % selected_style.to_upper()
+	style_label.text = "ESTILO: %s · el mazo libre permanece separado del mazo de campaña" % selected_style.to_upper()
 
 func _card_view(card: Dictionary, in_deck: bool) -> Button:
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(155, 205)
 	button.focus_mode = Control.FOCUS_NONE
-	button.text = "%s\n\n%s\n\n%s\n%s\n⚔ %d     ♥ %d" % [
-		card.name, card.glyph, card.cost, card.seal, card.atk, card.hp
-	]
+	button.text = "%s\n\n%s\n\n%s\n%s\n⚔ %d     ♥ %d" % [card.name, card.glyph, card.cost, card.seal, card.atk, card.hp]
 	button.add_theme_font_size_override("font_size", 15)
 	button.add_theme_color_override("font_color", INK)
 	button.add_theme_color_override("font_hover_color", Color.WHITE)
-	var tint := _resource_color(card.style)
+	var tint := _resource_color(str(card.get("resource", "none")))
 	button.add_theme_stylebox_override("normal", _panel_style(PANEL, tint, 3, 3))
 	button.add_theme_stylebox_override("hover", _panel_style(Color8(42, 34, 24), ACCENT, 4, 3))
 	button.add_theme_stylebox_override("pressed", _panel_style(ACCENT_DARK, ACCENT, 4, 3))
@@ -227,23 +226,21 @@ func _remove_card(card_id: String) -> void:
 	_refresh_cards()
 
 func _find_card(card_id: String) -> Dictionary:
-	for card in cards:
-		if card.id == card_id:
-			return card
-	return {}
+	return CardCatalogScript.find_by_id(card_id)
 
-func _resource_color(style: String) -> Color:
-	match style:
-		"Bestias": return BLOOD
-		"No-muertos": return BONE
-		"Tecnología": return ENERGY
-		"Magia": return RUNE
+func _resource_color(resource: String) -> Color:
+	match resource:
+		"blood": return BLOOD
+		"bones": return BONE
+		"energy": return ENERGY
+		"runes": return RUNE
 		_: return BORDER
 
 func _show(target: Control) -> void:
 	menu_screen.visible = target == menu_screen
 	deck_screen.visible = target == deck_screen
 	detail_screen.visible = target == detail_screen
+	campaign_screen.visible = target == campaign_screen
 
 func _label(text_value: String, size: int, color: Color, align: HorizontalAlignment) -> Label:
 	var label := Label.new()
