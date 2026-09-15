@@ -147,9 +147,9 @@ func end_turn() -> String:
 	if _check_result() != "ongoing":
 		return result
 	turn += 1
-	draw_pending = true
+	draw_pending = not draw_pile.is_empty() or squirrel_pile_count > 0
 	_spawn_enemy()
-	last_message = "Turno %d · elige entre tu mazo y la reserva de Ardillas." % turn
+	last_message = "Turno %d · elige entre tu mazo y la reserva de Ardillas." % turn if draw_pending else "No quedan cartas. Juega tu mano o toca la campana."
 	return result
 
 func _resolve_player_attacks() -> void:

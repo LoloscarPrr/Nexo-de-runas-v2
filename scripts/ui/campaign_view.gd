@@ -6,6 +6,9 @@ const CampaignStateScript = preload("res://scripts/domain/campaign_state.gd")
 const CampaignSaveScript = preload("res://scripts/domain/campaign_save.gd")
 const BattleStateScript = preload("res://scripts/domain/battle_state.gd")
 const CardCatalogScript = preload("res://scripts/domain/card_catalog.gd")
+const BattleTableScript = preload("res://scripts/ui/battle_table.gd")
+const BattleCardScript = preload("res://scripts/ui/battle_card.gd")
+
 const CardViewScript = preload("res://scripts/ui/card_view.gd")
 
 const CABIN := Color8(19, 14, 10)
@@ -103,7 +106,7 @@ func _show_map() -> void:
 	box.add_child(_map_node_button("campfire_1", "FOGATA"))
 	box.add_child(_connector("│"))
 	box.add_child(_map_node_button("gate_1", "SENDERO HACIA EL JEFE"))
-	var current := state.get_node(state.current_node)
+	var current: Dictionary = state.get_node(state.current_node)
 	box.add_child(_label("ESTÁS EN: %s" % str(current.get("title", state.current_node)), 15, AMBER, HORIZONTAL_ALIGNMENT_CENTER))
 
 func _map_node_button(node_id: String, text_value: String) -> Button:
@@ -130,7 +133,7 @@ func _map_node_button(node_id: String, text_value: String) -> Button:
 func _enter_node(node_id: String) -> void:
 	if state == null or not state.can_enter(node_id):
 		return
-	var node := state.get_node(node_id)
+	var node: Dictionary = state.get_node(node_id)
 	match str(node.get("type", "")):
 		"choice":
 			_show_choice(node_id)
@@ -181,85 +184,97 @@ func _start_battle(node_id: String) -> void:
 
 func _render_battle() -> void:
 	_clear_screen()
-	var box := _screen_box()
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 10)
-	box.add_child(header)
-	var abandon := _small_button("‹ MAPA", 120)
-	abandon.pressed.connect(_show_map)
-	header.add_child(abandon)
-	var title := _label("LA MESA · TURNO %d" % battle_state.turn, 22, INK, HORIZONTAL_ALIGNMENT_LEFT)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(title)
-	var resources := _label("HUESOS %d · ARDILLAS %d · BALANZA %+d" % [battle_state.bones, battle_state.squirrel_pile_count, battle_state.scale], 14, AMBER, HORIZONTAL_ALIGNMENT_RIGHT)
-	resources.custom_minimum_size = Vector2(360, 38)
-	header.add_child(resources)
+	var table := BattleTableScript.new()
+	table.balance = battle_state.scale
+	table.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(table)
+	_place(_label("LA MESA  /  TURNO %02d" % battle_state.turn, 20, INK, HORIZONTAL_ALIGNMENT_LEFT), Rect2(286, 34, 440, 36))
+	var leave := _small_button("‹ MAPA", 120)
+	leave.pressed.connect(_show_map)
+	_place(leave, Rect2(28, 28, 120, 44))
+	_place(_label("BALANZA", 15, AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(45, 195, 190, 30))
+	_place(_label("%+d / 5" % battle_state.scale, 23, INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(50, 401, 180, 36))
+	_place(_label("HUESOS  %d" % battle_state.bones, 19, BONE, HORIZONTAL_ALIGNMENT_CENTER), Rect2(40, 454, 198, 35))
+	var blood_cost: int = battle_state.blood_cost_for(selected_hand_index)
+	_place(_label("SANGRE  %d / %d" % [selected_sacrifices.size(), blood_cost], 17, INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(36, 493, 210, 34))
+	_place(_label("EL GUARDIÁN", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(990, 241, 230, 30))
+	if battle_state.enemy_queue_index < battle_state.enemy_queue.size():
+		var next_card := CardCatalogScript.find_by_id(battle_state.enemy_queue[battle_state.enemy_queue_index])
+		_place(_label("SE ACERCA\n%s" % str(next_card.get("name", "")), 14, AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(992, 280, 230, 48))
+	for lane in range(4):
+		var x := 290.0 + lane * 157.0
+		var enemy = battle_state.enemy_lanes[lane]
+		var enemy_slot := _table_slot(enemy, false, lane)
+		_place(enemy_slot, Rect2(x, 110, 147, 162))
+		var player = battle_state.player_lanes[lane]
+		var player_slot := _table_slot(player, true, lane)
+		player_slot.pressed.connect(_on_player_lane_pressed.bind(lane))
+		_place(player_slot, Rect2(x, 293, 147, 162))
+	_place(_label("SU LADO     ·     CUATRO CARRILES     ·     TU LADO", 11, MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(290, 270, 618, 22))
+	var status_text: String = battle_state.last_message
+	_place(_label(status_text, 15, INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(280, 467, 635, 49))
 
-	box.add_child(_label("SU LADO", 12, DANGER, HORIZONTAL_ALIGNMENT_CENTER))
-	var enemy_grid := GridContainer.new()
-	enemy_grid.columns = 4
-	enemy_grid.add_theme_constant_override("h_separation", 8)
-	box.add_child(enemy_grid)
-	for lane_index in range(4):
-		enemy_grid.add_child(_battle_slot(battle_state.enemy_lanes[lane_index], false, lane_index, false))
-
-	box.add_child(_connector("────────────────────────────────────────────────────────────"))
-	var player_grid := GridContainer.new()
-	player_grid.columns = 4
-	player_grid.add_theme_constant_override("h_separation", 8)
-	box.add_child(player_grid)
-	for lane_index in range(4):
-		var slot := _battle_slot(battle_state.player_lanes[lane_index], true, lane_index, selected_sacrifices.has(lane_index))
-		slot.pressed.connect(_on_player_lane_pressed.bind(lane_index))
-		player_grid.add_child(slot)
-	box.add_child(_label("TU LADO", 12, SUCCESS, HORIZONTAL_ALIGNMENT_CENTER))
-
-	var status_text := battle_state.last_message
-	if selected_hand_index >= 0:
-		var blood_cost: int = battle_state.blood_cost_for(selected_hand_index)
-		if blood_cost > 0:
-			status_text = "%s  ·  SACRIFICIOS %d/%d" % [status_text, selected_sacrifices.size(), blood_cost]
-	var status := _label(status_text, 14, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
-	status.custom_minimum_size.y = 34
-	box.add_child(status)
-
+	var draw_deck := _small_button("MAZO\n%d cartas" % battle_state.draw_pile.size(), 112)
+	draw_deck.disabled = not battle_state.needs_draw() or battle_state.draw_pile.is_empty()
+	draw_deck.pressed.connect(_draw_regular)
+	_place(draw_deck, Rect2(982, 442, 112, 102))
+	var squirrels := _small_button("ARDILLAS\n%d cartas" % battle_state.squirrel_pile_count, 112)
+	squirrels.disabled = not battle_state.needs_draw() or battle_state.squirrel_pile_count <= 0
+	squirrels.pressed.connect(_draw_squirrel)
+	_place(squirrels, Rect2(1110, 442, 112, 102))
 	if battle_state.needs_draw():
-		var draw_row := HBoxContainer.new()
-		draw_row.alignment = BoxContainer.ALIGNMENT_CENTER
-		draw_row.add_theme_constant_override("separation", 14)
-		box.add_child(draw_row)
-		var draw_deck := _small_button("ROBAR DEL MAZO", 260)
-		draw_deck.disabled = battle_state.draw_pile.is_empty()
-		draw_deck.pressed.connect(_draw_regular)
-		draw_row.add_child(draw_deck)
-		var draw_squirrel := _small_button("ROBAR ARDILLA", 260)
-		draw_squirrel.disabled = battle_state.squirrel_pile_count <= 0
-		draw_squirrel.pressed.connect(_draw_squirrel)
-		draw_row.add_child(draw_squirrel)
-	else:
-		var hand_row := HBoxContainer.new()
-		hand_row.alignment = BoxContainer.ALIGNMENT_CENTER
-		hand_row.add_theme_constant_override("separation", 8)
-		box.add_child(hand_row)
-		for hand_index in range(battle_state.hand.size()):
-			var card_id: String = battle_state.hand[hand_index]
-			var card_button := _hand_card_button(card_id, hand_index == selected_hand_index)
-			card_button.pressed.connect(_select_hand.bind(hand_index))
-			hand_row.add_child(card_button)
-		if battle_state.hand.is_empty():
-			hand_row.add_child(_label("TU MANO ESTÁ VACÍA", 13, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+		_place(_label("ELIGE DE DÓNDE ROBAR", 13, AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(978, 550, 250, 28))
 
-	var actions := HBoxContainer.new()
-	actions.alignment = BoxContainer.ALIGNMENT_CENTER
-	actions.add_theme_constant_override("separation", 10)
-	box.add_child(actions)
-	if not selected_sacrifices.is_empty():
-		var cancel := _small_button("CANCELAR SACRIFICIOS", 250)
-		cancel.pressed.connect(_cancel_sacrifices)
-		actions.add_child(cancel)
-	var end_turn := _small_button("HACER SONAR LA CAMPANA", 300)
-	end_turn.pressed.connect(_end_battle_turn)
-	actions.add_child(end_turn)
+	var hand_scroll := ScrollContainer.new()
+	hand_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	hand_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_place(hand_scroll, Rect2(278, 526, 647, 188))
+	var hand_row := HBoxContainer.new()
+	hand_row.add_theme_constant_override("separation", 8)
+	hand_scroll.add_child(hand_row)
+	for index in range(battle_state.hand.size()):
+		var card := BattleCardScript.new()
+		card.card = CardCatalogScript.find_by_id(battle_state.hand[index])
+		card.chosen = index == selected_hand_index
+		card.custom_minimum_size = Vector2(126, 172)
+		card.disabled = battle_state.needs_draw()
+		card.pressed.connect(_select_hand.bind(index))
+		hand_row.add_child(card)
+	if battle_state.hand.is_empty():
+		hand_row.add_child(_label("Tu mano está vacía.", 16, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	if selected_hand_index >= 0:
+		hand_scroll.set_deferred("scroll_horizontal", maxi(0, selected_hand_index * 134 - 268))
+	var cancel := _small_button("CANCELAR\nSACRIFICIOS", 192)
+	cancel.disabled = selected_sacrifices.is_empty()
+	cancel.pressed.connect(_cancel_sacrifices)
+	_place(cancel, Rect2(46, 565, 192, 60))
+	var bell := _small_button("CAMPANA\nTerminar turno", 240)
+	bell.disabled = battle_state.needs_draw()
+	bell.pressed.connect(_end_battle_turn)
+	_place(bell, Rect2(984, 615, 240, 70))
+
+func _place(control: Control, rect: Rect2) -> void:
+	add_child(control)
+	control.position = rect.position
+	control.size = rect.size
+	control.set_deferred("size", rect.size)
+
+func _table_slot(unit, player_side: bool, lane: int) -> Button:
+	if unit != null:
+		var card := BattleCardScript.new()
+		card.card = CardCatalogScript.find_by_id(str(unit.get("id", "")))
+		card.current_hp = int(unit.get("hp", 1))
+		card.marked = player_side and selected_sacrifices.has(lane)
+		card.disabled = not player_side or battle_state.needs_draw()
+		return card
+	var slot := _small_button("%d" % (lane + 1), 0)
+	slot.disabled = not player_side or battle_state.needs_draw()
+	slot.add_theme_stylebox_override("normal", _panel_style(Color(0.06, 0.04, 0.02, 0.35), EDGE, 2, 5))
+	slot.add_theme_stylebox_override("disabled", _panel_style(Color(0.06, 0.04, 0.02, 0.35), EDGE, 2, 5))
+	if player_side and selected_hand_index >= 0 and battle_state.can_play(selected_hand_index, lane, selected_sacrifices).is_empty():
+		slot.text = "COLOCAR"
+		slot.add_theme_stylebox_override("normal", _panel_style(WOOD, AMBER, 2, 5))
+	return slot
 
 func _select_hand(hand_index: int) -> void:
 	if selected_hand_index == hand_index:
@@ -270,7 +285,7 @@ func _select_hand(hand_index: int) -> void:
 		selected_hand_index = hand_index
 		selected_sacrifices.clear()
 		var card := CardCatalogScript.find_by_id(battle_state.hand[hand_index])
-		var blood_cost := battle_state.blood_cost_for(hand_index)
+		var blood_cost: int = battle_state.blood_cost_for(hand_index)
 		if blood_cost > 0:
 			battle_state.last_message = "%s exige %d sacrificio(s). Toca tus criaturas." % [str(card.get("name", "La carta")), blood_cost]
 		else:

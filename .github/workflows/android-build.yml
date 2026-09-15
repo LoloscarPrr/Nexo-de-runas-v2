@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feat/act1-table
   workflow_dispatch:
 
 permissions:
@@ -31,6 +32,19 @@ jobs:
       - name: Validate project structure
         shell: bash
         run: python tools/validate_project.py
+
+      - name: Check Godot scripts and battle rules
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/godot-check"
+          curl --fail --location --retry 3 -o "$RUNNER_TEMP/godot-check.zip" https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q "$RUNNER_TEMP/godot-check.zip" -d "$RUNNER_TEMP/godot-check"
+          GODOT_CHECK="$RUNNER_TEMP/godot-check/Godot_v4.3-stable_linux.x86_64"
+          "$GODOT_CHECK" --headless --path . --editor --import --quit 2>&1 | tee "$RUNNER_TEMP/godot-import.log"
+          if grep -E 'SCRIPT ERROR|Parse Error|Compile Error' "$RUNNER_TEMP/godot-import.log"; then exit 1; fi
+          "$GODOT_CHECK" --headless --path . --script tests/battle_test.gd
+          "$GODOT_CHECK" --headless --path . --script tests/battle_ui_test.gd 2>&1 | tee "$RUNNER_TEMP/godot-ui.log"
+          if grep -E 'SCRIPT ERROR|ERROR:' "$RUNNER_TEMP/godot-ui.log"; then exit 1; fi
 
       - name: Set up Java 17
         uses: actions/setup-java@v4

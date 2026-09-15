@@ -66,3 +66,10 @@ Reconstruir Nexo de Runas V2 en Godot 4 + GDScript como una experiencia centrada
 `Nueva partida → mapa físico/oscuro → elección de carta orgánica → combate con Sangre y sacrificios → recompensa → fogata → regreso al mapa → guardar y continuar`.
 
 La vertical slice no se considera convergida mientras conserve elementos visuales o mecánicos claramente heredados del Acto 2 en el flujo principal.
+
+## Iteración de mesa táctil — septiembre 2026
+- Cuatro casillas propias frente a cuatro rivales; se conservan los cuatro carriles del dominio.
+- Balanza gráfica izquierda enlazada al daño real, oponente a la derecha y mesa en perspectiva.
+- Mano inferior desplazable, siempre visible; mazo y Ardillas separados y visibles.
+- Selección y cancelación de sacrificios sin consumir criaturas hasta confirmar la colocación.
+- Cartas de papel con silueta de tinta, coste, ataque, salud actual y sello.

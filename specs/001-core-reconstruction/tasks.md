@@ -63,3 +63,10 @@
 
 ## Archivado
 Las tareas anteriores de constructor por cuatro facciones, Energía, Runas/Mox y estética Acto 2 quedan supersedidas por este plan. No deben reintroducirse en el flujo principal sin una nueva decisión explícita del usuario.
+
+## Iteración de mesa táctil
+- [ ] T901 Mesa en perspectiva, balanza vinculada y oponente derecho.
+- [ ] T902 Mano desplazable y cartas legibles con selección táctil.
+- [ ] T903 Mazos separados permanentes y cancelación de sacrificios.
+- [ ] T904 Pruebas de pagos/agotamiento y export Android.
+- [ ] T905 Verificación visual en el teléfono del usuario.

@@ -57,3 +57,6 @@
 6. Mesa/cabaña con dirección 2.5D/3D de terror.
 7. Exploración y puzzles de cabaña.
 8. Recorrido completo del Acto 1 antes de retomar cualquier modo secundario.
+
+### Iteración de mesa táctil
+Separar BattleTable (ambientación y balanza) y BattleCard (presentación) de CampaignView (acciones). Mantener BattleState como única autoridad de pagos y combate. Validar robo agotado, sacrificios y export Android antes de entrega.
