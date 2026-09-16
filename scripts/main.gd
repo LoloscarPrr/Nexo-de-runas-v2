@@ -3,7 +3,7 @@ extends Control
 ## Nexo de Runas V2 — flujo principal enfocado exclusivamente en Acto 1.
 ## El antiguo constructor por facciones y Batalla local quedan fuera del menú activo.
 
-const CampaignViewScript = preload("res://scripts/ui/campaign_view.gd")
+const CampaignViewScript = preload("res://scripts/ui/immersive_campaign_view.gd")
 
 const NIGHT := Color8(7, 5, 4)
 const CABIN := Color8(18, 13, 9)
