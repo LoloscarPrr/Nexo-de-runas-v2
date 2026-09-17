@@ -63,11 +63,29 @@ jobs:
         run: |
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "cmdline-tools;latest"
 
-      - name: Create Android debug keystore
+      - name: Restore permanent Android signing key
         shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          mkdir -p "$HOME/.android"
-          keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/nexo-de-runas.jks"
+          keytool -list -keystore "$RUNNER_TEMP/nexo-de-runas.jks" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null
+
+          sed -i "s|version/code=.*|version/code=$((1000 + GITHUB_RUN_NUMBER))|" export_presets.cfg
+          sed -i "s|version/name=.*|version/name=\"0.2.$GITHUB_RUN_NUMBER\"|" export_presets.cfg
+          sed -i "s|keystore/debug=.*|keystore/debug=\"$RUNNER_TEMP/nexo-de-runas.jks\"|" export_presets.cfg
+          sed -i "s|keystore/debug_user=.*|keystore/debug_user=\"$ANDROID_KEY_ALIAS\"|" export_presets.cfg
+          sed -i "s|keystore/debug_password=.*|keystore/debug_password=\"$ANDROID_KEY_PASSWORD\"|" export_presets.cfg
+          sed -i "s|keystore/release=.*|keystore/release=\"$RUNNER_TEMP/nexo-de-runas.jks\"|" export_presets.cfg
+          sed -i "s|keystore/release_user=.*|keystore/release_user=\"$ANDROID_KEY_ALIAS\"|" export_presets.cfg
+          sed -i "s|keystore/release_password=.*|keystore/release_password=\"$ANDROID_KEY_PASSWORD\"|" export_presets.cfg
 
       - name: Export with Godot 4.3
         id: export
