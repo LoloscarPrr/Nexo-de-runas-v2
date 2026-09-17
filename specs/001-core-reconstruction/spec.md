@@ -4,11 +4,26 @@
 Reconstruir Nexo de Runas V2 en Godot 4 + GDScript como una experiencia centrada casi exclusivamente en el Acto 1 de Inscryption: terror de cabaña, mesa física, mapa de expedición, sacrificios, selección progresiva de cartas, objetos, eventos, puzzles y jefes. El Acto 2 queda fuera del alcance activo.
 
 ## Dirección visual obligatoria
+- El mockup aprobado de Nexo de Runas V2 es la referencia visual canónica de **toda** la interfaz, no solo del combate.
+- Cada pantalla, menú, transición y estado jugable debe parecer una vista u objeto perteneciente a la misma cabaña/mesa del mockup. Una pantalla funcional que vuelva a paneles genéricos, menús móviles planos o una estética distinta se considera visualmente incompleta.
+- Esta regla aplica como mínimo a: menú principal, Nueva partida/Continuar, mapa, elecciones de carta, gestión del mazo dentro de la expedición, combate, robo de mazo/Ardillas, sacrificios, recompensas, fogatas, eventos, objetos, umbrales, jefes, derrota, pausa/opciones y futuros puzzles de cabaña.
 - Nada del flujo principal debe verse como el Acto 2 ni como un TCG de colección.
 - Objetivo: cabaña oscura, madera, papel envejecido, iluminación cálida puntual, sombras profundas, texturas sucias y sensación física de mesa/cartas.
 - La interfaz 2D plana existente es transitoria. La meta es una puesta en escena 2.5D/3D en Godot para menú, mesa y cabaña.
 - Las cartas deben sentirse como objetos físicos: marco orgánico, arte central, coste, ataque, salud y sello legibles.
+- La misma representación física de carta debe reutilizarse entre combate, elecciones y recompensas; no deben existir estilos incompatibles de carta entre pantallas.
+- Los botones deben integrarse como objetos de la escena —tablillas, cartas, papel, campana u otros elementos físicos— siempre que el mockup lo permita, evitando controles con apariencia Android genérica.
 - No usar pestañas de Bestias / No-muertos / Tecnología / Magia en el flujo del Acto 1.
+- La composición debe llenar el ancho panorámico del teléfono sin letterbox artificial, manteniendo 1280×720 como referencia y escalando a otras relaciones de aspecto.
+
+### Criterio de aceptación visual del mockup
+Una pantalla nueva o modificada solo se considera terminada si:
+1. mantiene la misma cabaña/mesa, paleta, iluminación y profundidad del mockup;
+2. no introduce lenguaje visual del Acto 2 ni UI móvil genérica;
+3. conserva la jerarquía física del mockup: mesa como escenario, cartas como objetos, oscuridad periférica y luz cálida focal;
+4. usa controles táctiles legibles sin depender de hover;
+5. se integra visualmente con las pantallas anterior y siguiente sin sentirse como otra aplicación;
+6. pasa revisión visual en Android además de las pruebas funcionales automatizadas.
 
 ## Alcance funcional principal
 1. Inicio con `Nueva partida` y `Continuar` como rutas principales.
