@@ -4,7 +4,7 @@ extends Control
 ## El mockup es la referencia visual canónica: incluso el menú existe dentro
 ## de la misma cabaña/mesa física y no como una pantalla UI independiente.
 
-const CampaignViewScript = preload("res://scripts/ui/immersive_campaign_view.gd")
+const CampaignViewScript = preload("res://scripts/ui/mockup_campaign_view.gd")
 const CampaignBackdropScript = preload("res://scripts/ui/campaign_backdrop.gd")
 
 const NIGHT := Color8(7, 5, 4)
@@ -54,11 +54,9 @@ func _build_menu() -> void:
 	var vw := maxf(viewport_size.x, 1280.0)
 	var vh := maxf(viewport_size.y, 720.0)
 
-	# Título dentro de la placa física dibujada en la cabaña.
 	_place_in(menu_screen, _label("NEXO DE RUNAS", 52, INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.27, vh * 0.245, vw * 0.40, 68))
 	_place_in(menu_screen, _label("LA CABAÑA TE ESTÁ ESPERANDO", 13, MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.29, vh * 0.335, vw * 0.36, 28))
 
-	# Las acciones se leen como tablillas sobre la mesa, no como botones Android.
 	var button_w := minf(460.0, vw * 0.38)
 	var button_x := vw * 0.5 - button_w * 0.5
 	var new_game := _menu_button("NUEVA PARTIDA", "Entrar al sendero")
