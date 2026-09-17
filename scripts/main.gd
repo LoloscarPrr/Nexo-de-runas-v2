@@ -1,18 +1,20 @@
 extends Control
 
-## Nexo de Runas V2 — flujo principal enfocado exclusivamente en Acto 1.
-## El antiguo constructor por facciones y Batalla local quedan fuera del menú activo.
+## Nexo de Runas V2 — entrada principal de la experiencia Acto 1.
+## El mockup es la referencia visual canónica: incluso el menú existe dentro
+## de la misma cabaña/mesa física y no como una pantalla UI independiente.
 
 const CampaignViewScript = preload("res://scripts/ui/immersive_campaign_view.gd")
+const CampaignBackdropScript = preload("res://scripts/ui/campaign_backdrop.gd")
 
 const NIGHT := Color8(7, 5, 4)
-const CABIN := Color8(18, 13, 9)
-const WOOD := Color8(35, 25, 16)
 const INK := Color8(234, 220, 181)
 const MUTED := Color8(150, 132, 98)
 const AMBER := Color8(188, 126, 57)
 const BLOOD := Color8(132, 40, 33)
 const EDGE := Color8(75, 52, 29)
+const WOOD_DEEP := Color8(28, 19, 12)
+const WOOD := Color8(48, 32, 19)
 
 var menu_screen: Control
 var campaign_screen
@@ -32,16 +34,6 @@ func _build_background() -> void:
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 
-	var inner := ColorRect.new()
-	inner.color = CABIN
-	inner.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	inner.offset_left = 34
-	inner.offset_right = -34
-	inner.offset_top = 18
-	inner.offset_bottom = -18
-	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(inner)
-
 func _build_campaign() -> void:
 	campaign_screen = CampaignViewScript.new()
 	campaign_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -49,41 +41,35 @@ func _build_campaign() -> void:
 	add_child(campaign_screen)
 
 func _build_menu() -> void:
-	menu_screen = MarginContainer.new()
+	menu_screen = Control.new()
 	menu_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	menu_screen.add_theme_constant_override("margin_left", 90)
-	menu_screen.add_theme_constant_override("margin_right", 90)
-	menu_screen.add_theme_constant_override("margin_top", 70)
-	menu_screen.add_theme_constant_override("margin_bottom", 70)
 	add_child(menu_screen)
 
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _panel_style(CABIN, EDGE, 2))
-	menu_screen.add_child(panel)
+	var backdrop := CampaignBackdropScript.new()
+	backdrop.mode = "menu"
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	menu_screen.add_child(backdrop)
 
-	var root := VBoxContainer.new()
-	root.alignment = BoxContainer.ALIGNMENT_CENTER
-	root.add_theme_constant_override("separation", 18)
-	panel.add_child(root)
+	var viewport_size := get_viewport_rect().size
+	var vw := maxf(viewport_size.x, 1280.0)
+	var vh := maxf(viewport_size.y, 720.0)
 
-	var whisper := _label("LA PUERTA ESTÁ ABIERTA", 13, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
-	root.add_child(whisper)
-	root.add_child(_label("NEXO DE RUNAS", 52, INK, HORIZONTAL_ALIGNMENT_CENTER))
-	root.add_child(_label("La cabaña no está vacía.", 17, AMBER, HORIZONTAL_ALIGNMENT_CENTER))
+	# Título dentro de la placa física dibujada en la cabaña.
+	_place_in(menu_screen, _label("NEXO DE RUNAS", 52, INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.27, vh * 0.245, vw * 0.40, 68))
+	_place_in(menu_screen, _label("LA CABAÑA TE ESTÁ ESPERANDO", 13, MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.29, vh * 0.335, vw * 0.36, 28))
 
-	var rule := HSeparator.new()
-	rule.custom_minimum_size = Vector2(650, 8)
-	root.add_child(rule)
-
-	var new_game := _menu_button("NUEVA PARTIDA", "Comenzar una expedición desde el sendero")
+	# Las acciones se leen como tablillas sobre la mesa, no como botones Android.
+	var button_w := minf(460.0, vw * 0.38)
+	var button_x := vw * 0.5 - button_w * 0.5
+	var new_game := _menu_button("NUEVA PARTIDA", "Entrar al sendero")
 	new_game.pressed.connect(_start_new_game)
-	root.add_child(new_game)
+	_place_in(menu_screen, new_game, Rect2(button_x, vh * 0.60, button_w, 72))
 
-	continue_button = _menu_button("CONTINUAR", "Regresar a la mesa donde la dejaste")
+	continue_button = _menu_button("CONTINUAR", "Volver a la mesa")
 	continue_button.pressed.connect(_continue_game)
-	root.add_child(continue_button)
+	_place_in(menu_screen, continue_button, Rect2(button_x, vh * 0.715, button_w, 72))
 
-	root.add_child(_label("Acto 1 en reconstrucción · Sangre · Huesos · Sacrificios", 12, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	_place_in(menu_screen, _label("SANGRE   ·   HUESOS   ·   SACRIFICIOS", 11, AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.32, vh - 42, vw * 0.36, 24))
 
 func _start_new_game() -> void:
 	campaign_screen.start_new_game()
@@ -105,25 +91,35 @@ func _show(target: Control) -> void:
 func _menu_button(title_text: String, subtitle_text: String) -> Button:
 	var button := Button.new()
 	button.text = "%s\n%s" % [title_text, subtitle_text]
-	button.custom_minimum_size = Vector2(670, 78)
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_font_size_override("font_size", 17)
+	button.add_theme_font_size_override("font_size", 18)
 	button.add_theme_color_override("font_color", INK)
+	button.add_theme_color_override("font_hover_color", Color8(248, 228, 179))
+	button.add_theme_color_override("font_pressed_color", Color8(248, 228, 179))
 	button.add_theme_color_override("font_disabled_color", Color8(83, 73, 57))
-	button.add_theme_stylebox_override("normal", _panel_style(Color8(25, 18, 12), EDGE, 2))
-	button.add_theme_stylebox_override("hover", _panel_style(WOOD, AMBER, 2))
-	button.add_theme_stylebox_override("pressed", _panel_style(Color8(51, 29, 21), BLOOD, 3))
+	button.add_theme_stylebox_override("normal", _panel_style(Color(0.10, 0.065, 0.038, 0.93), EDGE, 2, 3))
+	button.add_theme_stylebox_override("hover", _panel_style(Color(0.18, 0.115, 0.055, 0.97), AMBER, 3, 3))
+	button.add_theme_stylebox_override("pressed", _panel_style(Color(0.22, 0.075, 0.052, 0.98), BLOOD, 3, 3))
+	button.add_theme_stylebox_override("disabled", _panel_style(Color(0.065, 0.045, 0.030, 0.86), Color8(55, 43, 31), 2, 3))
 	return button
 
 func _label(text_value: String, size: int, color: Color, align: HorizontalAlignment) -> Label:
 	var label := Label.new()
 	label.text = text_value
 	label.horizontal_alignment = align
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", size)
 	label.add_theme_color_override("font_color", color)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 
-func _panel_style(color: Color, border_color: Color, width: int) -> StyleBoxFlat:
+func _place_in(parent: Control, control: Control, rect: Rect2) -> void:
+	parent.add_child(control)
+	control.position = rect.position
+	control.size = rect.size
+	control.set_deferred("size", rect.size)
+
+func _panel_style(color: Color, border_color: Color, width: int, radius: int) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
 	style.border_color = border_color
@@ -131,12 +127,12 @@ func _panel_style(color: Color, border_color: Color, width: int) -> StyleBoxFlat
 	style.border_width_top = width
 	style.border_width_right = width
 	style.border_width_bottom = width
-	style.corner_radius_top_left = 2
-	style.corner_radius_top_right = 2
-	style.corner_radius_bottom_left = 2
-	style.corner_radius_bottom_right = 2
+	style.corner_radius_top_left = radius
+	style.corner_radius_top_right = radius
+	style.corner_radius_bottom_left = radius
+	style.corner_radius_bottom_right = radius
 	style.content_margin_left = 14
 	style.content_margin_right = 14
-	style.content_margin_top = 12
-	style.content_margin_bottom = 12
+	style.content_margin_top = 10
+	style.content_margin_bottom = 10
 	return style
