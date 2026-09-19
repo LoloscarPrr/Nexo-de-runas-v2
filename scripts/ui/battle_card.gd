@@ -1,6 +1,13 @@
 extends Button
 
-const INK := Color("302217")
+const INK := Color("090c06")
+const PAPER := Color("aaa65c")
+const PAPER_LIGHT := Color("c1bb70")
+const PAPER_DARK := Color("77743f")
+const DEEP := Color("0a0d07")
+const EDGE := Color("4d5726")
+const GLOW := Color("c6da58")
+
 var card: Dictionary = {}
 var marked := false
 var chosen := false
@@ -9,6 +16,7 @@ var current_hp := -1
 func _ready() -> void:
 	focus_mode = Control.FOCUS_NONE
 	text = ""
+	clip_contents = false
 	for state_name in ["normal", "hover", "pressed", "disabled", "focus"]:
 		add_theme_stylebox_override(state_name, StyleBoxEmpty.new())
 	resized.connect(_refresh_pose)
@@ -18,84 +26,157 @@ func _ready() -> void:
 
 func _refresh_pose() -> void:
 	pivot_offset = size * 0.5
-	var target_scale := Vector2(1.045, 1.045) if chosen else Vector2.ONE
-	var target_rotation := deg_to_rad(-1.6) if marked else 0.0
+	var target_scale := Vector2(1.035, 1.035) if chosen else Vector2.ONE
+	var target_rotation := deg_to_rad(-1.0) if marked else rotation
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(self, "scale", target_scale, 0.09)
-	tween.tween_property(self, "rotation", target_rotation, 0.09)
+	tween.tween_property(self, "scale", target_scale, 0.08)
+	if marked:
+		tween.tween_property(self, "rotation", target_rotation, 0.08)
 	queue_redraw()
 
 func _press_pose() -> void:
 	pivot_offset = size * 0.5
 	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(self, "scale", Vector2(0.975, 0.975), 0.055)
-	tween.tween_property(self, "rotation", deg_to_rad(1.0), 0.055)
+	tween.tween_property(self, "scale", Vector2(0.975, 0.975), 0.05)
 
 func _draw() -> void:
 	var w := size.x
 	var h := size.y
-	# Shadow + layered paper makes each card read as an object on the table.
-	draw_rect(Rect2(7, 8, w - 7, h - 8), Color(0, 0, 0, 0.58))
-	draw_colored_polygon(PackedVector2Array([Vector2(2, 2), Vector2(w - 8, 1), Vector2(w - 5, h - 10), Vector2(4, h - 7)]), Color("b7a17a"))
-	draw_rect(Rect2(7, 7, w - 18, h - 19), Color("4a3522"), false, 2)
-	for i in range(14):
-		var y := 13.0 + float(i) * (h - 31.0) / 14.0
-		draw_line(Vector2(10, y), Vector2(w - 15, y + 2), Color(0.25, 0.18, 0.1, 0.09), 1)
+	if w < 24 or h < 36:
+		return
+
+	# Sombra y papel envejecido verde/oliva.
+	draw_rect(Rect2(5, 6, w - 2, h - 2), Color(0, 0, 0, 0.72))
+	draw_rect(Rect2(1, 1, w - 7, h - 7), PAPER_DARK)
+	draw_rect(Rect2(4, 4, w - 13, h - 13), PAPER)
+	draw_rect(Rect2(7, 7, w - 19, h - 19), INK, false, 2)
+
+	# Cabecera: coste cuadrado + nombre.
+	var head_h := clampf(h * 0.16, 30.0, 42.0)
+	draw_rect(Rect2(7, 7, head_h - 5, head_h - 5), PAPER_LIGHT)
+	draw_rect(Rect2(7, 7, head_h - 5, head_h - 5), INK, false, 2)
 	var font := ThemeDB.fallback_font
-	draw_string(font, Vector2(12, 25), str(card.get("name", "")), HORIZONTAL_ALIGNMENT_LEFT, w - 27, 15, INK)
-	var resource := str(card.get("resource", "none"))
-	var cost_value := int(card.get("cost_value", 0))
-	var cost_color := Color("742f24") if resource == "blood" else INK
-	draw_string(font, Vector2(12, 43), str(card.get("cost", "")), HORIZONTAL_ALIGNMENT_LEFT, w - 27, 11, cost_color)
-	if cost_value > 0:
-		for i in range(mini(cost_value, 4)):
-			var icon_x := w - 18.0 - float(i) * 11.0
-			if resource == "blood":
-				draw_circle(Vector2(icon_x, 36), 4.2, Color("8d2e25"))
-			else:
-				draw_circle(Vector2(icon_x, 36), 3.7, Color("d0c39d"))
-				draw_line(Vector2(icon_x - 5, 36), Vector2(icon_x + 5, 36), Color("6e6048"), 2)
+	var cost := int(card.get("cost_value", 0))
+	draw_string(font, Vector2(12, 7 + head_h * 0.72), str(cost), HORIZONTAL_ALIGNMENT_CENTER, head_h - 15, int(clampf(head_h * 0.65, 16, 24)), INK)
+	var title_x := head_h + 7.0
+	var title_size := int(clampf(h * 0.058, 10, 15))
+	draw_string(font, Vector2(title_x, 7 + head_h * 0.69), str(card.get("name", "CARTA")), HORIZONTAL_ALIGNMENT_LEFT, w - title_x - 15, title_size, INK)
 
-	# Ink animal silhouette; geometry scales with card size.
-	draw_set_transform(Vector2(w * 0.5 - 3, h * 0.47), 0, Vector2(w / 145.0, h / 180.0))
-	var id := str(card.get("id", ""))
-	if id in ["gorrion", "buitre"]:
-		draw_colored_polygon(PackedVector2Array([Vector2(-4, 5), Vector2(-45, -27), Vector2(-29, 13), Vector2(-9, 22), Vector2(0, 37), Vector2(10, 19), Vector2(37, 8), Vector2(49, -28), Vector2(8, -5), Vector2(4, -19), Vector2(-5, -15)]), INK)
-	elif id == "vibora":
-		draw_arc(Vector2(0, 12), 27, -1.0, 4.2, 26, INK, 12, true)
-		draw_line(Vector2(17, -10), Vector2(3, -28), INK, 12, true)
-		draw_circle(Vector2(2, -28), 10, INK)
-	elif id == "rana_toro":
-		draw_circle(Vector2(0, 10), 26, INK)
-		draw_circle(Vector2(-20, -9), 12, INK)
-		draw_circle(Vector2(20, -9), 12, INK)
-		for side in [-1, 1]:
-			draw_line(Vector2(side * 17, 15), Vector2(side * 38, 31), INK, 9, true)
-			draw_circle(Vector2(side * 20, -10), 4, Color("b5a078"))
-	else:
-		draw_colored_polygon(PackedVector2Array([Vector2(-30, -33), Vector2(-10, -18), Vector2(12, -18), Vector2(31, -33), Vector2(27, 8), Vector2(15, 27), Vector2(0, 36), Vector2(-17, 23), Vector2(-28, 7)]), INK)
-		draw_line(Vector2(-19, -1), Vector2(-8, 3), Color("b5a078"), 3)
-		draw_line(Vector2(9, 3), Vector2(20, -1), Color("b5a078"), 3)
-		draw_circle(Vector2(0, 19), 4, Color("b5a078"))
-		if id == "ardilla":
-			draw_arc(Vector2(29, 9), 16, -2, 2.8, 18, INK, 10, true)
-		if id == "alce":
-			for side in [-1, 1]:
-				draw_line(Vector2(side * 22, -24), Vector2(side * 39, -43), INK, 4)
-				draw_line(Vector2(side * 34, -38), Vector2(side * 22, -44), INK, 3)
-	draw_set_transform(Vector2.ZERO)
+	# Ventana de arte.
+	var art_top := head_h + 9.0
+	var stat_h := clampf(h * 0.19, 34.0, 48.0)
+	var art_bottom := h - stat_h - 8.0
+	var art_rect := Rect2(8, art_top, w - 22, art_bottom - art_top)
+	draw_rect(art_rect, DEEP)
+	draw_rect(art_rect, EDGE, false, 2)
+	for i in range(26):
+		var px := art_rect.position.x + 5.0 + fmod(float(i * 37), maxf(5.0, art_rect.size.x - 10.0))
+		var py := art_rect.position.y + 5.0 + fmod(float(i * 23), maxf(5.0, art_rect.size.y - 10.0))
+		draw_rect(Rect2(px, py, 2, 2), Color(0.68, 0.67, 0.34, 0.16))
+	_draw_art(art_rect)
 
-	var seal := str(card.get("seal", "NINGUNO"))
-	if seal != "NINGUNO":
-		draw_circle(Vector2(w * 0.5, h - 34), 13, Color(0.19, 0.13, 0.08, 0.16))
-		draw_string(font, Vector2(10, h - 30), seal, HORIZONTAL_ALIGNMENT_CENTER, w - 25, 10, INK)
-	draw_string(font, Vector2(12, h - 14), str(card.get("atk", 0)), HORIZONTAL_ALIGNMENT_LEFT, 35, 26, INK)
-	draw_string(font, Vector2(w - 45, h - 14), str(current_hp if current_hp >= 0 else card.get("hp", 1)), HORIZONTAL_ALIGNMENT_RIGHT, 27, 26, INK)
-	if chosen or marked:
-		draw_rect(Rect2(2, 2, w - 8, h - 9), Color("9e3026") if marked else Color("e4c27b"), false, 4)
+	# Faja inferior de estadísticas.
+	var stat_y := h - stat_h - 7.0
+	draw_rect(Rect2(7, stat_y, w - 19, stat_h), PAPER_LIGHT)
+	draw_rect(Rect2(7, stat_y, w - 19, stat_h), INK, false, 2)
+	draw_line(Vector2(w * 0.34, stat_y), Vector2(w * 0.34, stat_y + stat_h), INK, 1)
+	draw_line(Vector2(w * 0.66, stat_y), Vector2(w * 0.66, stat_y + stat_h), INK, 1)
+	var stat_size := int(clampf(stat_h * 0.66, 20, 32))
+	draw_string(font, Vector2(10, stat_y + stat_h * 0.76), str(card.get("atk", 0)), HORIZONTAL_ALIGNMENT_LEFT, w * 0.25, stat_size, INK)
+	draw_string(font, Vector2(w * 0.70, stat_y + stat_h * 0.76), str(current_hp if current_hp >= 0 else card.get("hp", 1)), HORIZONTAL_ALIGNMENT_RIGHT, w * 0.23, stat_size, INK)
+	_draw_seal(Vector2(w * 0.5, stat_y + stat_h * 0.52), minf(15.0, stat_h * 0.32))
+
+	# Selección y sacrificio.
+	if chosen:
+		draw_rect(Rect2(-2, -2, w + 1, h + 1), GLOW, false, 4)
 	if marked:
-		draw_circle(Vector2(w * 0.5, h * 0.5), minf(w, h) * 0.24, Color(0.35, 0.03, 0.02, 0.18))
-		draw_line(Vector2(19, 56), Vector2(w - 23, h - 50), Color("8c201a"), 5, true)
-		draw_line(Vector2(w - 23, 56), Vector2(19, h - 50), Color("8c201a"), 5, true)
+		draw_rect(Rect2(1, 1, w - 7, h - 7), Color("842c22"), false, 5)
+		draw_line(Vector2(14, art_top + 8), Vector2(w - 20, art_bottom - 8), Color("842c22"), 5)
+		draw_line(Vector2(w - 20, art_top + 8), Vector2(14, art_bottom - 8), Color("842c22"), 5)
+
+func _draw_art(rect: Rect2) -> void:
+	var id := str(card.get("id", ""))
+	var center := rect.position + rect.size * Vector2(0.5, 0.54)
+	var sx := rect.size.x / 150.0
+	var sy := rect.size.y / 135.0
+	draw_set_transform(center, 0.0, Vector2(sx, sy))
+	var ink := Color("97954f")
+	var glow := Color("d1df63")
+
+	if id in ["gorrion", "buitre"]:
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(-4, 6), Vector2(-43, -28), Vector2(-29, 15), Vector2(-9, 24),
+			Vector2(1, 39), Vector2(12, 20), Vector2(39, 8), Vector2(47, -25),
+			Vector2(10, -7), Vector2(5, -21), Vector2(-5, -16)
+		]), ink)
+		draw_circle(Vector2(5, -18), 3.5, glow)
+	elif id == "rana_toro":
+		draw_circle(Vector2(0, 12), 29, ink)
+		draw_circle(Vector2(-22, -8), 13, ink)
+		draw_circle(Vector2(22, -8), 13, ink)
+		draw_circle(Vector2(-20, -10), 3, DEEP)
+		draw_circle(Vector2(20, -10), 3, DEEP)
+		for side in [-1.0, 1.0]:
+			draw_line(Vector2(side * 18, 18), Vector2(side * 42, 34), ink, 10)
+	elif id == "vibora":
+		draw_arc(Vector2(0, 10), 31, -1.1, 4.5, 24, ink, 12)
+		draw_circle(Vector2(6, -28), 11, ink)
+		draw_circle(Vector2(10, -31), 2.5, glow)
+	elif id == "topo":
+		draw_colored_polygon(PackedVector2Array([Vector2(-40, 24), Vector2(-27, -15), Vector2(0, -30), Vector2(32, -12), Vector2(42, 22), Vector2(0, 37)]), ink)
+		draw_circle(Vector2(-10, -12), 3, glow)
+		draw_circle(Vector2(12, -12), 3, glow)
+	elif id == "puercoespin":
+		draw_colored_polygon(PackedVector2Array([Vector2(-43, 18), Vector2(-29, -25), Vector2(-18, -12), Vector2(-9, -34), Vector2(1, -13), Vector2(15, -31), Vector2(20, -8), Vector2(40, 3), Vector2(29, 31), Vector2(-20, 34)]), ink)
+		draw_circle(Vector2(23, -3), 3, glow)
+	elif id == "alce":
+		draw_colored_polygon(PackedVector2Array([Vector2(-24, -12), Vector2(-10, -28), Vector2(12, -28), Vector2(25, -9), Vector2(19, 27), Vector2(0, 39), Vector2(-19, 27)]), ink)
+		for side in [-1.0, 1.0]:
+			draw_line(Vector2(side * 17, -24), Vector2(side * 37, -46), ink, 4)
+			draw_line(Vector2(side * 31, -39), Vector2(side * 19, -49), ink, 3)
+			draw_line(Vector2(side * 34, -41), Vector2(side * 43, -34), ink, 3)
+		draw_circle(Vector2(-7, -11), 2.5, glow)
+		draw_circle(Vector2(7, -11), 2.5, glow)
+	elif id == "ardilla":
+		draw_circle(Vector2(-3, 5), 24, ink)
+		draw_circle(Vector2(3, -22), 13, ink)
+		draw_arc(Vector2(30, 5), 24, -2.4, 2.0, 18, ink, 12)
+		draw_circle(Vector2(7, -24), 2.5, glow)
+	else:
+		# Cánido para lobo, coyote, armiño, zarigüeya.
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(-34, -29), Vector2(-15, -15), Vector2(10, -17), Vector2(34, -31),
+			Vector2(28, 7), Vector2(16, 27), Vector2(0, 38), Vector2(-18, 26), Vector2(-30, 8)
+		]), ink)
+		draw_circle(Vector2(-9, -2), 3, glow)
+		draw_circle(Vector2(10, -2), 3, glow)
+		draw_line(Vector2(-40, 27), Vector2(-21, 17), ink, 8)
+		draw_line(Vector2(41, 26), Vector2(23, 17), ink, 8)
+
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_seal(pos: Vector2, radius: float) -> void:
+	var seal := str(card.get("seal", "NINGUNO"))
+	var c := INK
+	if seal == "AÉREO":
+		draw_line(pos + Vector2(-radius, 5), pos + Vector2(radius, -5), c, 4)
+		draw_line(pos + Vector2(-radius * 0.7, -5), pos + Vector2(radius * 0.7, 5), c, 3)
+	elif seal == "TOQUE MORTAL":
+		draw_circle(pos, radius * 0.72, c)
+		draw_circle(pos + Vector2(-radius * 0.25, -radius * 0.1), radius * 0.13, PAPER_LIGHT)
+		draw_circle(pos + Vector2(radius * 0.25, -radius * 0.1), radius * 0.13, PAPER_LIGHT)
+	elif seal == "ESPINAS":
+		for angle in range(0, 360, 60):
+			var a := deg_to_rad(float(angle))
+			draw_line(pos, pos + Vector2(cos(a), sin(a)) * radius, c, 3)
+	elif seal == "MADRIGUERA":
+		draw_arc(pos, radius * 0.8, PI, TAU, 16, c, 4)
+	elif seal == "CORREDOR":
+		for y in [-6.0, 0.0, 6.0]:
+			draw_line(pos + Vector2(-radius, y), pos + Vector2(radius, y - 4), c, 3)
+	elif seal == "SACRIFICIO":
+		draw_circle(pos, radius * 0.65, c, false, 3)
+		draw_line(pos + Vector2(0, -radius), pos + Vector2(0, radius), c, 3)
+	else:
+		draw_rect(Rect2(pos - Vector2(radius * 0.55, radius * 0.55), Vector2(radius * 1.1, radius * 1.1)), c, false, 3)
