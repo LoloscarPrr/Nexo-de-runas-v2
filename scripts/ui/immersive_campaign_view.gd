@@ -75,7 +75,7 @@ func _render_battle() -> void:
 	_place(_label(battle_state.last_message, maxi(10, int(13 * s)), MOCK_MUTED, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(300, 603, 900, 27, s, ox, oy))
 
 	# Mano física/abanicada. Sin ScrollContainer ni fila plana.
-	var hand_count := battle_state.hand.size()
+	var hand_count: int = battle_state.hand.size()
 	if hand_count > 0:
 		var hand_w := 170.0
 		var hand_h := 210.0
