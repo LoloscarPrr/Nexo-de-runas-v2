@@ -1,10 +1,22 @@
 extends Control
 
-## Fondo procedural único para toda la experiencia Acto 1.
-## Ninguna pantalla principal debe sentirse como un menú Android/TCG separado:
-## todas son distintas vistas de la misma cabaña, mesa y sendero físico.
+## Fondo visual canónico de Nexo de Runas.
+## Todo el juego usa el mismo lenguaje del mockup: negro/verde oliva,
+## paneles frontales gastados, runas, marcos rígidos y textura pixelada.
+
 var mode := "map"
 var ambience_time := 0.0
+
+const BG := Color("060906")
+const PANEL := Color("10170d")
+const PANEL_2 := Color("172013")
+const EDGE := Color("4d5928")
+const EDGE_DIM := Color("2e381d")
+const GLOW := Color("c5d85a")
+const INK := Color("a7a65b")
+const PAPER := Color("858344")
+const BLOOD := Color("792b22")
+const FIRE := Color("bd7b37")
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -23,8 +35,7 @@ func set_mode(value: String) -> void:
 func _draw() -> void:
 	var w := maxf(size.x, 1280.0)
 	var h := maxf(size.y, 720.0)
-	_draw_cabin_and_table(w, h)
-
+	_draw_base(w, h)
 	match mode:
 		"menu":
 			_draw_menu(w, h)
@@ -42,193 +53,174 @@ func _draw() -> void:
 			_draw_defeat(w, h)
 		_:
 			_draw_map(w, h)
-
 	_draw_vignette(w, h)
 
-func _draw_cabin_and_table(w: float, h: float) -> void:
-	# Oscuridad de cabaña y pared de tablones.
-	draw_rect(Rect2(0, 0, w, h), Color("080604"))
-	draw_rect(Rect2(0, 0, w, h * 0.39), Color("100c08"))
-	for i in range(int(w / 82.0) + 2):
-		var x := float(i) * 82.0
-		draw_rect(Rect2(x, 0, 79, h * 0.39), Color("17110c") if i % 2 == 0 else Color("1b130d"))
-		draw_line(Vector2(x, 0), Vector2(x, h * 0.39), Color("090705"), 3.0)
-		var grain_y := 18.0 + fmod(float(i * 47), maxf(1.0, h * 0.31))
-		draw_line(Vector2(x + 9, grain_y), Vector2(x + 61, grain_y + 2), Color(0.58, 0.37, 0.18, 0.07), 1.0)
+func _draw_base(w: float, h: float) -> void:
+	draw_rect(Rect2(0, 0, w, h), BG)
+	# Tablones frontales, no mesa en perspectiva.
+	var plank_h := maxf(52.0, h / 12.0)
+	for row in range(int(h / plank_h) + 2):
+		var y := float(row) * plank_h
+		draw_rect(Rect2(0, y, w, plank_h - 3), PANEL if row % 2 == 0 else Color("0c120a"))
+		draw_line(Vector2(0, y + plank_h - 3), Vector2(w, y + plank_h - 3), Color("040604"), 3)
+	for col in range(int(w / 88.0) + 2):
+		var x := float(col) * 88.0
+		draw_line(Vector2(x, 0), Vector2(x, h), Color(0.03, 0.05, 0.02, 0.34), 2)
 
-	# Mesa en perspectiva: ocupa el ancho completo del teléfono.
-	var horizon := h * 0.25
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(w * 0.10, horizon), Vector2(w * 0.90, horizon),
-		Vector2(w + 96, h + 12), Vector2(-96, h + 12)
-	]), Color("302116"))
-	for i in range(17):
-		var t := float(i) / 16.0
-		draw_line(
-			Vector2(lerpf(w * 0.10, w * 0.90, t), horizon),
-			Vector2(lerpf(-76.0, w + 76.0, t), h),
-			Color("17100b"), 3.0
-		)
-	for i in range(120):
-		var y := horizon + 20.0 + fmod(float(i * 71), maxf(1.0, h - horizon - 30.0))
-		var x2 := 18.0 + fmod(float(i * 173), maxf(1.0, w - 70.0))
-		draw_line(Vector2(x2, y), Vector2(x2 + 25.0 + float(i % 61), y + 1.5), Color(0.72, 0.50, 0.28, 0.06), 1.0)
+	# Marco metálico oliva.
+	draw_rect(Rect2(10, 10, w - 20, h - 20), EDGE_DIM, false, 3)
+	draw_rect(Rect2(18, 18, w - 36, h - 36), Color("202914"), false, 1)
+	for x in range(30, int(w) - 30, 72):
+		draw_circle(Vector2(float(x), 18), 2.2, EDGE)
+		draw_circle(Vector2(float(x), h - 18), 2.2, EDGE)
 
-	# Luz cálida general sobre el centro de la mesa.
-	var center := Vector2(w * 0.5, h * 0.50)
-	for radius in range(120, 500, 32):
-		draw_circle(center, float(radius), Color(0.84, 0.49, 0.19, 0.0065))
+	# Motivos de runas/patas discretos.
+	for i in range(14):
+		var px := 36.0 + fmod(float(i * 151), maxf(1.0, w - 72.0))
+		var py := 45.0 + fmod(float(i * 97), maxf(1.0, h - 90.0))
+		_draw_paw(Vector2(px, py), 0.35, Color(0.35, 0.40, 0.17, 0.15))
 
-func _paper_polygon(w: float, h: float, inset_x: float, inset_y: float) -> PackedVector2Array:
-	return PackedVector2Array([
-		Vector2(inset_x + 20, inset_y + 5),
-		Vector2(w - inset_x - 31, inset_y),
-		Vector2(w - inset_x - 9, h - inset_y - 22),
-		Vector2(inset_x, h - inset_y - 9)
-	])
+	# Dithering/grano determinista.
+	for i in range(150):
+		var px2 := 8.0 + fmod(float(i * 137), maxf(1.0, w - 16.0))
+		var py2 := 8.0 + fmod(float(i * 83), maxf(1.0, h - 16.0))
+		draw_rect(Rect2(px2, py2, 2, 2), Color(0.72, 0.76, 0.25, 0.055))
+
+func _panel(rect: Rect2, fill := PANEL_2, strong := false) -> void:
+	draw_rect(rect, Color("070b06"))
+	draw_rect(rect.grow(-4), fill)
+	draw_rect(rect.grow(-4), GLOW if strong else EDGE, false, 3 if strong else 2)
+	draw_rect(rect.grow(-9), EDGE_DIM, false, 1)
 
 func _draw_menu(w: float, h: float) -> void:
-	# El Guardián existe en el espacio, no en un panel lateral.
-	var gx := w * 0.78
-	var gy := h * 0.24
-	draw_circle(Vector2(gx, gy), 92, Color("090806"))
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(gx - 105, gy + 62), Vector2(gx - 75, gy - 20),
-		Vector2(gx - 31, gy - 74), Vector2(gx + 42, gy - 68),
-		Vector2(gx + 94, gy + 65)
-	]), Color("080705"))
-	var glow := 0.72 + sin(ambience_time * 1.55) * 0.12
-	for eye in [Vector2(gx - 30, gy - 1), Vector2(gx + 28, gy - 1)]:
-		draw_circle(eye, 15, Color(0.78, 0.42, 0.15, 0.05))
-		draw_circle(eye, 4.2, Color(0.87, 0.64, 0.34, glow))
-
-	# Dos velas marcan el plano de la mesa del mockup.
-	_draw_candle(Vector2(w * 0.18, h * 0.53), 1.0)
-	_draw_candle(Vector2(w * 0.86, h * 0.57), 0.82)
-
-	# Placa física para el título; los botones reales se superponen desde main.gd.
-	var plaque := PackedVector2Array([
-		Vector2(w * 0.27, h * 0.21), Vector2(w * 0.65, h * 0.20),
-		Vector2(w * 0.67, h * 0.39), Vector2(w * 0.25, h * 0.40)
-	])
-	draw_colored_polygon(plaque, Color("21170f"))
-	draw_polyline(PackedVector2Array([plaque[0], plaque[1], plaque[2], plaque[3], plaque[0]]), Color("694729"), 3.0, true)
+	_panel(Rect2(w * 0.23, h * 0.17, w * 0.47, h * 0.68), PANEL_2, true)
+	# Columna de retrato a la derecha, igual al lenguaje de la batalla.
+	_panel(Rect2(w * 0.76, h * 0.10, w * 0.17, h * 0.27), PANEL)
+	_draw_skull(Vector2(w * 0.845, h * 0.235), minf(w, h) * 0.085)
+	_panel(Rect2(w * 0.76, h * 0.40, w * 0.17, h * 0.20), PANEL)
+	# Rune totem left.
+	_draw_rune_totem(Vector2(w * 0.10, h * 0.38), minf(w, h) * 0.115)
+	for y in [h * 0.69, h * 0.76, h * 0.83]:
+		draw_line(Vector2(w * 0.06, y), Vector2(w * 0.17, y), EDGE, 2)
 
 func _draw_map(w: float, h: float) -> void:
-	var paper := _paper_polygon(w, h, w * 0.15, 78.0)
-	draw_colored_polygon(paper, Color("5c4a31"))
-	draw_polyline(PackedVector2Array([paper[0], paper[1], paper[2], paper[3], paper[0]]), Color("8e7045"), 3.0, true)
-	for i in range(32):
-		var px := w * 0.18 + fmod(float(i * 193), w * 0.63)
-		var py := 102.0 + fmod(float(i * 97), h - 210.0)
-		draw_circle(Vector2(px, py), 2.0 + float(i % 5), Color(0.13, 0.08, 0.04, 0.11))
+	var rect := Rect2(w * 0.13, h * 0.13, w * 0.74, h * 0.76)
+	_panel(rect, Color("252d18"), true)
 	var cx := w * 0.5
-	var top := 150.0
-	var usable := maxf(430.0, h - 245.0)
-	var y0 := top
-	var y1 := top + usable * 0.20
-	var y2 := top + usable * 0.43
-	var y3 := top + usable * 0.67
-	var y4 := top + usable * 0.90
-	var left := cx - minf(270.0, w * 0.18)
-	var right := cx + minf(270.0, w * 0.18)
-	var ink := Color("2b2117")
-	for points in [
-		PackedVector2Array([Vector2(cx, y0), Vector2(left, y1), Vector2(cx, y2)]),
-		PackedVector2Array([Vector2(cx, y0), Vector2(right, y1), Vector2(cx, y2)]),
-		PackedVector2Array([Vector2(cx, y2), Vector2(cx, y3), Vector2(cx, y4)])
+	var top := h * 0.27
+	var bottom := h * 0.79
+	var xoff := minf(w * 0.20, 270.0)
+	var points := [
+		Vector2(cx, top),
+		Vector2(cx - xoff, h * 0.40),
+		Vector2(cx + xoff, h * 0.40),
+		Vector2(cx, h * 0.54),
+		Vector2(cx, h * 0.67),
+		Vector2(cx, bottom)
+	]
+	for chain in [
+		PackedVector2Array([points[0], points[1], points[3]]),
+		PackedVector2Array([points[0], points[2], points[3]]),
+		PackedVector2Array([points[3], points[4], points[5]])
 	]:
-		draw_polyline(points, ink, 7.0, true)
-		draw_polyline(points, Color("aa8b56"), 2.0, true)
-	for p in [Vector2(cx, y0), Vector2(left, y1), Vector2(right, y1), Vector2(cx, y2), Vector2(cx, y3), Vector2(cx, y4)]:
-		draw_circle(p, 16, Color("2b2117"))
-		draw_circle(p, 10, Color("b08d55"))
+		draw_polyline(chain, Color("080b06"), 8, true)
+		draw_polyline(chain, INK, 2, true)
+	for p in points:
+		draw_circle(p, 17, Color("080b06"))
+		draw_circle(p, 10, PAPER)
+		draw_circle(p, 6, GLOW, false, 2)
 
 func _draw_choice(w: float, h: float) -> void:
-	var paper := _paper_polygon(w, h, w * 0.19, 76.0)
-	draw_colored_polygon(paper, Color("4f402b"))
-	draw_polyline(PackedVector2Array([paper[0], paper[1], paper[2], paper[3], paper[0]]), Color("7d633f"), 3.0, true)
-	var cy := h * 0.57
-	for offset in [-250.0, 0.0, 250.0]:
-		for radius in range(18, 92, 14):
-			draw_circle(Vector2(w * 0.5 + offset, cy), float(radius), Color(0.0, 0.0, 0.0, 0.012))
+	_panel(Rect2(w * 0.12, h * 0.12, w * 0.76, h * 0.76), PANEL_2, true)
+	var card_w := minf(210.0, w * 0.17)
+	var gap := minf(80.0, w * 0.05)
+	var total := card_w * 3.0 + gap * 2.0
+	var left := (w - total) * 0.5
+	for i in range(3):
+		var x := left + float(i) * (card_w + gap)
+		_panel(Rect2(x - 8, h * 0.27 - 8, card_w + 16, h * 0.47 + 16), Color("0b1008"))
+		for radius in range(16, 85, 14):
+			draw_circle(Vector2(x + card_w * 0.5, h * 0.49), float(radius), Color(0.70, 0.78, 0.25, 0.006))
 
 func _draw_campfire(w: float, h: float) -> void:
-	var center := Vector2(w * 0.5, h * 0.56)
-	for radius in range(40, 250, 20):
-		draw_circle(center, float(radius), Color(0.92, 0.37, 0.08, 0.012))
-	draw_line(center + Vector2(-72, 55), center + Vector2(72, -2), Color("311c11"), 24, true)
-	draw_line(center + Vector2(-69, -3), center + Vector2(70, 55), Color("3a2214"), 24, true)
+	_panel(Rect2(w * 0.12, h * 0.11, w * 0.76, h * 0.78), PANEL_2, true)
+	var c := Vector2(w * 0.5, h * 0.55)
+	for radius in range(35, 220, 18):
+		draw_circle(c, float(radius), Color(0.75, 0.38, 0.08, 0.012))
+	draw_line(c + Vector2(-72, 48), c + Vector2(68, -2), Color("171008"), 23, true)
+	draw_line(c + Vector2(-66, -2), c + Vector2(72, 48), Color("1b1209"), 23, true)
 	draw_colored_polygon(PackedVector2Array([
-		center + Vector2(-56, 32), center + Vector2(-34, -55), center + Vector2(-8, -8),
-		center + Vector2(6, -110), center + Vector2(29, -32), center + Vector2(54, -70),
-		center + Vector2(60, 37)
-	]), Color("9e3e1c"))
+		c + Vector2(-48, 28), c + Vector2(-28, -48), c + Vector2(-9, -8),
+		c + Vector2(7, -92), c + Vector2(27, -27), c + Vector2(52, 30)
+	]), Color("71311d"))
 	draw_colored_polygon(PackedVector2Array([
-		center + Vector2(-34, 29), center + Vector2(-18, -42), center + Vector2(2, -2),
-		center + Vector2(15, -72), center + Vector2(37, 31)
-	]), Color("e69a43"))
-	for x in [w * 0.25, w * 0.35, w * 0.65, w * 0.75]:
-		draw_circle(Vector2(x, h * 0.42), 30, Color("0a0806"))
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(x - 54, h * 0.64), Vector2(x - 36, h * 0.47),
-			Vector2(x + 36, h * 0.47), Vector2(x + 54, h * 0.64)
-		]), Color("0a0806"))
-		draw_circle(Vector2(x - 10, h * 0.415), 3, Color("b87937"))
-		draw_circle(Vector2(x + 10, h * 0.415), 3, Color("b87937"))
+		c + Vector2(-25, 27), c + Vector2(-11, -34), c + Vector2(4, -2),
+		c + Vector2(15, -62), c + Vector2(34, 27)
+	]), FIRE)
+	for x in [w * 0.28, w * 0.36, w * 0.64, w * 0.72]:
+		draw_circle(Vector2(x, h * 0.42), 26, Color("050805"))
+		draw_circle(Vector2(x - 8, h * 0.415), 3, GLOW)
+		draw_circle(Vector2(x + 8, h * 0.415), 3, GLOW)
 
 func _draw_gate(w: float, h: float) -> void:
+	_panel(Rect2(w * 0.15, h * 0.10, w * 0.70, h * 0.80), PANEL_2, true)
 	var cx := w * 0.5
-	var floor_y := h * 0.78
+	var top := h * 0.23
+	var bottom := h * 0.80
 	draw_colored_polygon(PackedVector2Array([
-		Vector2(cx - 250, floor_y), Vector2(cx - 205, h * 0.25),
-		Vector2(cx - 110, h * 0.13), Vector2(cx + 110, h * 0.13),
-		Vector2(cx + 205, h * 0.25), Vector2(cx + 250, floor_y)
-	]), Color("080706"))
+		Vector2(cx - 220, bottom), Vector2(cx - 185, top + 60),
+		Vector2(cx - 95, top), Vector2(cx + 95, top),
+		Vector2(cx + 185, top + 60), Vector2(cx + 220, bottom)
+	]), Color("050805"))
 	for i in range(6):
-		var y := h * 0.24 + float(i) * 70.0
-		draw_line(Vector2(cx - 230 + i * 13, y), Vector2(cx + 230 - i * 13, y), Color("25170f"), 5)
-	for radius in range(12, 110, 14):
-		draw_circle(Vector2(cx, h * 0.39), float(radius), Color(0.75, 0.31, 0.08, 0.008))
-	draw_circle(Vector2(cx - 44, h * 0.39), 7, Color("d0914b"))
-	draw_circle(Vector2(cx + 44, h * 0.39), 7, Color("d0914b"))
-	draw_line(Vector2(cx, floor_y), Vector2(cx, h), Color("765437"), 5)
+		var y := top + 85.0 + float(i) * 60.0
+		draw_line(Vector2(cx - 170 + i * 8, y), Vector2(cx + 170 - i * 8, y), EDGE_DIM, 5)
+	draw_circle(Vector2(cx - 37, top + 112), 6, GLOW)
+	draw_circle(Vector2(cx + 37, top + 112), 6, GLOW)
 
 func _draw_reward(w: float, h: float) -> void:
-	# Tres espacios iluminados sobre la mesa, como cartas empujadas hacia el jugador.
-	var cy := h * 0.57
+	_panel(Rect2(w * 0.12, h * 0.11, w * 0.76, h * 0.78), PANEL_2, true)
+	var card_w := minf(210.0, w * 0.17)
+	var gap := minf(80.0, w * 0.05)
+	var total := card_w * 3.0 + gap * 2.0
+	var left := (w - total) * 0.5
 	for i in range(3):
-		var x := w * 0.5 + float(i - 1) * minf(285.0, w * 0.22)
-		for radius in range(35, 160, 18):
-			draw_circle(Vector2(x, cy), float(radius), Color(0.90, 0.58, 0.26, 0.006))
-		draw_rect(Rect2(x - 92, cy - 135, 184, 270), Color(0, 0, 0, 0.20))
-	_draw_candle(Vector2(w * 0.14, h * 0.55), 0.9)
+		var x := left + float(i) * (card_w + gap)
+		_panel(Rect2(x - 8, h * 0.27 - 8, card_w + 16, h * 0.47 + 16), Color("0b1008"))
+		for radius in range(22, 120, 16):
+			draw_circle(Vector2(x + card_w * 0.5, h * 0.50), float(radius), Color(0.72, 0.80, 0.28, 0.007))
 
 func _draw_defeat(w: float, h: float) -> void:
-	# Vela apagada y mesa casi sin luz.
-	var cx := w * 0.5
-	draw_rect(Rect2(0, 0, w, h), Color(0.05, 0.0, 0.0, 0.24))
-	draw_rect(Rect2(cx - 12, h * 0.58, 24, 76), Color("766348"))
-	for i in range(7):
-		var p := Vector2(cx + sin(float(i) * 1.3) * 10.0, h * 0.55 - float(i) * 18.0)
-		draw_circle(p, 10.0 + float(i) * 2.5, Color(0.48, 0.43, 0.38, 0.018))
+	_panel(Rect2(w * 0.18, h * 0.17, w * 0.64, h * 0.66), Color("100d09"), true)
+	draw_rect(Rect2(0, 0, w, h), Color(0.20, 0.015, 0.01, 0.22))
+	_draw_skull(Vector2(w * 0.5, h * 0.45), minf(w, h) * 0.12)
 
-func _draw_candle(pos: Vector2, scale_factor: float) -> void:
-	for radius in range(20, 145, 12):
-		draw_circle(pos, float(radius) * scale_factor, Color(0.94, 0.49, 0.12, 0.009))
-	draw_rect(Rect2(pos.x - 10 * scale_factor, pos.y + 8 * scale_factor, 20 * scale_factor, 62 * scale_factor), Color("b8a178"))
-	var wobble := sin(ambience_time * 5.4 + pos.x * 0.01) * 3.0
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(pos.x - 6 * scale_factor, pos.y + 8 * scale_factor),
-		Vector2(pos.x + wobble, pos.y - 18 * scale_factor),
-		Vector2(pos.x + 7 * scale_factor, pos.y + 7 * scale_factor),
-		Vector2(pos.x, pos.y + 16 * scale_factor)
-	]), Color("efbd70"))
+func _draw_paw(pos: Vector2, factor: float, color: Color) -> void:
+	draw_circle(pos + Vector2(0, 11) * factor, 11 * factor, color)
+	for off in [Vector2(-16, -6), Vector2(-6, -15), Vector2(7, -15), Vector2(17, -5)]:
+		draw_circle(pos + off * factor, 6 * factor, color)
+
+func _draw_skull(pos: Vector2, radius: float) -> void:
+	draw_circle(pos, radius, Color("696b39"))
+	draw_circle(pos + Vector2(-radius * 0.32, -radius * 0.12), radius * 0.20, Color("050805"))
+	draw_circle(pos + Vector2(radius * 0.32, -radius * 0.12), radius * 0.20, Color("050805"))
+	var pulse := 0.80 + sin(ambience_time * 1.8) * 0.12
+	draw_circle(pos + Vector2(-radius * 0.32, -radius * 0.12), radius * 0.055, Color(0.78, 0.90, 0.24, pulse))
+	draw_circle(pos + Vector2(radius * 0.32, -radius * 0.12), radius * 0.055, Color(0.78, 0.90, 0.24, pulse))
+	draw_rect(Rect2(pos.x - radius * 0.19, pos.y + radius * 0.22, radius * 0.38, radius * 0.24), Color("050805"))
+
+func _draw_rune_totem(pos: Vector2, radius: float) -> void:
+	draw_circle(pos, radius * 0.36, GLOW)
+	draw_circle(pos, radius * 0.17, BG)
+	for angle in range(0, 360, 45):
+		var a := deg_to_rad(float(angle))
+		var p1 := pos + Vector2(cos(a), sin(a)) * radius * 0.42
+		var p2 := pos + Vector2(cos(a), sin(a)) * radius * 0.72
+		draw_line(p1, p2, GLOW, maxf(2.0, radius * 0.055))
+	draw_line(pos + Vector2(0, radius * 0.34), pos + Vector2(0, radius * 1.15), GLOW, maxf(3.0, radius * 0.075))
 
 func _draw_vignette(w: float, h: float) -> void:
-	# Bordes oscuros sin letterbox: sigue llenando toda la pantalla panorámica.
-	var edge := maxf(32.0, w * 0.032)
+	var edge := maxf(28.0, w * 0.025)
 	for i in range(9):
-		var alpha := 0.045 + float(i) * 0.011
 		var inset := float(i) * edge / 9.0
-		draw_rect(Rect2(inset, inset, w - inset * 2.0, h - inset * 2.0), Color(0, 0, 0, alpha), false, 7.0)
+		draw_rect(Rect2(inset, inset, w - inset * 2.0, h - inset * 2.0), Color(0, 0, 0, 0.04 + float(i) * 0.012), false, 7)
