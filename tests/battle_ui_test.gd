@@ -11,8 +11,12 @@ func run() -> void:
 		_fail("Missing bundled card art: ardilla.png")
 		return
 
+	root.size = Vector2i(1280, 720)
+	await process_frame
+
 	var view = load("res://scripts/ui/mockup_campaign_view.gd").new()
 	root.add_child(view)
+	view.position = Vector2.ZERO
 	view.size = Vector2(1280, 720)
 	view.state = load("res://scripts/domain/campaign_state.gd").new()
 	view._start_battle("battle_1")
