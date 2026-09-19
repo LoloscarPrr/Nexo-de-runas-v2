@@ -4,9 +4,11 @@ func _initialize() -> void:
 	call_deferred("run")
 
 func run() -> void:
-	var view = load("res://scripts/ui/campaign_view.gd").new()
+	var view = load("res://scripts/ui/mockup_campaign_view.gd").new()
 	root.add_child(view)
 	view.size = Vector2(1280, 720)
+	assert(ResourceLoader.exists("res://assets/card_art/lobo.png"))
+	assert(ResourceLoader.exists("res://assets/card_art/ardilla.png"))
 	view.state = load("res://scripts/domain/campaign_state.gd").new()
 	view._start_battle("battle_1")
 	await process_frame
@@ -21,5 +23,5 @@ func run() -> void:
 	view._select_hand(0)
 	view._on_player_lane_pressed(0)
 	await process_frame
-	print("Battle UI instantiated; controls fit 1280x720; squirrel and sacrifice selected")
+	print("Mockup battle UI instantiated; real card art loaded; controls fit 1280x720")
 	quit()
