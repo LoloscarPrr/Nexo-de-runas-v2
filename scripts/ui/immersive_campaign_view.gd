@@ -5,14 +5,14 @@ const ImmersiveCardScript = preload("res://scripts/ui/battle_card.gd")
 const ImmersiveCatalogScript = preload("res://scripts/domain/card_catalog.gd")
 const CampaignBackdropScript = preload("res://scripts/ui/campaign_backdrop.gd")
 
-const I_INK := Color8(232, 218, 180)
-const I_MUTED := Color8(157, 139, 105)
-const I_AMBER := Color8(188, 126, 57)
-const I_BONE := Color8(207, 195, 158)
-const I_EDGE := Color8(78, 55, 31)
-const I_WOOD := Color8(37, 27, 18)
-const I_PAPER := Color8(92, 74, 49)
-const I_SUCCESS := Color8(118, 133, 80)
+const I_INK := Color8(199, 213, 103)
+const I_MUTED := Color8(113, 125, 67)
+const I_AMBER := Color8(198, 218, 88)
+const I_BONE := Color8(184, 187, 111)
+const I_EDGE := Color8(76, 89, 40)
+const I_WOOD := Color8(18, 25, 13)
+const I_PAPER := Color8(118, 119, 65)
+const I_SUCCESS := Color8(168, 187, 83)
 const MOCK_GLOW := Color8(198, 218, 88)
 const MOCK_INK := Color8(199, 205, 116)
 const MOCK_MUTED := Color8(119, 128, 68)
@@ -217,7 +217,7 @@ func _show_campfire(node_id: String) -> void:
 	_place(_label("Las figuras del otro lado del fuego miran tu mazo con demasiado interés.", 14, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.24, 83, vw * 0.52, 34))
 	var approach := _small_button("ACERCARTE AL FUEGO", 300)
 	approach.pressed.connect(_resolve_simple_node.bind(node_id))
-	approach.add_theme_stylebox_override("normal", _panel_style(Color(0.18, 0.09, 0.035, 0.88), I_AMBER, 2, 3))
+	approach.add_theme_stylebox_override("normal", _panel_style(Color(0.075, 0.095, 0.035, 0.92), I_AMBER, 2, 3))
 	_place(approach, Rect2(vw * 0.5 - 155, vh - 132, 310, 54))
 	var leave := _small_button("ALEJARTE", 220)
 	leave.pressed.connect(_show_map)
@@ -233,7 +233,7 @@ func _show_region_gate(node_id: String) -> void:
 	_place(_label("Desde la oscuridad llegan golpes de metal y una respiración que no es la tuya.", 14, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.24, 88, vw * 0.52, 34))
 	var enter := _small_button("ACERCARTE AL UMBRAL", 320)
 	enter.pressed.connect(_resolve_simple_node.bind(node_id))
-	enter.add_theme_stylebox_override("normal", _panel_style(Color(0.08, 0.055, 0.035, 0.92), I_AMBER, 2, 3))
+	enter.add_theme_stylebox_override("normal", _panel_style(Color(0.035, 0.050, 0.025, 0.94), I_AMBER, 2, 3))
 	_place(enter, Rect2(vw * 0.5 - 160, vh - 127, 320, 54))
 	var back := _small_button("VOLVER AL MAPA", 230)
 	back.pressed.connect(_show_map)
@@ -253,14 +253,14 @@ func _physical_map_node(node_id: String, text_value: String) -> Button:
 	elif is_resolved:
 		button.text = "×  %s" % text_value
 		button.disabled = true
-		button.add_theme_stylebox_override("disabled", _panel_style(Color(0.09, 0.065, 0.04, 0.82), I_SUCCESS, 2, 3))
+		button.add_theme_stylebox_override("disabled", _panel_style(Color(0.045, 0.065, 0.030, 0.88), I_SUCCESS, 2, 3))
 	elif accessible:
 		button.pressed.connect(_enter_node.bind(node_id))
-		button.add_theme_stylebox_override("normal", _panel_style(Color(0.16, 0.12, 0.075, 0.92), I_AMBER, 2, 3))
+		button.add_theme_stylebox_override("normal", _panel_style(Color(0.075, 0.095, 0.040, 0.94), I_AMBER, 2, 3))
 		button.add_theme_stylebox_override("pressed", _panel_style(I_PAPER, I_AMBER, 3, 3))
 	else:
 		button.disabled = true
-		button.add_theme_stylebox_override("disabled", _panel_style(Color(0.055, 0.04, 0.027, 0.72), I_EDGE, 1, 3))
+		button.add_theme_stylebox_override("disabled", _panel_style(Color(0.028, 0.040, 0.022, 0.78), I_EDGE, 1, 3))
 	return button
 
 func _add_campaign_backdrop(mode_name: String) -> void:
