@@ -13,97 +13,138 @@ const I_EDGE := Color8(78, 55, 31)
 const I_WOOD := Color8(37, 27, 18)
 const I_PAPER := Color8(92, 74, 49)
 const I_SUCCESS := Color8(118, 133, 80)
+const MOCK_GLOW := Color8(198, 218, 88)
+const MOCK_INK := Color8(199, 205, 116)
+const MOCK_MUTED := Color8(119, 128, 68)
+const MOCK_PANEL := Color8(18, 24, 13)
+const MOCK_EDGE := Color8(78, 91, 39)
+const MOCK_PAPER := Color8(171, 166, 92)
 
 func _render_battle() -> void:
 	_clear_screen()
 	var viewport_size := get_viewport_rect().size
-	var vw := maxf(viewport_size.x, 1280.0)
-	var vh := maxf(viewport_size.y, 720.0)
+	var vw := maxf(viewport_size.x, 1.0)
+	var vh := maxf(viewport_size.y, 1.0)
+	var s := minf(vw / 1536.0, vh / 864.0)
+	var ox := (vw - 1536.0 * s) * 0.5
+	var oy := (vh - 864.0 * s) * 0.5
 
 	var table := ImmersiveTableScript.new()
 	table.balance = battle_state.scale
 	table.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(table)
 
-	var side_gap := 10.0
-	var lane_width := clampf((vw - 515.0 - side_gap * 3.0) / 4.0, 150.0, 198.0)
-	var lane_height := 176.0
-	var board_width := lane_width * 4.0 + side_gap * 3.0
-	var board_left := (vw - board_width) * 0.5
-	var right_x := vw - 252.0
-
-	_place(_label("LA MESA  /  TURNO %02d" % battle_state.turn, 20, I_INK, HORIZONTAL_ALIGNMENT_LEFT), Rect2(board_left, 28, board_width, 36))
-	var leave := _small_button("‹ MAPA", 120)
+	# Encabezado idéntico al lenguaje del mockup: título pequeño sobre el tablero.
+	_place(_label("NEXO DE RUNAS", maxi(14, int(23 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(24, 12, 205, 36, s, ox, oy))
+	var leave := _small_button("MAPA", int(82 * s))
 	leave.pressed.connect(_show_map)
-	_place(leave, Rect2(28, 27, 120, 44))
+	_mock_button_style(leave, false)
+	_place(leave, _mock_rect(214, 12, 82, 32, s, ox, oy))
 
-	_place(_label("BALANZA", 14, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(43, 193, 194, 28))
-	_place(_label("%+d / 5" % battle_state.scale, 23, I_INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(49, 405, 182, 34))
-	_place(_label("HUESOS  %d" % battle_state.bones, 18, I_BONE, HORIZONTAL_ALIGNMENT_CENTER), Rect2(38, 452, 202, 34))
+	# Valores de la balanza bajo los platos.
+	var left_weight := 2 + maxi(battle_state.scale, 0)
+	var right_weight := 2 + maxi(-battle_state.scale, 0)
+	_place(_label(str(left_weight), maxi(15, int(28 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(29, 183, 48, 42, s, ox, oy))
+	_place(_label(str(right_weight), maxi(15, int(28 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(142, 183, 48, 42, s, ox, oy))
+
 	var blood_cost: int = battle_state.blood_cost_for(selected_hand_index)
-	var blood_text := "SANGRE  %d / %d" % [selected_sacrifices.size(), blood_cost] if blood_cost > 0 else "SANGRE  —"
-	_place(_label(blood_text, 16, I_INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(32, 489, 214, 34))
+	var blood_text := "SANGRE  %d/%d" % [selected_sacrifices.size(), blood_cost] if blood_cost > 0 else "HUESOS  %d" % battle_state.bones
+	_place(_label(blood_text, maxi(12, int(20 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(28, 536, 170, 36, s, ox, oy))
+	_place(_label("◆  ◆  ◆", maxi(13, int(22 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(38, 576, 150, 34, s, ox, oy))
 
-	_place(_label("EL GUARDIÁN", 14, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(right_x, 238, 228, 28))
-	if battle_state.enemy_queue_index < battle_state.enemy_queue.size():
-		var next_card := ImmersiveCatalogScript.find_by_id(battle_state.enemy_queue[battle_state.enemy_queue_index])
-		_place(_label("SE ACERCA\n%s" % str(next_card.get("name", "")), 13, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(right_x, 274, 228, 50))
+	# Mensaje fijo del retrato derecho, como en la referencia.
+	_place(_label("TODO\nVUELVE\nAL CICLO.", maxi(12, int(21 * s)), MOCK_INK, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1344, 215, 144, 108, s, ox, oy))
+	var turn_text := "ROBA CARTA" if battle_state.needs_draw() else "TU TURNO"
+	_place(_label(turn_text, maxi(13, int(22 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(1338, 416, 154, 34, s, ox, oy))
 
+	# Cuatro cartas del rival y cuatro del jugador, alineadas como la captura.
+	var lane_x0 := 350.0
+	var lane_pitch := 220.0
+	var card_w := 198.0
+	var card_h := 246.0
 	for lane in range(4):
-		var x := board_left + float(lane) * (lane_width + side_gap)
+		var x := lane_x0 + float(lane) * lane_pitch
 		var enemy = battle_state.enemy_lanes[lane]
-		_place(_immersive_slot(enemy, false, lane), Rect2(x, 98, lane_width, lane_height))
+		_place(_immersive_slot(enemy, false, lane), _mock_rect(x, 58, card_w, card_h, s, ox, oy))
 		var player = battle_state.player_lanes[lane]
 		var player_slot := _immersive_slot(player, true, lane)
 		player_slot.pressed.connect(_on_player_lane_pressed.bind(lane))
-		_place(player_slot, Rect2(x, 294, lane_width, lane_height))
-	_place(_label("SU LADO          ·          CUATRO CARRILES          ·          TU LADO", 11, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(board_left, 274, board_width, 20))
+		_place(player_slot, _mock_rect(x, 334, card_w, card_h, s, ox, oy))
 
-	var status_text: String = battle_state.last_message
-	_place(_label(status_text, 15, I_INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(board_left - 4, 473, board_width + 8, 43))
+	# Estado discreto sobre la mano, sin convertirlo en un HUD separado.
+	_place(_label(battle_state.last_message, maxi(10, int(13 * s)), MOCK_MUTED, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(300, 603, 900, 27, s, ox, oy))
 
-	var draw_deck := _small_button("MAZO\n%d cartas" % battle_state.draw_pile.size(), 110)
+	# Mano física/abanicada. Sin ScrollContainer ni fila plana.
+	var hand_count := battle_state.hand.size()
+	if hand_count > 0:
+		var hand_w := 170.0
+		var hand_h := 210.0
+		var step := 150.0
+		if hand_count > 7:
+			step = 900.0 / float(hand_count - 1)
+		var total_w := hand_w + step * float(maxi(hand_count - 1, 0))
+		var start_x := 768.0 - total_w * 0.5
+		for index in range(hand_count):
+			var card := ImmersiveCardScript.new()
+			card.card = ImmersiveCatalogScript.find_by_id(battle_state.hand[index])
+			card.chosen = index == selected_hand_index
+			card.disabled = battle_state.needs_draw()
+			card.pressed.connect(_select_hand.bind(index))
+			var rel := float(index) - float(hand_count - 1) * 0.5
+			var y := 645.0 + absf(rel) * 3.5
+			if index == selected_hand_index:
+				y -= 16.0
+			_place(card, _mock_rect(start_x + float(index) * step, y, hand_w, hand_h, s, ox, oy))
+			card.rotation = deg_to_rad(rel * 1.6)
+	else:
+		_place(_label("TU MANO ESTÁ VACÍA", maxi(12, int(18 * s)), MOCK_MUTED, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(570, 735, 400, 32, s, ox, oy))
+
+	# Pilas de mazo en las esquinas inferiores. Son los propios objetivos táctiles.
+	var draw_deck := _small_button("MAZO\n%d" % battle_state.draw_pile.size(), int(104 * s))
 	draw_deck.disabled = not battle_state.needs_draw() or battle_state.draw_pile.is_empty()
 	draw_deck.pressed.connect(_draw_regular)
-	_place(draw_deck, Rect2(right_x, 440, 110, 102))
-	var squirrels := _small_button("ARDILLAS\n%d cartas" % battle_state.squirrel_pile_count, 110)
+	_mock_button_style(draw_deck, true)
+	_place(draw_deck, _mock_rect(28, 696, 112, 128, s, ox, oy))
+
+	var squirrels := _small_button("ARDILLAS\n%d" % battle_state.squirrel_pile_count, int(104 * s))
 	squirrels.disabled = not battle_state.needs_draw() or battle_state.squirrel_pile_count <= 0
 	squirrels.pressed.connect(_draw_squirrel)
-	_place(squirrels, Rect2(right_x + 120, 440, 110, 102))
-	if battle_state.needs_draw():
-		_place(_label("ELIGE DE DÓNDE ROBAR", 12, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(right_x - 3, 548, 236, 28))
+	_mock_button_style(squirrels, true)
+	_place(squirrels, _mock_rect(1396, 696, 112, 128, s, ox, oy))
 
-	var hand_scroll := ScrollContainer.new()
-	hand_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	hand_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_place(hand_scroll, Rect2(board_left - 4, 518, board_width + 8, maxf(194.0, vh - 526.0)))
-	var hand_row := HBoxContainer.new()
-	hand_row.add_theme_constant_override("separation", 7)
-	hand_scroll.add_child(hand_row)
-	for index in range(battle_state.hand.size()):
-		var card := ImmersiveCardScript.new()
-		card.card = ImmersiveCatalogScript.find_by_id(battle_state.hand[index])
-		card.chosen = index == selected_hand_index
-		card.custom_minimum_size = Vector2(150, 190)
-		card.disabled = battle_state.needs_draw()
-		card.pressed.connect(_select_hand.bind(index))
-		hand_row.add_child(card)
-	if battle_state.hand.is_empty():
-		hand_row.add_child(_label("Tu mano está vacía.", 16, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	if selected_hand_index >= 0:
-		hand_scroll.set_deferred("scroll_horizontal", maxi(0, selected_hand_index * 157 - int(board_width * 0.4)))
-
-	var cancel := _small_button("CANCELAR\nSACRIFICIOS", 192)
-	cancel.disabled = selected_sacrifices.is_empty()
-	cancel.pressed.connect(_cancel_sacrifices)
-	_place(cancel, Rect2(44, 566, 194, 60))
-	if not selected_sacrifices.is_empty():
-		_place(_label("Las cartas marcadas aún no se consumen.", 11, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(30, 632, 222, 42))
-
-	var bell := _small_button("CAMPANA\nTerminar turno", 228)
+	# Columna derecha: finalizar como botón grande de papel.
+	var bell := _small_button("FINALIZAR", int(170 * s))
 	bell.disabled = battle_state.needs_draw()
 	bell.pressed.connect(_end_battle_turn)
-	_place(bell, Rect2(right_x, 614, 230, 70))
+	_mock_button_style(bell, false, true)
+	_place(bell, _mock_rect(1330, 492, 170, 96, s, ox, oy))
+
+	if not selected_sacrifices.is_empty():
+		var cancel := _small_button("CANCELAR", int(160 * s))
+		cancel.pressed.connect(_cancel_sacrifices)
+		_mock_button_style(cancel, false)
+		_place(cancel, _mock_rect(31, 618, 160, 46, s, ox, oy))
+
+func _mock_rect(x: float, y: float, w: float, h: float, s: float, ox: float, oy: float) -> Rect2:
+	return Rect2(ox + x * s, oy + y * s, w * s, h * s)
+
+func _mock_button_style(button: Button, deck_style := false, paper_style := false) -> void:
+	button.focus_mode = Control.FOCUS_NONE
+	button.add_theme_font_size_override("font_size", 16 if not deck_style else 13)
+	button.add_theme_color_override("font_color", Color("c7d669") if not paper_style else Color("0a0d07"))
+	button.add_theme_color_override("font_disabled_color", Color("59612f"))
+	if paper_style:
+		button.add_theme_stylebox_override("normal", _panel_style(Color("aaa65c"), Color("11170d"), 3, 1))
+		button.add_theme_stylebox_override("pressed", _panel_style(Color("c4bd70"), Color("c8d95b"), 4, 1))
+		button.add_theme_stylebox_override("disabled", _panel_style(Color("575832"), Color("30391d"), 2, 1))
+	elif deck_style:
+		button.add_theme_stylebox_override("normal", _panel_style(Color("11170d"), Color("697337"), 3, 1))
+		button.add_theme_stylebox_override("pressed", _panel_style(Color("242e18"), Color("c8d95b"), 4, 1))
+		button.add_theme_stylebox_override("disabled", _panel_style(Color(0.04, 0.055, 0.03, 0.65), Color("30391d"), 2, 1))
+	else:
+		button.add_theme_stylebox_override("normal", _panel_style(Color("0b1008"), Color("667035"), 2, 1))
+		button.add_theme_stylebox_override("pressed", _panel_style(Color("1a2412"), Color("c8d95b"), 3, 1))
+		button.add_theme_stylebox_override("disabled", _panel_style(Color("090d07"), Color("30391d"), 2, 1))
 
 func _show_map() -> void:
 	if state == null:
@@ -238,14 +279,16 @@ func _immersive_slot(unit, player_side: bool, lane: int) -> Button:
 		card.disabled = not player_side or battle_state.needs_draw()
 		return card
 
-	var marks := ["I", "II", "III", "IV"]
-	var slot := _small_button(marks[lane], 0)
+	# Casilla vacía casi invisible: la madera/pata ya está dibujada por battle_table.gd.
+	var slot := Button.new()
+	slot.text = ""
+	slot.focus_mode = Control.FOCUS_NONE
 	slot.disabled = not player_side or battle_state.needs_draw()
-	slot.add_theme_color_override("font_color", I_MUTED)
-	slot.add_theme_stylebox_override("normal", _panel_style(Color(0.035, 0.024, 0.014, 0.34), I_EDGE, 2, 4))
-	slot.add_theme_stylebox_override("disabled", _panel_style(Color(0.035, 0.024, 0.014, 0.34), I_EDGE, 2, 4))
+	for state_name in ["normal", "hover", "pressed", "disabled", "focus"]:
+		slot.add_theme_stylebox_override(state_name, StyleBoxEmpty.new())
 	if player_side and selected_hand_index >= 0 and battle_state.can_play(selected_hand_index, lane, selected_sacrifices).is_empty():
 		slot.text = "COLOCAR"
-		slot.add_theme_color_override("font_color", I_INK)
-		slot.add_theme_stylebox_override("normal", _panel_style(I_WOOD, I_AMBER, 3, 4))
+		slot.add_theme_font_size_override("font_size", 14)
+		slot.add_theme_color_override("font_color", MOCK_GLOW)
+		slot.add_theme_stylebox_override("normal", _panel_style(Color(0.05, 0.07, 0.035, 0.38), MOCK_EDGE, 2, 1))
 	return slot
