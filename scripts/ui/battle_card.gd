@@ -12,6 +12,8 @@ var card: Dictionary = {}
 var marked := false
 var chosen := false
 var current_hp := -1
+var _cached_art_id := ""
+var _cached_art_texture: Texture2D
 
 func _ready() -> void:
 	focus_mode = Control.FOCUS_NONE
@@ -97,6 +99,26 @@ func _draw() -> void:
 
 func _draw_art(rect: Rect2) -> void:
 	var id := str(card.get("id", ""))
+	var texture := _get_art_texture(id)
+	if texture != null:
+		var source_size := texture.get_size()
+		# Recorta la ilustración central de la carta fuente; el marco, coste y estadísticas
+		# siguen siendo los de Nexo de Runas.
+		var src := Rect2(
+			source_size.x * 0.04,
+			source_size.y * 0.225,
+			source_size.x * 0.92,
+			source_size.y * 0.455
+		)
+		draw_texture_rect_region(texture, rect, src, Color(0.72, 0.82, 0.40, 1.0), false, true)
+		# Integra el arte con la paleta verde/oliva del mockup.
+		draw_rect(rect, Color(0.04, 0.065, 0.025, 0.18))
+		for y in range(int(rect.position.y) + 2, int(rect.end.y), 4):
+			draw_line(Vector2(rect.position.x, float(y)), Vector2(rect.end.x, float(y)), Color(0, 0, 0, 0.08), 1)
+		draw_rect(rect, EDGE, false, 2)
+		return
+
+	# Fallback procedural únicamente si un asset no está disponible.
 	var center := rect.position + rect.size * Vector2(0.5, 0.54)
 	var sx := rect.size.x / 150.0
 	var sy := rect.size.y / 135.0
@@ -144,7 +166,6 @@ func _draw_art(rect: Rect2) -> void:
 		draw_arc(Vector2(30, 5), 24, -2.4, 2.0, 18, ink, 12)
 		draw_circle(Vector2(7, -24), 2.5, glow)
 	else:
-		# Cánido para lobo, coyote, armiño, zarigüeya.
 		draw_colored_polygon(PackedVector2Array([
 			Vector2(-34, -29), Vector2(-15, -15), Vector2(10, -17), Vector2(34, -31),
 			Vector2(28, 7), Vector2(16, 27), Vector2(0, 38), Vector2(-18, 26), Vector2(-30, 8)
@@ -155,6 +176,16 @@ func _draw_art(rect: Rect2) -> void:
 		draw_line(Vector2(41, 26), Vector2(23, 17), ink, 8)
 
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _get_art_texture(card_id: String) -> Texture2D:
+	if _cached_art_id == card_id:
+		return _cached_art_texture
+	_cached_art_id = card_id
+	_cached_art_texture = null
+	var path := "res://assets/card_art/%s.png" % card_id
+	if ResourceLoader.exists(path):
+		_cached_art_texture = load(path) as Texture2D
+	return _cached_art_texture
 
 func _draw_seal(pos: Vector2, radius: float) -> void:
 	var seal := str(card.get("seal", "NINGUNO"))
