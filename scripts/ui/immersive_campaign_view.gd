@@ -48,7 +48,8 @@ func _render_battle() -> void:
 	_place(_label(str(right_weight), maxi(15, int(28 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(142, 183, 48, 42, s, ox, oy))
 
 	var blood_cost: int = battle_state.blood_cost_for(selected_hand_index)
-	var blood_text := "SANGRE  %d/%d" % [selected_sacrifices.size(), blood_cost] if blood_cost > 0 else "HUESOS  %d" % battle_state.bones
+	var blood_ready: int = battle_state.blood_value_for_sacrifices(selected_sacrifices)
+	var blood_text := "SANGRE  %d/%d" % [blood_ready, blood_cost] if blood_cost > 0 else "HUESOS  %d" % battle_state.bones
 	_place(_label(blood_text, maxi(12, int(20 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(28, 536, 170, 36, s, ox, oy))
 	_place(_label("◆  ◆  ◆", maxi(13, int(22 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(38, 576, 150, 34, s, ox, oy))
 
@@ -274,6 +275,7 @@ func _immersive_slot(unit, player_side: bool, lane: int) -> Button:
 		var card := ImmersiveCardScript.new()
 		card.card = ImmersiveCatalogScript.find_by_id(str(unit.get("id", "")))
 		card.current_hp = int(unit.get("hp", 1))
+		card.current_atk = battle_state.attack_for_lane(player_side, lane)
 		card.marked = player_side and selected_sacrifices.has(lane)
 		card.disabled = not player_side or battle_state.needs_draw()
 		return card
