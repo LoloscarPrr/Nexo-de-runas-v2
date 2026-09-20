@@ -19,6 +19,7 @@ func _ready() -> void:
 	focus_mode = Control.FOCUS_NONE
 	text = ""
 	clip_contents = false
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	for state_name in ["normal", "hover", "pressed", "disabled", "focus"]:
 		add_theme_stylebox_override(state_name, StyleBoxEmpty.new())
 	resized.connect(_refresh_pose)
@@ -29,12 +30,10 @@ func _ready() -> void:
 func _refresh_pose() -> void:
 	pivot_offset = size * 0.5
 	var target_scale := Vector2(1.035, 1.035) if chosen else Vector2.ONE
-	var target_rotation := deg_to_rad(-1.0) if marked else rotation
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(self, "scale", target_scale, 0.08)
-	if marked:
-		tween.tween_property(self, "rotation", target_rotation, 0.08)
+	tween.tween_property(self, "rotation", 0.0, 0.08)
 	queue_redraw()
 
 func _press_pose() -> void:
@@ -70,7 +69,7 @@ func _draw() -> void:
 		title_size = maxi(8, title_size - 4)
 	elif title_text.length() > 15:
 		title_size = maxi(9, title_size - 3)
-	draw_string(font, Vector2(title_x, 7 + head_h * 0.69), title_text, HORIZONTAL_ALIGNMENT_LEFT, w - title_x - 15, title_size, INK)
+	draw_string(font, Vector2(title_x, 7 + head_h * 0.69), title_text, HORIZONTAL_ALIGNMENT_CENTER, w - title_x - 15, title_size, INK)
 
 	# Ventana de arte.
 	var art_top := head_h + 9.0
@@ -109,20 +108,18 @@ func _draw_art(rect: Rect2) -> void:
 	var texture := _get_art_texture(id)
 	if texture != null:
 		var source_size := texture.get_size()
-		# Los assets V3 ya son ilustraciones recortadas de Nexo, no cartas completas.
-		# Solo hacemos un crop central para llenar el hueco sin deformarlas.
-		var src := Rect2(Vector2.ZERO, source_size)
+		# Mantén la ilustración completa, recta y centrada. Nunca hacemos crop agresivo:
+		# calculamos un rectángulo de destino centrado conservando proporción.
 		var target_aspect := rect.size.x / rect.size.y
 		var source_aspect := source_size.x / source_size.y
+		var draw_size := rect.size
 		if source_aspect > target_aspect:
-			var new_width := source_size.y * target_aspect
-			src.position.x = (source_size.x - new_width) * 0.5
-			src.size.x = new_width
-		elif source_aspect < target_aspect:
-			var new_height := source_size.x / target_aspect
-			src.position.y = (source_size.y - new_height) * 0.5
-			src.size.y = new_height
-		draw_texture_rect_region(texture, rect, src, Color.WHITE, false, true)
+			draw_size.y = rect.size.x / source_aspect
+		else:
+			draw_size.x = rect.size.y * source_aspect
+		var draw_pos := rect.position + (rect.size - draw_size) * 0.5
+		var centered_rect := Rect2(draw_pos, draw_size)
+		draw_texture_rect(texture, centered_rect, false, Color.WHITE)
 		# Un filtro muy leve integra el arte sin borrar el detalle original de Nexo.
 		draw_rect(rect, Color(0.05, 0.075, 0.025, 0.08))
 		for y in range(int(rect.position.y) + 2, int(rect.end.y), 4):
