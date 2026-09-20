@@ -196,7 +196,7 @@ func _new_unit(card_id: String) -> Dictionary:
 		"attack_bonus": ouro_bonus
 	}
 	if Array(card.get("sigils", [])).has("AMORPHOUS"):
-		var pick := AMORPHOUS_POOL[(turn + hand.size() + card_id.length()) % AMORPHOUS_POOL.size()]
+		var pick: String = str(AMORPHOUS_POOL[(turn + hand.size() + card_id.length()) % AMORPHOUS_POOL.size()])
 		unit.extra_sigils = [pick]
 	return unit
 
