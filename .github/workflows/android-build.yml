@@ -64,6 +64,7 @@ jobs:
           "$GODOT_CHECK" --headless --path . --editor --import --quit 2>&1 | tee "$RUNNER_TEMP/godot-import.log"
           if grep -E 'SCRIPT ERROR|Parse Error|Compile Error' "$RUNNER_TEMP/godot-import.log"; then exit 1; fi
           "$GODOT_CHECK" --headless --path . --script tests/battle_test.gd
+          "$GODOT_CHECK" --headless --path . --script tests/campaign_progression_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/battle_ui_test.gd 2>&1 | tee "$RUNNER_TEMP/godot-ui.log"
           if grep -E 'SCRIPT ERROR|ERROR:' "$RUNNER_TEMP/godot-ui.log"; then exit 1; fi
 
