@@ -90,12 +90,11 @@ func _render_battle() -> void:
 			card.chosen = index == selected_hand_index
 			card.disabled = battle_state.needs_draw()
 			card.pressed.connect(_select_hand.bind(index))
-			var rel := float(index) - float(hand_count - 1) * 0.5
-			var y := 645.0 + absf(rel) * 3.5
+			var y := 645.0
 			if index == selected_hand_index:
 				y -= 16.0
 			_place(card, _mock_rect(start_x + float(index) * step, y, hand_w, hand_h, s, ox, oy))
-			card.rotation = deg_to_rad(rel * 1.6)
+			card.rotation = 0.0
 	else:
 		_place(_label("TU MANO ESTÁ VACÍA", maxi(12, int(18 * s)), MOCK_MUTED, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(570, 735, 400, 32, s, ox, oy))
 
