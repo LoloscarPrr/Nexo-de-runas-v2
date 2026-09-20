@@ -170,9 +170,11 @@ func _reward_choices(key: String, count: int = 3) -> Array[String]:
 	var rng := RandomNumberGenerator.new()
 	var seed_base := int(state.run_seed) if state != null else 1
 	rng.seed = seed_base ^ int(key.hash())
-	var available: Array[String] = pool.duplicate()
+	var available: Array[String] = []
+	for card_id in pool:
+		available.append(card_id)
 	while choices.size() < count and not available.is_empty():
-		var pick := rng.randi_range(0, available.size() - 1)
+		var pick: int = rng.randi_range(0, available.size() - 1)
 		choices.append(available[pick])
 		available.remove_at(pick)
 	return choices
