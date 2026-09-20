@@ -29,28 +29,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Fetch card art assets
+      - name: Verify canonical Nexo card art
         shell: bash
         run: |
-          rm -rf "$RUNNER_TEMP/nexo-card-pack"
-          mkdir -p "$RUNNER_TEMP/nexo-card-pack" assets/card_art
-          curl --fail --location --retry 3             -o "$RUNNER_TEMP/nexo-cards-es.zip"             https://cards.vladde.me/downloads/2022-01-07/es.zip
-          unzip -q "$RUNNER_TEMP/nexo-cards-es.zip" -d "$RUNNER_TEMP/nexo-card-pack"
-
-          cp "$RUNNER_TEMP/nexo-card-pack/regular/squirrel.png" assets/card_art/ardilla.png
-          cp "$RUNNER_TEMP/nexo-card-pack/regular/stoat_talking.png" assets/card_art/armino.png
-          cp "$RUNNER_TEMP/nexo-card-pack/regular/wolf.png" assets/card_art/lobo.png
-          cp "$RUNNER_TEMP/nexo-card-pack/regular/bullfrog.png" assets/card_art/rana_toro.png
-          cp "$RUNNER_TEMP/nexo-card-pack/regular/sparrow.png" assets/card_art/gorrion.png
-          cp "$RUNNER_TEMP/nexo-card-pack/regular/adder.png" assets/card_art/vibora.png
-          cp "$RUNNER_TEMP/nexo-card-pack/regular/porcupine.png" assets/card_art/puercoespin.png
-          cp "$RUNNER_TEMP/nexo-card-pack/regular/mole.png" assets/card_art/topo.png
-          cp "$RUNNER_TEMP/nexo-card-pack/regular/moose_buck.png" assets/card_art/alce.png
-          cp "$RUNNER_TEMP/nexo-card-pack/regular/opossum.png" assets/card_art/zarigueya.png
-          cp "$RUNNER_TEMP/nexo-card-pack/regular/coyote.png" assets/card_art/coyote.png
-          cp "$RUNNER_TEMP/nexo-card-pack/regular/turkey_vulture.png" assets/card_art/buitre.png
-
+          test -d assets/card_art
+          for f in ardilla armino lobo rana_toro gorrion vibora puercoespin topo alce zarigueya coyote buitre; do
+            test -s "assets/card_art/$f.png"
+          done
           test "$(find assets/card_art -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 12
+          echo "Canonical Nexo replacement art:"
           ls -lh assets/card_art
 
       - name: Validate project structure
