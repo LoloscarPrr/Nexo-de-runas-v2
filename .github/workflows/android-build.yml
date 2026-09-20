@@ -29,16 +29,26 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Verify canonical Nexo card art
+      - name: Restore canonical Nexo Act I card set
         shell: bash
         run: |
-          test -d assets/card_art
-          for f in ardilla armino lobo rana_toro gorrion vibora puercoespin topo alce zarigueya coyote buitre; do
-            test -s "assets/card_art/$f.png"
-          done
-          test "$(find assets/card_art -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 12
-          echo "Canonical Nexo replacement art:"
-          ls -lh assets/card_art
+          rm -rf assets/card_full
+          mkdir -p assets/card_full
+          cat assets/card_set_94/chunk*.b64 | base64 --decode > "$RUNNER_TEMP/nexo-act1-cards.zip"
+          unzip -q "$RUNNER_TEMP/nexo-act1-cards.zip" -d assets/card_full
+
+          test -s assets/card_full/manifest.json
+          test "$(find assets/card_full -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 95
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path("assets/card_full/manifest.json").read_text(encoding="utf-8"))
+          assert len(manifest) == 94, len(manifest)
+          assert len({card["id"] for card in manifest}) == 94
+          for card in manifest:
+              assert Path("assets/card_full", card["file"]).is_file(), card
+          print("Canonical Act I visual set:", len(manifest), "cards, all straight and normalized")
+          PY
 
       - name: Validate project structure
         shell: bash
