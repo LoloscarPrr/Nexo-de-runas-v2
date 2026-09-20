@@ -7,7 +7,15 @@ var hand: Array[String] = []
 var draw_pile: Array[String] = []
 var player_lanes := [null, null, null, null]
 var enemy_lanes := [null, null, null, null]
-var enemy_queue: Array[String] = ["coyote", "rana_toro", "lobo", "puercoespin", "cascabel", "cuervo"]
+var enemy_queue: Array[String] = []
+var encounter_id := "battle_1"
+var run_buffs: Dictionary = {}
+
+const ENCOUNTERS := {
+	"battle_1": ["coyote", "rana_toro", "lobo", "puercoespin", "cascabel", "cuervo"],
+	"battle_2": ["puercoespin", "cascabel", "sabueso", "cuervo", "alce", "oso_grizzly"],
+	"boss_1": ["mula_de_carga", "coyote", "trampa_saltarina", "sabueso", "cascabel", "oso_grizzly", "alce_macho"]
+}
 var enemy_queue_index := 0
 var bones := 0
 var squirrel_pile_count := 10
@@ -25,7 +33,13 @@ const AMORPHOUS_POOL := [
 	"BURROWER", "SPRINTER", "UNKILLABLE", "FLEDGLING"
 ]
 
-func setup(deck_ids: Array[String]) -> void:
+func setup(deck_ids: Array[String], buffs: Dictionary = {}, battle_id: String = "battle_1") -> void:
+	encounter_id = battle_id
+	run_buffs = buffs.duplicate(true)
+	enemy_queue = []
+	var encounter_cards = ENCOUNTERS.get(battle_id, ENCOUNTERS["battle_1"])
+	for enemy_id in encounter_cards:
+		enemy_queue.append(str(enemy_id))
 	hand = []
 	draw_pile = []
 	for card_id in deck_ids:
@@ -49,6 +63,16 @@ func setup(deck_ids: Array[String]) -> void:
 	_draw_regular_if_possible()
 	hand.append("ardilla")
 	_spawn_enemy()
+
+func card_for_id(card_id: String) -> Dictionary:
+	var card := CardCatalogScript.find_by_id(card_id)
+	if card.is_empty():
+		return card
+	if run_buffs.has(card_id) and run_buffs[card_id] is Dictionary:
+		var buff: Dictionary = run_buffs[card_id]
+		card["atk"] = int(card.get("atk", 0)) + int(buff.get("atk", 0))
+		card["hp"] = int(card.get("hp", 1)) + int(buff.get("hp", 0))
+	return card
 
 func needs_draw() -> bool:
 	return draw_pending and result == "ongoing"
@@ -184,16 +208,21 @@ func end_turn() -> String:
 
 func _new_unit(card_id: String) -> Dictionary:
 	var card := CardCatalogScript.find_by_id(card_id)
+	var buff: Dictionary = {}
+	if run_buffs.has(card_id) and run_buffs[card_id] is Dictionary:
+		buff = run_buffs[card_id]
+	var persistent_atk := int(buff.get("atk", 0))
+	var persistent_hp := int(buff.get("hp", 0))
 	var ouro_bonus := ouroboros_bonus if card_id == "uroboros" else 0
 	var unit := {
 		"id": card_id,
-		"hp": int(card.get("hp", 1)) + ouro_bonus,
+		"hp": int(card.get("hp", 1)) + persistent_hp + ouro_bonus,
 		"age": 0,
 		"move_dir": 1,
 		"sacrifice_count": 0,
 		"tail_used": false,
 		"extra_sigils": [],
-		"attack_bonus": ouro_bonus
+		"attack_bonus": persistent_atk + ouro_bonus
 	}
 	if Array(card.get("sigils", [])).has("AMORPHOUS"):
 		var pick: String = str(AMORPHOUS_POOL[(turn + hand.size() + card_id.length()) % AMORPHOUS_POOL.size()])
