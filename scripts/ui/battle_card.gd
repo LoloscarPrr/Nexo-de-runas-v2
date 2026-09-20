@@ -7,13 +7,13 @@ const PAPER_DARK := Color("77743f")
 const DEEP := Color("0a0d07")
 const EDGE := Color("4d5726")
 const GLOW := Color("c6da58")
+const BLOOD_MARK := Color("842c22")
 
 var card: Dictionary = {}
 var marked := false
 var chosen := false
 var current_hp := -1
-var _cached_art_id := ""
-var _cached_art_texture: Texture2D
+var current_atk := -1
 var _cached_full_id := ""
 var _cached_full_texture: Texture2D
 
@@ -49,169 +49,193 @@ func _draw() -> void:
 	if w < 24 or h < 36:
 		return
 
-	# The canonical 94-card set already contains the complete card face.
-	# Draw it as one straight, centered object so name, art, stats and sello
-	# remain exactly aligned with the approved sheets.
-	var full_texture := _get_full_card_texture(str(card.get("id", "")))
-	if full_texture != null:
-		draw_rect(Rect2(5, 6, w - 4, h - 4), Color(0, 0, 0, 0.72))
-		var target := Rect2(3, 3, w - 10, h - 10)
-		var source_size := full_texture.get_size()
-		var source_aspect := source_size.x / source_size.y
-		var target_aspect := target.size.x / target.size.y
-		var draw_size := target.size
-		if source_aspect > target_aspect:
-			draw_size.y = target.size.x / source_aspect
-		else:
-			draw_size.x = target.size.y * source_aspect
-		var draw_pos := target.position + (target.size - draw_size) * 0.5
-		draw_texture_rect(full_texture, Rect2(draw_pos, draw_size), false, Color.WHITE)
-		if chosen:
-			draw_rect(Rect2(0, 0, w - 4, h - 4), GLOW, false, 4)
-		if marked:
-			draw_rect(Rect2(1, 1, w - 6, h - 6), Color("842c22"), false, 5)
-			draw_line(Vector2(12, 12), Vector2(w - 16, h - 16), Color("842c22"), 5)
-			draw_line(Vector2(w - 16, 12), Vector2(12, h - 16), Color("842c22"), 5)
-		return
-
-	# Sombra y papel envejecido verde/oliva.
-	draw_rect(Rect2(5, 6, w - 2, h - 2), Color(0, 0, 0, 0.72))
+	# Marco canónico. Siempre se reconstruye desde datos mecánicos para que
+	# el valor visible coincida con lo que la carta realmente hace.
+	draw_rect(Rect2(5, 6, w - 3, h - 3), Color(0, 0, 0, 0.74))
 	draw_rect(Rect2(1, 1, w - 7, h - 7), PAPER_DARK)
 	draw_rect(Rect2(4, 4, w - 13, h - 13), PAPER)
 	draw_rect(Rect2(7, 7, w - 19, h - 19), INK, false, 2)
 
-	# Cabecera: coste cuadrado + nombre.
-	var head_h := clampf(h * 0.16, 30.0, 42.0)
-	draw_rect(Rect2(7, 7, head_h - 5, head_h - 5), PAPER_LIGHT)
-	draw_rect(Rect2(7, 7, head_h - 5, head_h - 5), INK, false, 2)
 	var font := ThemeDB.fallback_font
-	var cost := int(card.get("cost_value", 0))
-	draw_string(font, Vector2(12, 7 + head_h * 0.72), str(cost), HORIZONTAL_ALIGNMENT_CENTER, head_h - 15, int(clampf(head_h * 0.65, 16, 24)), INK)
-	var title_x := head_h + 7.0
-	var title_text := str(card.get("name", "CARTA"))
-	var title_size := int(clampf(h * 0.058, 10, 15))
-	if title_text.length() > 26:
-		title_size = maxi(7, title_size - 5)
-	elif title_text.length() > 20:
-		title_size = maxi(8, title_size - 4)
-	elif title_text.length() > 15:
-		title_size = maxi(9, title_size - 3)
-	draw_string(font, Vector2(title_x, 7 + head_h * 0.69), title_text, HORIZONTAL_ALIGNMENT_CENTER, w - title_x - 15, title_size, INK)
+	var head_h := clampf(h * 0.155, 28.0, 41.0)
+	var cost_box := head_h - 5.0
 
-	# Ventana de arte.
-	var art_top := head_h + 9.0
+	# Coste arriba a la izquierda.
+	draw_rect(Rect2(7, 7, cost_box, cost_box), PAPER_LIGHT)
+	draw_rect(Rect2(7, 7, cost_box, cost_box), INK, false, 2)
+	var cost_value := int(card.get("cost_value", 0))
+	var cost_size := int(clampf(head_h * 0.62, 15, 24))
+	draw_string(font, Vector2(10, 7 + head_h * 0.72), str(cost_value), HORIZONTAL_ALIGNMENT_CENTER, cost_box - 6, cost_size, INK)
+
+	# Nombre centrado, reduciendo tamaño en nombres largos.
+	var title_x := head_h + 6.0
+	var title_text := str(card.get("name", "CARTA"))
+	var title_size := int(clampf(h * 0.052, 9, 15))
+	if title_text.length() > 24:
+		title_size = maxi(7, title_size - 4)
+	elif title_text.length() > 18:
+		title_size = maxi(8, title_size - 3)
+	elif title_text.length() > 13:
+		title_size = maxi(9, title_size - 2)
+	draw_string(font, Vector2(title_x, 7 + head_h * 0.68), title_text, HORIZONTAL_ALIGNMENT_CENTER, w - title_x - 14, title_size, INK)
+
+	# Ilustración de Nexo: se extrae SOLO la zona central de la carta
+	# normalizada. Misma región para las 94, sin inclinación ni desplazamiento.
+	var art_top := head_h + 8.0
 	var stat_h := clampf(h * 0.19, 34.0, 48.0)
 	var art_bottom := h - stat_h - 8.0
 	var art_rect := Rect2(8, art_top, w - 22, art_bottom - art_top)
 	draw_rect(art_rect, DEEP)
+	_draw_nexo_art(art_rect)
 	draw_rect(art_rect, EDGE, false, 2)
-	for i in range(26):
-		var px := art_rect.position.x + 5.0 + fmod(float(i * 37), maxf(5.0, art_rect.size.x - 10.0))
-		var py := art_rect.position.y + 5.0 + fmod(float(i * 23), maxf(5.0, art_rect.size.y - 10.0))
-		draw_rect(Rect2(px, py, 2, 2), Color(0.68, 0.67, 0.34, 0.16))
-	_draw_art(art_rect)
 
-	# Faja inferior de estadísticas.
+	# Faja inferior: ATQ real / sello(s) / VIDA actual.
 	var stat_y := h - stat_h - 7.0
 	draw_rect(Rect2(7, stat_y, w - 19, stat_h), PAPER_LIGHT)
 	draw_rect(Rect2(7, stat_y, w - 19, stat_h), INK, false, 2)
-	draw_line(Vector2(w * 0.34, stat_y), Vector2(w * 0.34, stat_y + stat_h), INK, 1)
-	draw_line(Vector2(w * 0.66, stat_y), Vector2(w * 0.66, stat_y + stat_h), INK, 1)
-	var stat_size := int(clampf(stat_h * 0.66, 20, 32))
-	draw_string(font, Vector2(10, stat_y + stat_h * 0.76), str(card.get("atk", 0)), HORIZONTAL_ALIGNMENT_LEFT, w * 0.25, stat_size, INK)
-	draw_string(font, Vector2(w * 0.70, stat_y + stat_h * 0.76), str(current_hp if current_hp >= 0 else card.get("hp", 1)), HORIZONTAL_ALIGNMENT_RIGHT, w * 0.23, stat_size, INK)
-	_draw_seal(Vector2(w * 0.5, stat_y + stat_h * 0.52), minf(15.0, stat_h * 0.32))
+	draw_line(Vector2(w * 0.31, stat_y), Vector2(w * 0.31, stat_y + stat_h), INK, 1)
+	draw_line(Vector2(w * 0.69, stat_y), Vector2(w * 0.69, stat_y + stat_h), INK, 1)
 
-	# Selección y sacrificio.
+	var attack_value := current_atk if current_atk >= 0 else int(card.get("atk", 0))
+	var health_value := current_hp if current_hp >= 0 else int(card.get("hp", 1))
+	var stat_size := int(clampf(stat_h * 0.66, 19, 31))
+	draw_string(font, Vector2(9, stat_y + stat_h * 0.76), str(attack_value), HORIZONTAL_ALIGNMENT_CENTER, w * 0.25, stat_size, INK)
+	draw_string(font, Vector2(w * 0.73, stat_y + stat_h * 0.76), str(health_value), HORIZONTAL_ALIGNMENT_CENTER, w * 0.20, stat_size, INK)
+
+	_draw_sigils(Rect2(w * 0.32, stat_y + 2, w * 0.36, stat_h - 4))
+
 	if chosen:
-		draw_rect(Rect2(-2, -2, w + 1, h + 1), GLOW, false, 4)
+		draw_rect(Rect2(-1, -1, w - 4, h - 4), GLOW, false, 4)
 	if marked:
-		draw_rect(Rect2(1, 1, w - 7, h - 7), Color("842c22"), false, 5)
-		draw_line(Vector2(14, art_top + 8), Vector2(w - 20, art_bottom - 8), Color("842c22"), 5)
-		draw_line(Vector2(w - 20, art_top + 8), Vector2(14, art_bottom - 8), Color("842c22"), 5)
+		draw_rect(Rect2(1, 1, w - 7, h - 7), BLOOD_MARK, false, 5)
+		draw_line(Vector2(13, art_top + 7), Vector2(w - 20, art_bottom - 7), BLOOD_MARK, 5)
+		draw_line(Vector2(w - 20, art_top + 7), Vector2(13, art_bottom - 7), BLOOD_MARK, 5)
 
-func _draw_art(rect: Rect2) -> void:
-	var id := str(card.get("id", ""))
-	var texture := _get_art_texture(id)
-	if texture != null:
-		var source_size := texture.get_size()
-		# Mantén la ilustración completa, recta y centrada. Nunca hacemos crop agresivo:
-		# calculamos un rectángulo de destino centrado conservando proporción.
-		var target_aspect := rect.size.x / rect.size.y
-		var source_aspect := source_size.x / source_size.y
-		var draw_size := rect.size
-		if source_aspect > target_aspect:
-			draw_size.y = rect.size.x / source_aspect
-		else:
-			draw_size.x = rect.size.y * source_aspect
-		var draw_pos := rect.position + (rect.size - draw_size) * 0.5
-		var centered_rect := Rect2(draw_pos, draw_size)
-		draw_texture_rect(texture, centered_rect, false, Color.WHITE)
-		# Un filtro muy leve integra el arte sin borrar el detalle original de Nexo.
-		draw_rect(rect, Color(0.05, 0.075, 0.025, 0.08))
-		for y in range(int(rect.position.y) + 2, int(rect.end.y), 4):
-			draw_line(Vector2(rect.position.x, float(y)), Vector2(rect.end.x, float(y)), Color(0, 0, 0, 0.08), 1)
-		draw_rect(rect, EDGE, false, 2)
+func _draw_nexo_art(rect: Rect2) -> void:
+	var texture := _get_full_card_texture(str(card.get("id", "")))
+	if texture == null:
+		_draw_missing_art(rect)
 		return
-
-	# Fallback procedural únicamente si un asset no está disponible.
-	var center := rect.position + rect.size * Vector2(0.5, 0.54)
-	var sx := rect.size.x / 150.0
-	var sy := rect.size.y / 135.0
-	draw_set_transform(center, 0.0, Vector2(sx, sy))
-	var ink := Color("97954f")
-	var glow := Color("d1df63")
-
-	if id in ["gorrion", "buitre"]:
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(-4, 6), Vector2(-43, -28), Vector2(-29, 15), Vector2(-9, 24),
-			Vector2(1, 39), Vector2(12, 20), Vector2(39, 8), Vector2(47, -25),
-			Vector2(10, -7), Vector2(5, -21), Vector2(-5, -16)
-		]), ink)
-		draw_circle(Vector2(5, -18), 3.5, glow)
-	elif id == "rana_toro":
-		draw_circle(Vector2(0, 12), 29, ink)
-		draw_circle(Vector2(-22, -8), 13, ink)
-		draw_circle(Vector2(22, -8), 13, ink)
-		draw_circle(Vector2(-20, -10), 3, DEEP)
-		draw_circle(Vector2(20, -10), 3, DEEP)
-		for side in [-1.0, 1.0]:
-			draw_line(Vector2(side * 18, 18), Vector2(side * 42, 34), ink, 10)
-	elif id == "vibora":
-		draw_arc(Vector2(0, 10), 31, -1.1, 4.5, 24, ink, 12)
-		draw_circle(Vector2(6, -28), 11, ink)
-		draw_circle(Vector2(10, -31), 2.5, glow)
-	elif id == "topo":
-		draw_colored_polygon(PackedVector2Array([Vector2(-40, 24), Vector2(-27, -15), Vector2(0, -30), Vector2(32, -12), Vector2(42, 22), Vector2(0, 37)]), ink)
-		draw_circle(Vector2(-10, -12), 3, glow)
-		draw_circle(Vector2(12, -12), 3, glow)
-	elif id == "puercoespin":
-		draw_colored_polygon(PackedVector2Array([Vector2(-43, 18), Vector2(-29, -25), Vector2(-18, -12), Vector2(-9, -34), Vector2(1, -13), Vector2(15, -31), Vector2(20, -8), Vector2(40, 3), Vector2(29, 31), Vector2(-20, 34)]), ink)
-		draw_circle(Vector2(23, -3), 3, glow)
-	elif id == "alce":
-		draw_colored_polygon(PackedVector2Array([Vector2(-24, -12), Vector2(-10, -28), Vector2(12, -28), Vector2(25, -9), Vector2(19, 27), Vector2(0, 39), Vector2(-19, 27)]), ink)
-		for side in [-1.0, 1.0]:
-			draw_line(Vector2(side * 17, -24), Vector2(side * 37, -46), ink, 4)
-			draw_line(Vector2(side * 31, -39), Vector2(side * 19, -49), ink, 3)
-			draw_line(Vector2(side * 34, -41), Vector2(side * 43, -34), ink, 3)
-		draw_circle(Vector2(-7, -11), 2.5, glow)
-		draw_circle(Vector2(7, -11), 2.5, glow)
-	elif id == "ardilla":
-		draw_circle(Vector2(-3, 5), 24, ink)
-		draw_circle(Vector2(3, -22), 13, ink)
-		draw_arc(Vector2(30, 5), 24, -2.4, 2.0, 18, ink, 12)
-		draw_circle(Vector2(7, -24), 2.5, glow)
+	var source_size := texture.get_size()
+	# Las 94 imágenes tienen el mismo lienzo. El área central evita volver a
+	# mostrar nombre/coste/estadísticas horneados en la lámina.
+	var src := Rect2(
+		source_size.x * 0.055,
+		source_size.y * 0.185,
+		source_size.x * 0.89,
+		source_size.y * 0.565
+	)
+	var src_aspect := src.size.x / src.size.y
+	var dst := rect.grow(-2)
+	var dst_size := dst.size
+	var dst_aspect := dst.size.x / dst.size.y
+	if src_aspect > dst_aspect:
+		dst_size.y = dst.size.x / src_aspect
 	else:
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(-34, -29), Vector2(-15, -15), Vector2(10, -17), Vector2(34, -31),
-			Vector2(28, 7), Vector2(16, 27), Vector2(0, 38), Vector2(-18, 26), Vector2(-30, 8)
-		]), ink)
-		draw_circle(Vector2(-9, -2), 3, glow)
-		draw_circle(Vector2(10, -2), 3, glow)
-		draw_line(Vector2(-40, 27), Vector2(-21, 17), ink, 8)
-		draw_line(Vector2(41, 26), Vector2(23, 17), ink, 8)
+		dst_size.x = dst.size.y * src_aspect
+	var dst_pos := dst.position + (dst.size - dst_size) * 0.5
+	draw_texture_rect_region(texture, Rect2(dst_pos, dst_size), src, Color.WHITE, false, true)
+	# Integración leve con el tablero sin borrar detalle.
+	draw_rect(rect.grow(-2), Color(0.035, 0.055, 0.02, 0.06))
+	for y in range(int(rect.position.y) + 2, int(rect.end.y), 4):
+		draw_line(Vector2(rect.position.x + 2, float(y)), Vector2(rect.end.x - 2, float(y)), Color(0, 0, 0, 0.055), 1)
 
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+func _draw_missing_art(rect: Rect2) -> void:
+	var c := Color("8d8b48")
+	var center := rect.get_center()
+	draw_circle(center, minf(rect.size.x, rect.size.y) * 0.22, c, false, 3)
+	draw_line(center + Vector2(-18, -18), center + Vector2(18, 18), c, 3)
+	draw_line(center + Vector2(18, -18), center + Vector2(-18, 18), c, 3)
+
+func _draw_sigils(rect: Rect2) -> void:
+	var sigils: Array = Array(card.get("sigils", []))
+	var stat := str(card.get("special_stat", "NONE"))
+	if sigils.is_empty() and stat != "NONE":
+		sigils = ["STAT_" + stat]
+	if sigils.is_empty():
+		return
+	var shown := mini(sigils.size(), 2)
+	var radius := minf(rect.size.y * 0.30, rect.size.x / float(shown) * 0.28)
+	for i in range(shown):
+		var x := rect.position.x + rect.size.x * (float(i + 1) / float(shown + 1))
+		var pos := Vector2(x, rect.get_center().y)
+		_draw_sigil_symbol(str(sigils[i]), pos, radius)
+
+func _draw_sigil_symbol(code: String, pos: Vector2, r: float) -> void:
+	var c := INK
+	match code:
+		"AIRBORNE":
+			draw_line(pos + Vector2(-r, r * 0.35), pos + Vector2(r, -r * 0.35), c, 3)
+			draw_line(pos + Vector2(-r * 0.65, -r * 0.35), pos + Vector2(r * 0.65, r * 0.35), c, 3)
+		"MIGHTY_LEAP":
+			draw_arc(pos, r * 0.72, PI, TAU, 14, c, 3)
+			draw_line(pos + Vector2(-r * 0.7, 0), pos + Vector2(0, -r * 0.95), c, 2)
+			draw_line(pos + Vector2(0, -r * 0.95), pos + Vector2(r * 0.7, 0), c, 2)
+		"TOUCH_OF_DEATH":
+			draw_circle(pos, r * 0.72, c)
+			draw_circle(pos + Vector2(-r * 0.25, -r * 0.08), r * 0.13, PAPER_LIGHT)
+			draw_circle(pos + Vector2(r * 0.25, -r * 0.08), r * 0.13, PAPER_LIGHT)
+			draw_rect(Rect2(pos.x - r * 0.22, pos.y + r * 0.26, r * 0.44, r * 0.20), PAPER_LIGHT)
+		"SHARP_QUILLS":
+			for angle in range(0, 360, 45):
+				var a := deg_to_rad(float(angle))
+				draw_line(pos + Vector2(cos(a), sin(a)) * r * 0.22, pos + Vector2(cos(a), sin(a)) * r, c, 3)
+		"LEADER":
+			draw_line(pos + Vector2(0, -r), pos + Vector2(0, r), c, 3)
+			draw_line(pos, pos + Vector2(-r * 0.8, -r * 0.45), c, 3)
+			draw_line(pos, pos + Vector2(r * 0.8, -r * 0.45), c, 3)
+		"MANY_LIVES":
+			draw_circle(pos, r * 0.72, c, false, 3)
+			draw_arc(pos, r * 0.42, -PI * 0.35, PI * 1.35, 14, c, 3)
+		"UNKILLABLE":
+			draw_arc(pos, r * 0.75, 0, TAU, 20, c, 3)
+			draw_line(pos + Vector2(r * 0.45, -r * 0.6), pos + Vector2(r * 0.85, -r * 0.7), c, 3)
+		"SPRINTER", "HEFTY":
+			for y in [-0.45, 0.0, 0.45]:
+				draw_line(pos + Vector2(-r, y * r), pos + Vector2(r, y * r - r * 0.25), c, 3)
+		"BURROWER", "RABBIT_HOLE":
+			draw_arc(pos, r * 0.78, PI, TAU, 18, c, 4)
+			draw_line(pos + Vector2(-r * 0.75, 0), pos + Vector2(r * 0.75, 0), c, 3)
+		"BIFURCATED_STRIKE":
+			draw_line(pos + Vector2(0, r), pos + Vector2(0, 0), c, 3)
+			draw_line(pos, pos + Vector2(-r * 0.8, -r), c, 3)
+			draw_line(pos, pos + Vector2(r * 0.8, -r), c, 3)
+		"TRIFURCATED_STRIKE":
+			draw_line(pos + Vector2(0, r), pos + Vector2(0, -r), c, 3)
+			draw_line(pos, pos + Vector2(-r * 0.85, -r), c, 3)
+			draw_line(pos, pos + Vector2(r * 0.85, -r), c, 3)
+		"FLEDGLING":
+			draw_arc(pos, r * 0.60, 0, TAU, 16, c, 3)
+			draw_line(pos + Vector2(-r * 0.6, r * 0.7), pos + Vector2(r * 0.6, r * 0.7), c, 3)
+		"STINKY":
+			for x in [-0.55, 0.0, 0.55]:
+				var px := pos.x + x * r
+				draw_arc(Vector2(px, pos.y), r * 0.35, -PI * 0.5, PI * 0.5, 8, c, 2)
+		"WORTHY_SACRIFICE":
+			draw_circle(pos, r * 0.62, c, false, 3)
+			draw_line(pos + Vector2(0, -r), pos + Vector2(0, r), c, 3)
+			draw_line(pos + Vector2(-r * 0.7, 0), pos + Vector2(r * 0.7, 0), c, 3)
+		"STAT_ANTS":
+			draw_circle(pos, r * 0.32, c)
+			draw_circle(pos + Vector2(-r * 0.38, -r * 0.25), r * 0.18, c)
+			draw_circle(pos + Vector2(r * 0.38, -r * 0.25), r * 0.18, c)
+			draw_line(pos + Vector2(-r * 0.2, r * 0.2), pos + Vector2(-r * 0.65, r * 0.75), c, 2)
+			draw_line(pos + Vector2(r * 0.2, r * 0.2), pos + Vector2(r * 0.65, r * 0.75), c, 2)
+		"STAT_BELL":
+			draw_arc(pos, r * 0.7, PI, TAU, 14, c, 3)
+			draw_line(pos + Vector2(-r * 0.7, 0), pos + Vector2(-r * 0.5, r * 0.75), c, 3)
+			draw_line(pos + Vector2(r * 0.7, 0), pos + Vector2(r * 0.5, r * 0.75), c, 3)
+			draw_line(pos + Vector2(-r * 0.5, r * 0.75), pos + Vector2(r * 0.5, r * 0.75), c, 3)
+		"STAT_CARDS_IN_HAND":
+			draw_rect(Rect2(pos - Vector2(r * 0.65, r * 0.8), Vector2(r * 1.05, r * 1.35)), c, false, 2)
+			draw_rect(Rect2(pos - Vector2(r * 0.35, r * 0.55), Vector2(r * 1.05, r * 1.35)), c, false, 2)
+		"STAT_MIRROR":
+			draw_rect(Rect2(pos - Vector2(r * 0.55, r * 0.8), Vector2(r * 1.1, r * 1.6)), c, false, 3)
+			draw_line(pos + Vector2(0, -r * 0.7), pos + Vector2(0, r * 0.7), c, 2)
+		_:
+			# Runa genérica para sellos menos frecuentes; evita texto ilegible.
+			draw_rect(Rect2(pos - Vector2(r * 0.62, r * 0.62), Vector2(r * 1.24, r * 1.24)), c, false, 3)
+			draw_line(pos + Vector2(-r * 0.45, r * 0.45), pos + Vector2(r * 0.45, -r * 0.45), c, 2)
 
 func _get_full_card_texture(card_id: String) -> Texture2D:
 	if _cached_full_id == card_id:
@@ -222,38 +246,3 @@ func _get_full_card_texture(card_id: String) -> Texture2D:
 	if ResourceLoader.exists(path):
 		_cached_full_texture = load(path) as Texture2D
 	return _cached_full_texture
-
-func _get_art_texture(card_id: String) -> Texture2D:
-	if _cached_art_id == card_id:
-		return _cached_art_texture
-	_cached_art_id = card_id
-	_cached_art_texture = null
-	var path := "res://assets/card_art/%s.png" % card_id
-	if ResourceLoader.exists(path):
-		_cached_art_texture = load(path) as Texture2D
-	return _cached_art_texture
-
-func _draw_seal(pos: Vector2, radius: float) -> void:
-	var seal := str(card.get("seal", "NINGUNO"))
-	var c := INK
-	if seal == "AÉREO":
-		draw_line(pos + Vector2(-radius, 5), pos + Vector2(radius, -5), c, 4)
-		draw_line(pos + Vector2(-radius * 0.7, -5), pos + Vector2(radius * 0.7, 5), c, 3)
-	elif seal == "TOQUE MORTAL":
-		draw_circle(pos, radius * 0.72, c)
-		draw_circle(pos + Vector2(-radius * 0.25, -radius * 0.1), radius * 0.13, PAPER_LIGHT)
-		draw_circle(pos + Vector2(radius * 0.25, -radius * 0.1), radius * 0.13, PAPER_LIGHT)
-	elif seal == "ESPINAS":
-		for angle in range(0, 360, 60):
-			var a := deg_to_rad(float(angle))
-			draw_line(pos, pos + Vector2(cos(a), sin(a)) * radius, c, 3)
-	elif seal == "MADRIGUERA":
-		draw_arc(pos, radius * 0.8, PI, TAU, 16, c, 4)
-	elif seal == "CORREDOR":
-		for y in [-6.0, 0.0, 6.0]:
-			draw_line(pos + Vector2(-radius, y), pos + Vector2(radius, y - 4), c, 3)
-	elif seal == "SACRIFICIO":
-		draw_circle(pos, radius * 0.65, c, false, 3)
-		draw_line(pos + Vector2(0, -radius), pos + Vector2(0, radius), c, 3)
-	else:
-		draw_rect(Rect2(pos - Vector2(radius * 0.55, radius * 0.55), Vector2(radius * 1.1, radius * 1.1)), c, false, 3)
