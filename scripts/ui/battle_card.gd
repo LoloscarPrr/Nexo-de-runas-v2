@@ -209,7 +209,7 @@ func _draw_sigil_symbol(code: String, pos: Vector2, r: float) -> void:
 			draw_line(pos + Vector2(-r * 0.6, r * 0.7), pos + Vector2(r * 0.6, r * 0.7), c, 3)
 		"STINKY":
 			for x in [-0.55, 0.0, 0.55]:
-				var px := pos.x + x * r
+				var px: float = pos.x + float(x) * r
 				draw_arc(Vector2(px, pos.y), r * 0.35, -PI * 0.5, PI * 0.5, 8, c, 2)
 		"WORTHY_SACRIFICE":
 			draw_circle(pos, r * 0.62, c, false, 3)
