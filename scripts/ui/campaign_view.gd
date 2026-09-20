@@ -29,6 +29,7 @@ var battle_state
 var active_battle_node := ""
 var selected_hand_index := -1
 var selected_sacrifices: Array[int] = []
+var selected_campfire_card_id := ""
 
 func has_save() -> bool:
 	return CampaignSaveScript.exists()
@@ -105,7 +106,20 @@ func _show_map() -> void:
 	box.add_child(_connector("│"))
 	box.add_child(_map_node_button("campfire_1", "FOGATA"))
 	box.add_child(_connector("│"))
-	box.add_child(_map_node_button("gate_1", "SENDERO HACIA EL JEFE"))
+	box.add_child(_map_node_button("gate_1", "UMBRAL DEL BOSQUE"))
+	box.add_child(_connector("│"))
+	var branch2 := HBoxContainer.new()
+	branch2.alignment = BoxContainer.ALIGNMENT_CENTER
+	branch2.add_theme_constant_override("separation", 90)
+	branch2.add_child(_map_node_button("choice_2_left", "RASTRO DE BESTIA"))
+	branch2.add_child(_map_node_button("choice_2_right", "RASTRO DE SANGRE"))
+	box.add_child(branch2)
+	box.add_child(_connector("╲                         ╱"))
+	box.add_child(_map_node_button("battle_2", "COMBATE PROFUNDO"))
+	box.add_child(_connector("│"))
+	box.add_child(_map_node_button("campfire_2", "FOGATA II"))
+	box.add_child(_connector("│"))
+	box.add_child(_map_node_button("boss_1", "GUARDIÁN DEL BOSQUE"))
 	var current: Dictionary = state.get_node(state.current_node)
 	box.add_child(_label("ESTÁS EN: %s" % str(current.get("title", state.current_node)), 15, AMBER, HORIZONTAL_ALIGNMENT_CENTER))
 
@@ -139,8 +153,12 @@ func _enter_node(node_id: String) -> void:
 			_show_choice(node_id)
 		"battle":
 			_start_battle(node_id)
+		"boss":
+			_start_battle(node_id)
 		"campfire":
 			_show_campfire(node_id)
+		"gate":
+			_show_region_gate(node_id)
 		"end":
 			_show_region_gate(node_id)
 		_:
@@ -192,7 +210,7 @@ func _start_battle(node_id: String) -> void:
 	selected_hand_index = -1
 	selected_sacrifices.clear()
 	battle_state = BattleStateScript.new()
-	battle_state.setup(state.deck_ids)
+	battle_state.setup(state.deck_ids, state.card_buffs, node_id)
 	_render_battle()
 
 func _render_battle() -> void:
@@ -248,7 +266,7 @@ func _render_battle() -> void:
 	hand_scroll.add_child(hand_row)
 	for index in range(battle_state.hand.size()):
 		var card := BattleCardScript.new()
-		card.card = CardCatalogScript.find_by_id(battle_state.hand[index])
+		card.card = battle_state.card_for_id(battle_state.hand[index])
 		card.chosen = index == selected_hand_index
 		card.custom_minimum_size = Vector2(126, 172)
 		card.disabled = battle_state.needs_draw()
@@ -276,7 +294,7 @@ func _place(control: Control, rect: Rect2) -> void:
 func _table_slot(unit, player_side: bool, lane: int) -> Button:
 	if unit != null:
 		var card := BattleCardScript.new()
-		card.card = CardCatalogScript.find_by_id(str(unit.get("id", "")))
+		card.card = battle_state.card_for_id(str(unit.get("id", "")))
 		card.current_hp = int(unit.get("hp", 1))
 		card.marked = player_side and selected_sacrifices.has(lane)
 		card.disabled = not player_side or battle_state.needs_draw()
@@ -397,19 +415,86 @@ func _show_campfire(node_id: String) -> void:
 	_clear_screen()
 	var box := _screen_box()
 	box.add_child(_label("UNA FOGATA ENTRE LOS ÁRBOLES", 34, AMBER, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_label("Figuras hambrientas observan tus cartas desde el otro lado del fuego. En esta primera transición la fogata abre el sendero; la mejora con riesgo se implementará en la siguiente fase.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	var continue_button := _wide_button("ACERCARTE AL FUEGO")
-	continue_button.pressed.connect(_resolve_simple_node.bind(node_id))
-	box.add_child(continue_button)
+	box.add_child(_label("Elige una carta de tu mazo y colócala junto al fuego.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+
+	var deck_scroll := ScrollContainer.new()
+	deck_scroll.custom_minimum_size = Vector2(0, 260)
+	deck_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	deck_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(deck_scroll)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	deck_scroll.add_child(row)
+	for card_id in state.deck_ids:
+		var card := BattleCardScript.new()
+		card.card = _campaign_card(card_id)
+		card.chosen = card_id == selected_campfire_card_id
+		card.custom_minimum_size = Vector2(160, 220)
+		card.pressed.connect(_select_campfire_card.bind(node_id, card_id))
+		row.add_child(card)
+
+	if selected_campfire_card_id.is_empty():
+		box.add_child(_label("TOCA UNA CARTA PARA PONERLA EN LA FOGATA", 14, AMBER, HORIZONTAL_ALIGNMENT_CENTER))
+	else:
+		var selected := _campaign_card(selected_campfire_card_id)
+		var buff: Dictionary = state.get_card_buff(selected_campfire_card_id)
+		box.add_child(_label("%s  ·  ATQ %d  ·  VIDA %d" % [
+			str(selected.get("name", selected_campfire_card_id)),
+			int(selected.get("atk", 0)),
+			int(selected.get("hp", 0))
+		], 15, INK, HORIZONTAL_ALIGNMENT_CENTER))
+		box.add_child(_label("Mejoras acumuladas: +%d ATQ  ·  +%d VIDA" % [
+			int(buff.get("atk", 0)), int(buff.get("hp", 0))
+		], 12, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+		var improve_row := HBoxContainer.new()
+		improve_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		improve_row.add_theme_constant_override("separation", 18)
+		box.add_child(improve_row)
+		var atk_button := _small_button("AVIVAR EL FUEGO  ·  +1 ATQ", 300)
+		atk_button.pressed.connect(_apply_campfire_upgrade.bind(node_id, "atk"))
+		improve_row.add_child(atk_button)
+		var hp_button := _small_button("FORTALECER  ·  +2 VIDA", 300)
+		hp_button.pressed.connect(_apply_campfire_upgrade.bind(node_id, "hp"))
+		improve_row.add_child(hp_button)
+
 	var back := _wide_button("ALEJARTE")
-	back.pressed.connect(_show_map)
+	back.pressed.connect(_leave_campfire)
 	box.add_child(back)
+
+func _campaign_card(card_id: String) -> Dictionary:
+	var card := CardCatalogScript.find_by_id(card_id)
+	if state == null or card.is_empty():
+		return card
+	var buff: Dictionary = state.get_card_buff(card_id)
+	card["atk"] = int(card.get("atk", 0)) + int(buff.get("atk", 0))
+	card["hp"] = int(card.get("hp", 1)) + int(buff.get("hp", 0))
+	return card
+
+func _select_campfire_card(node_id: String, card_id: String) -> void:
+	selected_campfire_card_id = card_id
+	_show_campfire(node_id)
+
+func _apply_campfire_upgrade(node_id: String, stat: String) -> void:
+	if state == null or selected_campfire_card_id.is_empty():
+		return
+	if not state.can_enter(node_id):
+		return
+	if not state.upgrade_card(selected_campfire_card_id, stat):
+		return
+	state.resolve_node(node_id)
+	CampaignSaveScript.save_state(state)
+	selected_campfire_card_id = ""
+	_show_map()
+
+func _leave_campfire() -> void:
+	selected_campfire_card_id = ""
+	_show_map()
 
 func _show_region_gate(node_id: String) -> void:
 	_clear_screen()
 	var box := _screen_box()
 	box.add_child(_label("ALGO TE ESPERA MÁS ADELANTE", 34, INK, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_label("La primera ruta Acto 1 ya conecta elección, sacrificios, combate, recompensa y fogata. El siguiente hito es reemplazar este umbral por el primer jefe con fases reales.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("El sendero continúa. Cruza el umbral para revelar el siguiente tramo.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	var finish := _wide_button("MARCAR EL SENDERO")
 	finish.pressed.connect(_resolve_simple_node.bind(node_id))
 	box.add_child(finish)
