@@ -48,7 +48,6 @@ jobs:
           for card in manifest:
               assert Path("assets/card_full", card["file"]).is_file(), card
           print("Canonical Act I visual set:", len(manifest), "cards, all straight and normalized")
-          print("NEXO_MANIFEST=" + json.dumps(manifest, ensure_ascii=False, separators=(",", ":")))
           PY
 
       - name: Validate project structure
