@@ -180,7 +180,7 @@ func play_card(hand_index: int, lane_index: int, sacrifice_lanes: Array[int]) ->
 		last_message = "La casilla sigue ocupada tras el sacrificio."
 		return false
 	hand.remove_at(hand_index)
-	player_lanes[lane_index] = _new_unit(card_id)
+	player_lanes[lane_index] = _new_unit(card_id, true)
 	_on_card_played(true, lane_index)
 	_trigger_guardian(false, lane_index)
 	last_message = "%s entra en la casilla %d." % [str(card.get("name", card_id)), lane_index + 1]
@@ -206,10 +206,10 @@ func end_turn() -> String:
 	last_message = "Turno %d · elige entre tu mazo y la reserva de Ardillas." % turn if draw_pending else "No quedan cartas. Juega tu mano o toca la campana."
 	return result
 
-func _new_unit(card_id: String) -> Dictionary:
+func _new_unit(card_id: String, player_owned: bool = false) -> Dictionary:
 	var card := CardCatalogScript.find_by_id(card_id)
 	var buff: Dictionary = {}
-	if run_buffs.has(card_id) and run_buffs[card_id] is Dictionary:
+	if player_owned and run_buffs.has(card_id) and run_buffs[card_id] is Dictionary:
 		buff = run_buffs[card_id]
 	var persistent_atk := int(buff.get("atk", 0))
 	var persistent_hp := int(buff.get("hp", 0))
@@ -305,7 +305,7 @@ func _spawn_adjacent(player_side: bool, lane: int, card_id: String) -> void:
 	var lanes = player_lanes if player_side else enemy_lanes
 	for target in [lane - 1, lane + 1]:
 		if target >= 0 and target < lanes.size() and lanes[target] == null:
-			lanes[target] = _new_unit(card_id)
+			lanes[target] = _new_unit(card_id, player_side)
 
 func _resolve_side_attacks(player_side: bool) -> void:
 	var lanes = player_lanes if player_side else enemy_lanes
@@ -460,7 +460,7 @@ func _loose_tail(defender_player: bool, lane: int) -> bool:
 			var tail_id := str(card.get("tail_spawn", ""))
 			if tail_id.is_empty():
 				tail_id = "cola_retorcida"
-			lanes[lane] = _new_unit(tail_id)
+			lanes[lane] = _new_unit(tail_id, defender_player)
 			return true
 	return false
 
@@ -480,16 +480,16 @@ func _kill_unit(player_side: bool, lane: int, combat_death: bool, opposing_lane:
 			hand.append(id)
 		var death_spawn := str(card.get("death_spawn", ""))
 		if not death_spawn.is_empty():
-			lanes[lane] = _new_unit(death_spawn)
+			lanes[lane] = _new_unit(death_spawn, true)
 		if combat_death:
 			var corpse_index := hand.find("gusanos_cadavericos")
 			if corpse_index >= 0 and lanes[lane] == null:
 				hand.remove_at(corpse_index)
-				lanes[lane] = _new_unit("gusanos_cadavericos")
+				lanes[lane] = _new_unit("gusanos_cadavericos", true)
 	else:
 		var death_spawn_enemy := str(card.get("death_spawn", ""))
 		if not death_spawn_enemy.is_empty():
-			lanes[lane] = _new_unit(death_spawn_enemy)
+			lanes[lane] = _new_unit(death_spawn_enemy, false)
 
 func _daus_retaliate(defender_player: bool, attacker_lane: int) -> void:
 	var lanes = player_lanes if defender_player else enemy_lanes
@@ -517,7 +517,7 @@ func _end_side_phase(player_side: bool) -> void:
 			var card := CardCatalogScript.find_by_id(str(unit.get("id", "")))
 			var target := str(card.get("evolve_to", ""))
 			if not target.is_empty() and int(unit.age) >= int(card.get("evolve_turns", 1)):
-				var evolved := _new_unit(target)
+				var evolved := _new_unit(target, player_side)
 				evolved.hp = int(CardCatalogScript.find_by_id(target).get("hp", evolved.hp))
 				lanes[i] = evolved
 	# Movement after transformations. Process in movement direction to avoid double moves.
