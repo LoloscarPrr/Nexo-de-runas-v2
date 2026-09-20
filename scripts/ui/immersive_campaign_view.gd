@@ -87,7 +87,7 @@ func _render_battle() -> void:
 		var start_x := 768.0 - total_w * 0.5
 		for index in range(hand_count):
 			var card := ImmersiveCardScript.new()
-			card.card = ImmersiveCatalogScript.find_by_id(battle_state.hand[index])
+			card.card = battle_state.card_for_id(battle_state.hand[index])
 			card.chosen = index == selected_hand_index
 			card.disabled = battle_state.needs_draw()
 			card.pressed.connect(_select_hand.bind(index))
@@ -158,29 +158,34 @@ func _show_map() -> void:
 
 	var back := _small_button("‹ MENÚ", 116)
 	back.pressed.connect(_exit_to_menu)
-	_place(back, Rect2(28, 24, 116, 44))
-	_place(_label("EL MAPA SOBRE LA MESA", 26, I_INK, HORIZONTAL_ALIGNMENT_LEFT), Rect2(175, 24, 500, 38))
-	_place(_label("MAZO %d  ·  VICTORIAS %d" % [state.deck_ids.size(), state.victories], 14, I_AMBER, HORIZONTAL_ALIGNMENT_RIGHT), Rect2(vw - 380, 28, 340, 34))
-	_place(_label("La tinta no es un menú: es el sendero que queda sobre la madera.", 13, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.25, 70, vw * 0.5, 30))
+	_place(back, Rect2(28, 18, 116, 40))
+	_place(_label("EL MAPA SOBRE LA MESA", 24, I_INK, HORIZONTAL_ALIGNMENT_LEFT), Rect2(170, 18, 470, 36))
+	_place(_label("MAZO %d  ·  VICTORIAS %d" % [state.deck_ids.size(), state.victories], 13, I_AMBER, HORIZONTAL_ALIGNMENT_RIGHT), Rect2(vw - 360, 21, 330, 32))
+	_place(_label("El sendero ya no termina tras la primera fogata.", 12, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.28, 58, vw * 0.44, 25))
 
 	var cx := vw * 0.5
-	var top := 150.0
-	var usable := maxf(430.0, vh - 245.0)
-	var y0 := top
-	var y1 := top + usable * 0.20
-	var y2 := top + usable * 0.43
-	var y3 := top + usable * 0.67
-	var y4 := top + usable * 0.90
-	var branch_offset := minf(270.0, vw * 0.18)
-	_place(_physical_map_node("start", "LA SENDA"), Rect2(cx - 115, y0 - 24, 230, 48))
-	_place(_physical_map_node("choice_left", "ELEGIR BESTIA"), Rect2(cx - branch_offset - 125, y1 - 25, 250, 50))
-	_place(_physical_map_node("choice_right", "ELEGIR COSTE"), Rect2(cx + branch_offset - 125, y1 - 25, 250, 50))
-	_place(_physical_map_node("battle_1", "COMBATE"), Rect2(cx - 125, y2 - 25, 250, 50))
-	_place(_physical_map_node("campfire_1", "FOGATA"), Rect2(cx - 125, y3 - 25, 250, 50))
-	_place(_physical_map_node("gate_1", "UMBRAL DEL JEFE"), Rect2(cx - 135, y4 - 26, 270, 52))
+	var branch_offset := minf(210.0, vw * 0.17)
+	var y0 := 102.0
+	var pitch := minf(56.0, maxf(45.0, (vh - 170.0) / 9.0))
+	var node_h := 38.0
+	var branch_w := 190.0
+	var center_w := 210.0
+
+	_place(_physical_map_node("start", "LA SENDA"), Rect2(cx - center_w * 0.5, y0, center_w, node_h))
+	_place(_physical_map_node("choice_left", "ELEGIR BESTIA"), Rect2(cx - branch_offset - branch_w * 0.5, y0 + pitch, branch_w, node_h))
+	_place(_physical_map_node("choice_right", "ELEGIR COSTE"), Rect2(cx + branch_offset - branch_w * 0.5, y0 + pitch, branch_w, node_h))
+	_place(_physical_map_node("battle_1", "COMBATE DEL BOSQUE"), Rect2(cx - center_w * 0.5, y0 + pitch * 2.0, center_w, node_h))
+	_place(_physical_map_node("campfire_1", "FOGATA I"), Rect2(cx - center_w * 0.5, y0 + pitch * 3.0, center_w, node_h))
+	_place(_physical_map_node("gate_1", "UMBRAL DEL BOSQUE"), Rect2(cx - center_w * 0.5, y0 + pitch * 4.0, center_w, node_h))
+	_place(_physical_map_node("choice_2_left", "RASTRO DE BESTIA"), Rect2(cx - branch_offset - branch_w * 0.5, y0 + pitch * 5.0, branch_w, node_h))
+	_place(_physical_map_node("choice_2_right", "RASTRO DE SANGRE"), Rect2(cx + branch_offset - branch_w * 0.5, y0 + pitch * 5.0, branch_w, node_h))
+	_place(_physical_map_node("battle_2", "COMBATE PROFUNDO"), Rect2(cx - center_w * 0.5, y0 + pitch * 6.0, center_w, node_h))
+	_place(_physical_map_node("campfire_2", "FOGATA II"), Rect2(cx - center_w * 0.5, y0 + pitch * 7.0, center_w, node_h))
+	_place(_physical_map_node("boss_1", "GUARDIÁN DEL BOSQUE"), Rect2(cx - center_w * 0.5, y0 + pitch * 8.0, center_w, node_h))
+	_place(_physical_map_node("region_complete", "SENDERO SIGUIENTE"), Rect2(cx - center_w * 0.5, y0 + pitch * 9.0, center_w, node_h))
 
 	var current: Dictionary = state.get_node(state.current_node)
-	_place(_label("TU FIGURA ESTÁ EN: %s" % str(current.get("title", state.current_node)), 13, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.33, vh - 43, vw * 0.34, 28))
+	_place(_label("TU FIGURA ESTÁ EN: %s" % str(current.get("title", state.current_node)), 12, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.27, vh - 31, vw * 0.46, 24))
 
 func _show_choice(node_id: String) -> void:
 	_clear_screen()
@@ -190,11 +195,7 @@ func _show_choice(node_id: String) -> void:
 	var vh := maxf(viewport_size.y, 720.0)
 	_place(_label("TRES CARTAS ESPERAN", 30, I_INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.25, 38, vw * 0.5, 42))
 	_place(_label("Toma una. Las otras vuelven a la oscuridad.", 14, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.25, 78, vw * 0.5, 30))
-	var ids: Array[String]
-	if node_id == "choice_left":
-		ids = ["gorrion", "puercoespin", "topo"]
-	else:
-		ids = ["zarigueya", "coyote", "vibora"]
+	var ids: Array[String] = _reward_choices("choice:%s" % node_id, 3)
 	var card_w := 190.0
 	var card_h := 260.0
 	var gap := minf(90.0, vw * 0.05)
@@ -213,15 +214,57 @@ func _show_campfire(node_id: String) -> void:
 	var viewport_size := get_viewport_rect().size
 	var vw := maxf(viewport_size.x, 1280.0)
 	var vh := maxf(viewport_size.y, 720.0)
-	_place(_label("UNA FOGATA ENTRE LOS ÁRBOLES", 30, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.22, 38, vw * 0.56, 44))
-	_place(_label("Las figuras del otro lado del fuego miran tu mazo con demasiado interés.", 14, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.24, 83, vw * 0.52, 34))
-	var approach := _small_button("ACERCARTE AL FUEGO", 300)
-	approach.pressed.connect(_resolve_simple_node.bind(node_id))
-	approach.add_theme_stylebox_override("normal", _panel_style(Color(0.075, 0.095, 0.035, 0.92), I_AMBER, 2, 3))
-	_place(approach, Rect2(vw * 0.5 - 155, vh - 132, 310, 54))
-	var leave := _small_button("ALEJARTE", 220)
-	leave.pressed.connect(_show_map)
-	_place(leave, Rect2(vw * 0.5 - 110, vh - 70, 220, 44))
+
+	_place(_label("UNA FOGATA ENTRE LOS ÁRBOLES", 29, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.20, 25, vw * 0.60, 42))
+	_place(_label("Elige una carta de tu mazo. El fuego puede fortalecerla.", 13, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.22, 65, vw * 0.56, 30))
+
+	if selected_campfire_card_id.is_empty():
+		_place(_label("TOCA UNA CARTA Y COLÓCALA JUNTO AL FUEGO", 14, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.30, 315, vw * 0.40, 30))
+	else:
+		var selected_card := ImmersiveCardScript.new()
+		selected_card.card = _campaign_card(selected_campfire_card_id)
+		selected_card.chosen = true
+		selected_card.disabled = true
+		_place(selected_card, Rect2(vw * 0.5 - 88, 135, 176, 242))
+
+		var buff: Dictionary = state.get_card_buff(selected_campfire_card_id)
+		var selected_data := _campaign_card(selected_campfire_card_id)
+		_place(_label("%s  ·  ATQ %d  ·  VIDA %d" % [
+			str(selected_data.get("name", selected_campfire_card_id)),
+			int(selected_data.get("atk", 0)),
+			int(selected_data.get("hp", 0))
+		], 13, I_INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.31, 382, vw * 0.38, 26))
+		_place(_label("MEJORAS: +%d ATQ  ·  +%d VIDA" % [int(buff.get("atk", 0)), int(buff.get("hp", 0))], 11, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.34, 408, vw * 0.32, 24))
+
+		var atk_button := _small_button("+1 ATQ", 170)
+		atk_button.pressed.connect(_apply_campfire_upgrade.bind(node_id, "atk"))
+		atk_button.add_theme_stylebox_override("normal", _panel_style(Color(0.11, 0.055, 0.025, 0.94), I_AMBER, 2, 2))
+		_place(atk_button, Rect2(vw * 0.5 - 190, 438, 170, 42))
+
+		var hp_button := _small_button("+2 VIDA", 170)
+		hp_button.pressed.connect(_apply_campfire_upgrade.bind(node_id, "hp"))
+		hp_button.add_theme_stylebox_override("normal", _panel_style(Color(0.075, 0.095, 0.035, 0.94), I_AMBER, 2, 2))
+		_place(hp_button, Rect2(vw * 0.5 + 20, 438, 170, 42))
+
+	# El mazo físico queda disponible abajo para colocar otra carta en el fuego.
+	var deck_scroll := ScrollContainer.new()
+	deck_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	deck_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_place(deck_scroll, Rect2(105, 492, vw - 210, 170))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	deck_scroll.add_child(row)
+	for card_id in state.deck_ids:
+		var card := ImmersiveCardScript.new()
+		card.card = _campaign_card(card_id)
+		card.chosen = card_id == selected_campfire_card_id
+		card.custom_minimum_size = Vector2(118, 160)
+		card.pressed.connect(_select_campfire_card.bind(node_id, card_id))
+		row.add_child(card)
+
+	var leave := _small_button("ALEJARTE", 190)
+	leave.pressed.connect(_leave_campfire)
+	_place(leave, Rect2(vw - 215, vh - 48, 190, 36))
 
 func _show_region_gate(node_id: String) -> void:
 	_clear_screen()
@@ -229,12 +272,16 @@ func _show_region_gate(node_id: String) -> void:
 	var viewport_size := get_viewport_rect().size
 	var vw := maxf(viewport_size.x, 1280.0)
 	var vh := maxf(viewport_size.y, 720.0)
-	_place(_label("ALGO TE ESPERA MÁS ADELANTE", 31, I_INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.22, 42, vw * 0.56, 44))
-	_place(_label("Desde la oscuridad llegan golpes de metal y una respiración que no es la tuya.", 14, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.24, 88, vw * 0.52, 34))
-	var enter := _small_button("ACERCARTE AL UMBRAL", 320)
-	enter.pressed.connect(_resolve_simple_node.bind(node_id))
-	enter.add_theme_stylebox_override("normal", _panel_style(Color(0.035, 0.050, 0.025, 0.94), I_AMBER, 2, 3))
-	_place(enter, Rect2(vw * 0.5 - 160, vh - 127, 320, 54))
+	var is_region_end := node_id == "region_complete"
+	var title := "EL PRIMER TRAMO TERMINA AQUÍ" if is_region_end else "ALGO TE ESPERA MÁS ADELANTE"
+	var subtitle := "Derrotaste al Guardián del Bosque. El siguiente mapa será el próximo tramo de campaña." if is_region_end else "Cruza el umbral: todavía quedan cartas, otra fogata y un Guardián por delante."
+	_place(_label(title, 31, I_INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.18, 42, vw * 0.64, 44))
+	_place(_label(subtitle, 14, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.20, 88, vw * 0.60, 42))
+	if not is_region_end:
+		var enter := _small_button("CRUZAR EL UMBRAL", 320)
+		enter.pressed.connect(_resolve_simple_node.bind(node_id))
+		enter.add_theme_stylebox_override("normal", _panel_style(Color(0.035, 0.050, 0.025, 0.94), I_AMBER, 2, 3))
+		_place(enter, Rect2(vw * 0.5 - 160, vh - 127, 320, 54))
 	var back := _small_button("VOLVER AL MAPA", 230)
 	back.pressed.connect(_show_map)
 	_place(back, Rect2(vw * 0.5 - 115, vh - 66, 230, 44))
@@ -273,7 +320,7 @@ func _add_campaign_backdrop(mode_name: String) -> void:
 func _immersive_slot(unit, player_side: bool, lane: int) -> Button:
 	if unit != null:
 		var card := ImmersiveCardScript.new()
-		card.card = ImmersiveCatalogScript.find_by_id(str(unit.get("id", "")))
+		card.card = battle_state.card_for_id(str(unit.get("id", "")))
 		card.current_hp = int(unit.get("hp", 1))
 		card.current_atk = battle_state.attack_for_lane(player_side, lane)
 		card.marked = player_side and selected_sacrifices.has(lane)
