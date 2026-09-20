@@ -207,7 +207,7 @@ func _render_battle() -> void:
 	_place(_label("%+d / 5" % battle_state.scale, 23, INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(50, 401, 180, 36))
 	_place(_label("HUESOS  %d" % battle_state.bones, 19, BONE, HORIZONTAL_ALIGNMENT_CENTER), Rect2(40, 454, 198, 35))
 	var blood_cost: int = battle_state.blood_cost_for(selected_hand_index)
-	var blood_ready := battle_state.blood_value_for_sacrifices(selected_sacrifices)
+	var blood_ready: int = battle_state.blood_value_for_sacrifices(selected_sacrifices)
 	_place(_label("SANGRE  %d / %d" % [blood_ready, blood_cost], 17, INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(36, 493, 210, 34))
 	_place(_label("EL GUARDIÁN", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(990, 241, 230, 30))
 	if battle_state.enemy_queue_index < battle_state.enemy_queue.size():
