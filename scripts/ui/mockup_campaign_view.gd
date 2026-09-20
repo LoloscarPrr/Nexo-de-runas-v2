@@ -51,7 +51,7 @@ func _show_battle_reward() -> void:
 	_place(_label("LA BALANZA CEDE", 34, M_SUCCESS, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.27, 34, vw * 0.46, 48))
 	_place(_label("Tres cartas son empujadas sobre la mesa. Toma una.", 14, M_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.25, 79, vw * 0.50, 30))
 
-	var ids := ["gorrion", "puercoespin", "coyote"]
+	var ids: Array[String] = _reward_choices("battle:%s:%d" % [active_battle_node, state.victories], 3)
 	var card_w := 190.0
 	var card_h := 260.0
 	var gap := minf(88.0, vw * 0.05)
