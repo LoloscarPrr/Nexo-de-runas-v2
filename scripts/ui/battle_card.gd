@@ -14,6 +14,8 @@ var chosen := false
 var current_hp := -1
 var _cached_art_id := ""
 var _cached_art_texture: Texture2D
+var _cached_full_id := ""
+var _cached_full_texture: Texture2D
 
 func _ready() -> void:
 	focus_mode = Control.FOCUS_NONE
@@ -45,6 +47,31 @@ func _draw() -> void:
 	var w := size.x
 	var h := size.y
 	if w < 24 or h < 36:
+		return
+
+	# The canonical 94-card set already contains the complete card face.
+	# Draw it as one straight, centered object so name, art, stats and sello
+	# remain exactly aligned with the approved sheets.
+	var full_texture := _get_full_card_texture(str(card.get("id", "")))
+	if full_texture != null:
+		draw_rect(Rect2(5, 6, w - 4, h - 4), Color(0, 0, 0, 0.72))
+		var target := Rect2(3, 3, w - 10, h - 10)
+		var source_size := full_texture.get_size()
+		var source_aspect := source_size.x / source_size.y
+		var target_aspect := target.size.x / target.size.y
+		var draw_size := target.size
+		if source_aspect > target_aspect:
+			draw_size.y = target.size.x / source_aspect
+		else:
+			draw_size.x = target.size.y * source_aspect
+		var draw_pos := target.position + (target.size - draw_size) * 0.5
+		draw_texture_rect(full_texture, Rect2(draw_pos, draw_size), false, Color.WHITE)
+		if chosen:
+			draw_rect(Rect2(0, 0, w - 4, h - 4), GLOW, false, 4)
+		if marked:
+			draw_rect(Rect2(1, 1, w - 6, h - 6), Color("842c22"), false, 5)
+			draw_line(Vector2(12, 12), Vector2(w - 16, h - 16), Color("842c22"), 5)
+			draw_line(Vector2(w - 16, 12), Vector2(12, h - 16), Color("842c22"), 5)
 		return
 
 	# Sombra y papel envejecido verde/oliva.
@@ -185,6 +212,16 @@ func _draw_art(rect: Rect2) -> void:
 		draw_line(Vector2(41, 26), Vector2(23, 17), ink, 8)
 
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _get_full_card_texture(card_id: String) -> Texture2D:
+	if _cached_full_id == card_id:
+		return _cached_full_texture
+	_cached_full_id = card_id
+	_cached_full_texture = null
+	var path := "res://assets/card_full/%s.png" % card_id
+	if ResourceLoader.exists(path):
+		_cached_full_texture = load(path) as Texture2D
+	return _cached_full_texture
 
 func _get_art_texture(card_id: String) -> Texture2D:
 	if _cached_art_id == card_id:
