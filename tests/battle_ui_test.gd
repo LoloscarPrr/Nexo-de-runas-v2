@@ -4,11 +4,11 @@ func _initialize() -> void:
 	call_deferred("run")
 
 func run() -> void:
-	if not ResourceLoader.exists("res://assets/card_art/lobo.png"):
-		_fail("Missing bundled card art: lobo.png")
+	if not ResourceLoader.exists("res://assets/card_full/lobo.png"):
+		_fail("Missing canonical full card: lobo.png")
 		return
-	if not ResourceLoader.exists("res://assets/card_art/ardilla.png"):
-		_fail("Missing bundled card art: ardilla.png")
+	if not ResourceLoader.exists("res://assets/card_full/ardilla.png"):
+		_fail("Missing canonical full card: ardilla.png")
 		return
 
 	root.size = Vector2i(1280, 720)
@@ -41,7 +41,7 @@ func run() -> void:
 	view._select_hand(0)
 	view._on_player_lane_pressed(0)
 	await process_frame
-	print("Mockup battle UI instantiated; real card art loaded; controls fit 1280x720")
+	print("Mockup battle UI instantiated; 94-card visual set loaded; controls fit 1280x720")
 	quit(0)
 
 func _fail(message: String) -> void:
