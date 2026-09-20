@@ -184,15 +184,16 @@ func end_turn() -> String:
 
 func _new_unit(card_id: String) -> Dictionary:
 	var card := CardCatalogScript.find_by_id(card_id)
+	var ouro_bonus := ouroboros_bonus if card_id == "uroboros" else 0
 	var unit := {
 		"id": card_id,
-		"hp": int(card.get("hp", 1)),
+		"hp": int(card.get("hp", 1)) + ouro_bonus,
 		"age": 0,
 		"move_dir": 1,
 		"sacrifice_count": 0,
 		"tail_used": false,
 		"extra_sigils": [],
-		"attack_bonus": 0
+		"attack_bonus": ouro_bonus
 	}
 	if Array(card.get("sigils", [])).has("AMORPHOUS"):
 		var pick := AMORPHOUS_POOL[(turn + hand.size() + card_id.length()) % AMORPHOUS_POOL.size()]
@@ -322,11 +323,7 @@ func _resolve_strike(attacker_player: bool, attacker_lane: int, target_lane: int
 		return
 	var defender_card := CardCatalogScript.find_by_id(str(defender.get("id", "")))
 	if _has_sigil(defender, "BEES_WITHIN") and not attacker_player:
-		pass
-	elif _has_sigil(defender, "BEES_WITHIN"):
-		# enemy hive generating enemy bees is not represented by a hand yet
-		pass
-	if _has_sigil(defender, "BEES_WITHIN") and not (not attacker_player):
+		# El defensor pertenece al jugador cuando ataca el oponente.
 		hand.append("abeja")
 	if _has_sigil(attacker, "TOUCH_OF_DEATH") and damage > 0:
 		defender.hp = 0
@@ -382,6 +379,12 @@ func _unit_attack(unit, lane: int, player_side: bool) -> int:
 	if opposing != null and _has_sigil(opposing, "STINKY"):
 		power -= 1
 	return maxi(0, power)
+
+func attack_for_lane(player_side: bool, lane: int) -> int:
+	var lanes = player_lanes if player_side else enemy_lanes
+	if lane < 0 or lane >= lanes.size() or lanes[lane] == null:
+		return 0
+	return _unit_attack(lanes[lane], lane, player_side)
 
 func _count_ants(player_side: bool) -> int:
 	var lanes = player_lanes if player_side else enemy_lanes
