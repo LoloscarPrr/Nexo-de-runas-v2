@@ -62,8 +62,15 @@ func _draw() -> void:
 	var cost := int(card.get("cost_value", 0))
 	draw_string(font, Vector2(12, 7 + head_h * 0.72), str(cost), HORIZONTAL_ALIGNMENT_CENTER, head_h - 15, int(clampf(head_h * 0.65, 16, 24)), INK)
 	var title_x := head_h + 7.0
+	var title_text := str(card.get("name", "CARTA"))
 	var title_size := int(clampf(h * 0.058, 10, 15))
-	draw_string(font, Vector2(title_x, 7 + head_h * 0.69), str(card.get("name", "CARTA")), HORIZONTAL_ALIGNMENT_LEFT, w - title_x - 15, title_size, INK)
+	if title_text.length() > 26:
+		title_size = maxi(7, title_size - 5)
+	elif title_text.length() > 20:
+		title_size = maxi(8, title_size - 4)
+	elif title_text.length() > 15:
+		title_size = maxi(9, title_size - 3)
+	draw_string(font, Vector2(title_x, 7 + head_h * 0.69), title_text, HORIZONTAL_ALIGNMENT_LEFT, w - title_x - 15, title_size, INK)
 
 	# Ventana de arte.
 	var art_top := head_h + 9.0
@@ -102,17 +109,22 @@ func _draw_art(rect: Rect2) -> void:
 	var texture := _get_art_texture(id)
 	if texture != null:
 		var source_size := texture.get_size()
-		# Recorta la ilustración central de la carta fuente; el marco, coste y estadísticas
-		# siguen siendo los de Nexo de Runas.
-		var src := Rect2(
-			source_size.x * 0.04,
-			source_size.y * 0.225,
-			source_size.x * 0.92,
-			source_size.y * 0.455
-		)
-		draw_texture_rect_region(texture, rect, src, Color(0.72, 0.82, 0.40, 1.0), false, true)
-		# Integra el arte con la paleta verde/oliva del mockup.
-		draw_rect(rect, Color(0.04, 0.065, 0.025, 0.18))
+		# Los assets V3 ya son ilustraciones recortadas de Nexo, no cartas completas.
+		# Solo hacemos un crop central para llenar el hueco sin deformarlas.
+		var src := Rect2(Vector2.ZERO, source_size)
+		var target_aspect := rect.size.x / rect.size.y
+		var source_aspect := source_size.x / source_size.y
+		if source_aspect > target_aspect:
+			var new_width := source_size.y * target_aspect
+			src.position.x = (source_size.x - new_width) * 0.5
+			src.size.x = new_width
+		elif source_aspect < target_aspect:
+			var new_height := source_size.x / target_aspect
+			src.position.y = (source_size.y - new_height) * 0.5
+			src.size.y = new_height
+		draw_texture_rect_region(texture, rect, src, Color.WHITE, false, true)
+		# Un filtro muy leve integra el arte sin borrar el detalle original de Nexo.
+		draw_rect(rect, Color(0.05, 0.075, 0.025, 0.08))
 		for y in range(int(rect.position.y) + 2, int(rect.end.y), 4):
 			draw_line(Vector2(rect.position.x, float(y)), Vector2(rect.end.x, float(y)), Color(0, 0, 0, 0.08), 1)
 		draw_rect(rect, EDGE, false, 2)
