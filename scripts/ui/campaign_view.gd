@@ -151,11 +151,7 @@ func _show_choice(node_id: String) -> void:
 	var box := _screen_box()
 	box.add_child(_label("TRES CARTAS ESPERAN", 32, INK, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(_label("Solo una puede acompañarte. Las otras volverán a la oscuridad.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	var ids: Array[String]
-	if node_id == "choice_left":
-		ids = ["gorrion", "puercoespin", "topo"]
-	else:
-		ids = ["zarigueya", "coyote", "vibora"]
+	var ids: Array[String] = _reward_choices("choice:%s" % node_id, 3)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 18)
@@ -165,6 +161,21 @@ func _show_choice(node_id: String) -> void:
 	var back := _small_button("VOLVER AL MAPA", 260)
 	back.pressed.connect(_show_map)
 	box.add_child(back)
+
+func _reward_choices(key: String, count: int = 3) -> Array[String]:
+	var pool: Array[String] = CardCatalogScript.campaign_reward_pool()
+	var choices: Array[String] = []
+	if pool.is_empty():
+		return choices
+	var rng := RandomNumberGenerator.new()
+	var seed_base := int(state.run_seed) if state != null else 1
+	rng.seed = seed_base ^ int(key.hash())
+	var available: Array[String] = pool.duplicate()
+	while choices.size() < count and not available.is_empty():
+		var pick := rng.randi_range(0, available.size() - 1)
+		choices.append(available[pick])
+		available.remove_at(pick)
+	return choices
 
 func _claim_choice(node_id: String, card_id: String) -> void:
 	if state == null or not state.can_enter(node_id):
@@ -196,7 +207,8 @@ func _render_battle() -> void:
 	_place(_label("%+d / 5" % battle_state.scale, 23, INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(50, 401, 180, 36))
 	_place(_label("HUESOS  %d" % battle_state.bones, 19, BONE, HORIZONTAL_ALIGNMENT_CENTER), Rect2(40, 454, 198, 35))
 	var blood_cost: int = battle_state.blood_cost_for(selected_hand_index)
-	_place(_label("SANGRE  %d / %d" % [selected_sacrifices.size(), blood_cost], 17, INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(36, 493, 210, 34))
+	var blood_ready := battle_state.blood_value_for_sacrifices(selected_sacrifices)
+	_place(_label("SANGRE  %d / %d" % [blood_ready, blood_cost], 17, INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(36, 493, 210, 34))
 	_place(_label("EL GUARDIÁN", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(990, 241, 230, 30))
 	if battle_state.enemy_queue_index < battle_state.enemy_queue.size():
 		var next_card := CardCatalogScript.find_by_id(battle_state.enemy_queue[battle_state.enemy_queue_index])
@@ -298,7 +310,8 @@ func _on_player_lane_pressed(lane_index: int) -> void:
 		_render_battle()
 		return
 	var blood_cost: int = battle_state.blood_cost_for(selected_hand_index)
-	if blood_cost > 0 and selected_sacrifices.size() < blood_cost:
+	var blood_ready: int = battle_state.blood_value_for_sacrifices(selected_sacrifices)
+	if blood_cost > 0 and blood_ready < blood_cost:
 		if battle_state.player_lanes[lane_index] == null:
 			battle_state.last_message = "Necesitas marcar criaturas vivas para el sacrificio."
 			_render_battle()
@@ -307,10 +320,11 @@ func _on_player_lane_pressed(lane_index: int) -> void:
 			selected_sacrifices.erase(lane_index)
 		else:
 			selected_sacrifices.append(lane_index)
-		if selected_sacrifices.size() == blood_cost:
+		blood_ready = battle_state.blood_value_for_sacrifices(selected_sacrifices)
+		if blood_ready >= blood_cost:
 			battle_state.last_message = "La Sangre está lista. Toca la casilla donde colocarás la carta."
 		else:
-			battle_state.last_message = "Marca %d sacrificio(s) más." % (blood_cost - selected_sacrifices.size())
+			battle_state.last_message = "Faltan %d punto(s) de Sangre." % (blood_cost - blood_ready)
 		_render_battle()
 		return
 	if battle_state.play_card(selected_hand_index, lane_index, selected_sacrifices):
@@ -353,7 +367,7 @@ func _show_battle_reward() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 18)
 	box.add_child(row)
-	for card_id in ["gorrion", "puercoespin", "coyote"]:
+	for card_id in _reward_choices("battle:%s:%d" % [active_battle_node, state.victories], 3):
 		row.add_child(_choice_card_button(card_id, _claim_battle_reward.bind(card_id)))
 
 func _claim_battle_reward(card_id: String) -> void:
