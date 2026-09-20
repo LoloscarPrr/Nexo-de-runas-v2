@@ -1,15 +1,24 @@
 class_name CampaignState
 extends RefCounted
 
+# Se conserva la versión 2 para que las partidas de las builds anteriores
+# carguen sin reiniciar la campaña. Los campos nuevos son opcionales.
 const SAVE_VERSION := 2
 const STARTER_DECK := ["armino", "lobo", "rana_toro"]
+
 const MAP_NODES := {
 	"start": {"title":"LA SENDA", "type":"start", "next":["choice_left", "choice_right"]},
 	"choice_left": {"title":"ELECCIÓN DE BESTIA", "type":"choice", "next":["battle_1"]},
 	"choice_right": {"title":"ELECCIÓN DE COSTE", "type":"choice", "next":["battle_1"]},
 	"battle_1": {"title":"COMBATE DEL BOSQUE", "type":"battle", "next":["campfire_1"]},
-	"campfire_1": {"title":"FOGATA", "type":"campfire", "next":["gate_1"]},
-	"gate_1": {"title":"SENDERO HACIA EL JEFE", "type":"end", "next":[]}
+	"campfire_1": {"title":"FOGATA I", "type":"campfire", "next":["gate_1"]},
+	"gate_1": {"title":"UMBRAL DEL BOSQUE", "type":"gate", "next":["choice_2_left", "choice_2_right"]},
+	"choice_2_left": {"title":"RASTRO DE BESTIA", "type":"choice", "next":["battle_2"]},
+	"choice_2_right": {"title":"RASTRO DE SANGRE", "type":"choice", "next":["battle_2"]},
+	"battle_2": {"title":"COMBATE PROFUNDO", "type":"battle", "next":["campfire_2"]},
+	"campfire_2": {"title":"FOGATA II", "type":"campfire", "next":["boss_1"]},
+	"boss_1": {"title":"GUARDIÁN DEL BOSQUE", "type":"boss", "next":["region_complete"]},
+	"region_complete": {"title":"SENDERO SIGUIENTE", "type":"end", "next":[]}
 }
 
 var version := SAVE_VERSION
@@ -18,6 +27,7 @@ var current_node := "start"
 var resolved_nodes: Array[String] = ["start"]
 var claimed_rewards: Array[String] = []
 var deck_ids: Array[String] = []
+var card_buffs: Dictionary = {}
 var victories := 0
 var defeats := 0
 var started_at_unix := 0
@@ -32,6 +42,7 @@ func reset() -> void:
 	resolved_nodes = ["start"]
 	claimed_rewards = []
 	deck_ids = []
+	card_buffs = {}
 	for card_id in STARTER_DECK:
 		deck_ids.append(card_id)
 	victories = 0
@@ -75,6 +86,31 @@ func claim_reward(reward_key: String, card_id: String) -> bool:
 	add_card(card_id)
 	return true
 
+func get_card_buff(card_id: String) -> Dictionary:
+	if not card_buffs.has(card_id):
+		return {"atk":0, "hp":0}
+	var buff = card_buffs[card_id]
+	if buff is Dictionary:
+		return {
+			"atk": int(buff.get("atk", 0)),
+			"hp": int(buff.get("hp", 0))
+		}
+	return {"atk":0, "hp":0}
+
+func upgrade_card(card_id: String, stat: String) -> bool:
+	if not deck_ids.has(card_id):
+		return false
+	var buff := get_card_buff(card_id)
+	match stat:
+		"atk":
+			buff["atk"] = int(buff.get("atk", 0)) + 1
+		"hp":
+			buff["hp"] = int(buff.get("hp", 0)) + 2
+		_:
+			return false
+	card_buffs[card_id] = buff
+	return true
+
 func to_dict() -> Dictionary:
 	return {
 		"version": version,
@@ -83,6 +119,7 @@ func to_dict() -> Dictionary:
 		"resolved_nodes": resolved_nodes,
 		"claimed_rewards": claimed_rewards,
 		"deck_ids": deck_ids,
+		"card_buffs": card_buffs,
 		"victories": victories,
 		"defeats": defeats,
 		"started_at_unix": started_at_unix
@@ -100,6 +137,16 @@ func load_from_dict(data: Dictionary) -> bool:
 	resolved_nodes = _string_array(data.get("resolved_nodes", ["start"]))
 	claimed_rewards = _string_array(data.get("claimed_rewards", []))
 	deck_ids = _string_array(data.get("deck_ids", STARTER_DECK))
+	card_buffs = {}
+	var loaded_buffs = data.get("card_buffs", {})
+	if loaded_buffs is Dictionary:
+		for card_id in loaded_buffs:
+			var raw = loaded_buffs[card_id]
+			if raw is Dictionary:
+				card_buffs[str(card_id)] = {
+					"atk": int(raw.get("atk", 0)),
+					"hp": int(raw.get("hp", 0))
+				}
 	victories = int(data.get("victories", 0))
 	defeats = int(data.get("defeats", 0))
 	started_at_unix = int(data.get("started_at_unix", 0))
