@@ -32,6 +32,7 @@ var selected_hand_index := -1
 var selected_sacrifices: Array[int] = []
 var selected_campfire_card_id := ""
 var selected_event_card_id := ""
+var inspected_card_id := ""
 
 func has_save() -> bool:
 	return CampaignSaveScript.exists()
@@ -326,11 +327,13 @@ func _select_hand(hand_index: int) -> void:
 	if selected_hand_index == hand_index:
 		selected_hand_index = -1
 		selected_sacrifices.clear()
+		inspected_card_id = ""
 		battle_state.last_message = "Cancelaste la carta seleccionada."
 	else:
 		selected_hand_index = hand_index
 		selected_sacrifices.clear()
-		var card := CardCatalogScript.find_by_id(battle_state.hand[hand_index])
+		inspected_card_id = battle_state.hand[hand_index]
+		var card := battle_state.card_for_id(battle_state.hand[hand_index])
 		var blood_cost: int = battle_state.blood_cost_for(hand_index)
 		if blood_cost > 0:
 			battle_state.last_message = "%s exige %d sacrificio(s). Toca tus criaturas." % [str(card.get("name", "La carta")), blood_cost]
@@ -340,7 +343,12 @@ func _select_hand(hand_index: int) -> void:
 
 func _on_player_lane_pressed(lane_index: int) -> void:
 	if selected_hand_index < 0:
-		battle_state.last_message = "Primero elige una carta de tu mano."
+		var unit = battle_state.player_lanes[lane_index]
+		if unit != null:
+			inspected_card_id = str(unit.get("id", ""))
+			battle_state.last_message = "Inspeccionando %s." % str(battle_state.card_for_id(inspected_card_id).get("name", "la carta"))
+		else:
+			battle_state.last_message = "Primero elige una carta de tu mano."
 		_render_battle()
 		return
 	var blood_cost: int = battle_state.blood_cost_for(selected_hand_index)
@@ -364,6 +372,18 @@ func _on_player_lane_pressed(lane_index: int) -> void:
 	if battle_state.play_card(selected_hand_index, lane_index, selected_sacrifices):
 		selected_hand_index = -1
 		selected_sacrifices.clear()
+	_render_battle()
+
+func _inspect_enemy_lane(lane_index: int) -> void:
+	if battle_state == null or lane_index < 0 or lane_index >= battle_state.enemy_lanes.size():
+		return
+	var unit = battle_state.enemy_lanes[lane_index]
+	if unit == null:
+		return
+	inspected_card_id = str(unit.get("id", ""))
+	selected_hand_index = -1
+	selected_sacrifices.clear()
+	battle_state.last_message = "Inspeccionando %s." % str(battle_state.card_for_id(inspected_card_id).get("name", "la carta"))
 	_render_battle()
 
 func _cancel_sacrifices() -> void:
