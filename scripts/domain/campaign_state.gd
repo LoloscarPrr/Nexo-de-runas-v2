@@ -21,7 +21,13 @@ const MAP_NODES := {
 	"battle_2": {"title":"COMBATE PROFUNDO", "type":"battle", "next":["campfire_2"]},
 	"campfire_2": {"title":"FOGATA II", "type":"campfire", "next":["boss_1"]},
 	"boss_1": {"title":"GUARDIÁN DEL BOSQUE", "type":"boss", "next":["region_complete"]},
-	"region_complete": {"title":"SENDERO SIGUIENTE", "type":"end", "next":[]}
+	"region_complete": {"title":"SEGUNDO TRAMO", "type":"gate", "next":["sigil_stones", "mycologists"]},
+	"sigil_stones": {"title":"PIEDRAS MISTERIOSAS", "type":"sigil_stones", "next":["trial_event"]},
+	"mycologists": {"title":"MICÓLOGOS", "type":"mycologists", "next":["trial_event"]},
+	"trial_event": {"title":"PRUEBA DEL MAZO", "type":"trial", "next":["battle_3"]},
+	"battle_3": {"title":"COMBATE DE LA ARBOLEDA", "type":"battle", "next":["boss_2"]},
+	"boss_2": {"title":"EL TRAMPERO", "type":"boss", "next":["region_2_complete"]},
+	"region_2_complete": {"title":"TERCER TRAMO", "type":"end", "next":[]}
 }
 
 const PROSPECTOR_INSECTS := [
@@ -36,6 +42,7 @@ var resolved_nodes: Array[String] = ["start"]
 var claimed_rewards: Array[String] = []
 var deck_ids: Array[String] = []
 var card_buffs: Dictionary = {}
+var card_sigils: Dictionary = {}
 var event_results: Dictionary = {}
 var bone_boon := 0
 var ouroboros_bonus := 0
@@ -54,6 +61,7 @@ func reset() -> void:
 	claimed_rewards = []
 	deck_ids = []
 	card_buffs = {}
+	card_sigils = {}
 	event_results = {}
 	bone_boon = 0
 	ouroboros_bonus = 0
@@ -132,6 +140,139 @@ func upgrade_card(card_id: String, stat: String) -> bool:
 	card_buffs[card_id] = buff
 	return true
 
+func get_card_sigils(card_id: String) -> Array[String]:
+	var result: Array[String] = []
+	var card := CardCatalogScript.find_by_id(card_id)
+	for sigil in Array(card.get("sigils", [])):
+		var code := str(sigil)
+		if not result.has(code):
+			result.append(code)
+	if card_sigils.has(card_id):
+		for sigil in Array(card_sigils[card_id]):
+			var code := str(sigil)
+			if not result.has(code):
+				result.append(code)
+	return result
+
+func transfer_sigils(node_id: String, donor_id: String, receiver_id: String) -> bool:
+	if event_results.has(node_id) or not can_enter(node_id):
+		return false
+	if donor_id == receiver_id or deck_ids.count(donor_id) < 1 or deck_ids.count(receiver_id) < 1:
+		return false
+	var donor_sigils := get_card_sigils(donor_id)
+	if donor_sigils.is_empty():
+		return false
+	if not remove_one_card(donor_id):
+		return false
+	var receiver_extra: Array[String] = []
+	if card_sigils.has(receiver_id):
+		for sigil in Array(card_sigils[receiver_id]):
+			receiver_extra.append(str(sigil))
+	for sigil in donor_sigils:
+		if not receiver_extra.has(sigil):
+			receiver_extra.append(sigil)
+	card_sigils[receiver_id] = receiver_extra
+	event_results[node_id] = {"donor":donor_id, "receiver":receiver_id, "sigils":receiver_extra.duplicate()}
+	return resolve_node(node_id)
+
+func mycologist_candidates() -> Array[String]:
+	var result: Array[String] = []
+	for card_id in deck_ids:
+		if deck_ids.count(card_id) >= 2 and not result.has(card_id):
+			result.append(card_id)
+	return result
+
+func fuse_duplicate(node_id: String, card_id: String) -> bool:
+	if event_results.has(node_id) or not can_enter(node_id) or deck_ids.count(card_id) < 2:
+		return false
+	var card := CardCatalogScript.find_by_id(card_id)
+	if card.is_empty():
+		return false
+	if not remove_one_card(card_id) or not remove_one_card(card_id):
+		return false
+	add_card(card_id)
+	var buff := get_card_buff(card_id)
+	buff["atk"] = int(buff.get("atk", 0)) + int(card.get("atk", 0))
+	buff["hp"] = int(buff.get("hp", 0)) + int(card.get("hp", 1))
+	card_buffs[card_id] = buff
+	event_results[node_id] = {"card":card_id, "atk":buff["atk"], "hp":buff["hp"]}
+	return resolve_node(node_id)
+
+func trial_preview(node_id: String, trial_type: String) -> Dictionary:
+	var cards: Array[String] = []
+	if deck_ids.is_empty():
+		return {"cards":cards, "total":0, "threshold":0, "passed":false, "type":trial_type}
+	var available: Array[String] = deck_ids.duplicate()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(run_seed) ^ int(node_id.hash()) ^ int(trial_type.hash())
+	while cards.size() < mini(3, available.size()):
+		var index: int = rng.randi_range(0, available.size() - 1)
+		cards.append(available[index])
+		available.remove_at(index)
+	var total := 0
+	var threshold := 0
+	for card_id in cards:
+		var card := CardCatalogScript.find_by_id(card_id)
+		match trial_type:
+			"power":
+				total += int(card.get("atk", 0)) + int(get_card_buff(card_id).get("atk", 0))
+				threshold = 4
+			"health":
+				total += int(card.get("hp", 1)) + int(get_card_buff(card_id).get("hp", 0))
+				threshold = 6
+			"blood":
+				if str(card.get("resource", "none")) == "blood":
+					total += int(card.get("cost_value", 0))
+				threshold = 4
+			"wisdom":
+				total += get_card_sigils(card_id).size()
+				threshold = 3
+	return {"cards":cards, "total":total, "threshold":threshold, "passed":total >= threshold, "type":trial_type}
+
+func trial_reward_choices(node_id: String) -> Array[String]:
+	var pool: Array[String] = []
+	for card in CardCatalogScript.all_cards():
+		if bool(card.get("rare", false)) and bool(card.get("playable", false)):
+			pool.append(str(card.get("id", "")))
+	if pool.size() < 3:
+		pool = CardCatalogScript.campaign_reward_pool()
+	var result: Array[String] = []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(run_seed) ^ int(node_id.hash()) ^ 0x51A1
+	var available: Array[String] = pool.duplicate()
+	while result.size() < mini(3, available.size()):
+		var index: int = rng.randi_range(0, available.size() - 1)
+		result.append(available[index])
+		available.remove_at(index)
+	return result
+
+func begin_trial(node_id: String, trial_type: String) -> Dictionary:
+	if event_results.has(node_id) or not can_enter(node_id):
+		return {}
+	var result := trial_preview(node_id, trial_type)
+	result["claimed"] = false
+	if bool(result.get("passed", false)):
+		result["rewards"] = trial_reward_choices(node_id)
+		event_results[node_id] = result
+	else:
+		event_results[node_id] = result
+		resolve_node(node_id)
+	return result
+
+func claim_trial_reward(node_id: String, card_id: String) -> bool:
+	if not event_results.has(node_id):
+		return false
+	var result = event_results[node_id]
+	if not (result is Dictionary) or not bool(result.get("passed", false)) or bool(result.get("claimed", false)):
+		return false
+	if not Array(result.get("rewards", [])).has(card_id):
+		return false
+	add_card(card_id)
+	result["claimed"] = true
+	result["reward"] = card_id
+	event_results[node_id] = result
+	return resolve_node(node_id)
+
 func sacrifice_to_bone_lord(node_id: String, card_id: String) -> bool:
 	if event_results.has(node_id) or not can_enter(node_id):
 		return false
@@ -178,6 +319,7 @@ func to_dict() -> Dictionary:
 		"claimed_rewards": claimed_rewards,
 		"deck_ids": deck_ids,
 		"card_buffs": card_buffs,
+		"card_sigils": card_sigils,
 		"event_results": event_results,
 		"bone_boon": bone_boon,
 		"ouroboros_bonus": ouroboros_bonus,
@@ -208,6 +350,14 @@ func load_from_dict(data: Dictionary) -> bool:
 					"atk": int(raw.get("atk", 0)),
 					"hp": int(raw.get("hp", 0))
 				}
+	card_sigils = {}
+	var loaded_sigils = data.get("card_sigils", {})
+	if loaded_sigils is Dictionary:
+		for card_id in loaded_sigils:
+			var sigils: Array[String] = []
+			for sigil in Array(loaded_sigils[card_id]):
+				sigils.append(str(sigil))
+			card_sigils[str(card_id)] = sigils
 	event_results = {}
 	var loaded_events = data.get("event_results", {})
 	if loaded_events is Dictionary:
