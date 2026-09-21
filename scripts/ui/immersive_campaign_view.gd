@@ -54,12 +54,16 @@ func _render_battle() -> void:
 	_place(_label("◆  ◆  ◆", maxi(13, int(22 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(38, 576, 150, 34, s, ox, oy))
 
 	# Libro de reglas contextual: en móvil el sello debe entenderse sin hover.
+	var inspect_data: Dictionary = {}
 	if selected_hand_index >= 0 and selected_hand_index < battle_state.hand.size():
-		var selected_data: Dictionary = battle_state.card_for_id(battle_state.hand[selected_hand_index])
-		_place(_label("SELLOS · %s" % str(selected_data.get("name", "CARTA")), maxi(10, int(13 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1326, 194, 188, 26, s, ox, oy))
-		_place(_label(SigilCatalogScript.summary_for_card(selected_data), maxi(8, int(10 * s)), MOCK_INK, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1326, 221, 188, 175, s, ox, oy))
+		inspect_data = battle_state.card_for_id(battle_state.hand[selected_hand_index])
+	elif not inspected_card_id.is_empty():
+		inspect_data = battle_state.card_for_id(inspected_card_id)
+	if not inspect_data.is_empty():
+		_place(_label("SELLOS · %s" % str(inspect_data.get("name", "CARTA")), maxi(10, int(13 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1312, 184, 210, 28, s, ox, oy))
+		_place(_label(SigilCatalogScript.summary_for_card(inspect_data), maxi(8, int(10 * s)), MOCK_INK, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1312, 216, 210, 190, s, ox, oy))
 	else:
-		_place(_label("TODO\nVUELVE\nAL CICLO.", maxi(12, int(21 * s)), MOCK_INK, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1344, 215, 144, 108, s, ox, oy))
+		_place(_label("TOCA UNA CARTA\nPARA LEER\nSU SELLO.", maxi(11, int(17 * s)), MOCK_INK, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1330, 220, 170, 100, s, ox, oy))
 	var turn_text := "ROBA CARTA" if battle_state.needs_draw() else "TU TURNO"
 	_place(_label(turn_text, maxi(13, int(22 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(1338, 416, 154, 34, s, ox, oy))
 
@@ -71,7 +75,10 @@ func _render_battle() -> void:
 	for lane in range(4):
 		var x := lane_x0 + float(lane) * lane_pitch
 		var enemy = battle_state.enemy_lanes[lane]
-		_place(_immersive_slot(enemy, false, lane), _mock_rect(x, 58, card_w, card_h, s, ox, oy))
+		var enemy_slot := _immersive_slot(enemy, false, lane)
+		if enemy != null:
+			enemy_slot.pressed.connect(_inspect_enemy_lane.bind(lane))
+		_place(enemy_slot, _mock_rect(x, 58, card_w, card_h, s, ox, oy))
 		var player = battle_state.player_lanes[lane]
 		var player_slot := _immersive_slot(player, true, lane)
 		player_slot.pressed.connect(_on_player_lane_pressed.bind(lane))
@@ -166,30 +173,44 @@ func _show_map() -> void:
 	_place(back, Rect2(28, 18, 116, 40))
 	_place(_label("EL MAPA SOBRE LA MESA", 24, I_INK, HORIZONTAL_ALIGNMENT_LEFT), Rect2(170, 18, 470, 36))
 	_place(_label("MAZO %d  ·  VICTORIAS %d  ·  BENDICIÓN %d HUESOS" % [state.deck_ids.size(), state.victories, state.bone_boon], 12, I_AMBER, HORIZONTAL_ALIGNMENT_RIGHT), Rect2(vw - 470, 21, 440, 32))
-	_place(_label("Combate, elecciones y encuentros especiales comparten el mismo sendero.", 12, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.24, 58, vw * 0.52, 25))
 
+	var second_segment := state.resolved_nodes.has("region_complete") or state.current_node in [
+		"region_complete", "sigil_stones", "mycologists", "trial_event", "battle_3", "boss_2", "region_2_complete"
+	]
 	var cx := vw * 0.5
-	var branch_offset := minf(210.0, vw * 0.17)
-	var y0 := 100.0
-	var pitch := minf(50.0, maxf(40.0, (vh - 165.0) / 10.0))
-	var node_h := 34.0
-	var branch_w := 190.0
-	var center_w := 210.0
+	var branch_offset := minf(220.0, vw * 0.18)
+	var y0 := 120.0
+	var pitch := 74.0
+	var node_h := 44.0
+	var branch_w := 220.0
+	var center_w := 250.0
 
-	_place(_physical_map_node("start", "LA SENDA"), Rect2(cx - center_w * 0.5, y0, center_w, node_h))
-	_place(_physical_map_node("choice_left", "ELEGIR BESTIA"), Rect2(cx - branch_offset - branch_w * 0.5, y0 + pitch, branch_w, node_h))
-	_place(_physical_map_node("choice_right", "ELEGIR COSTE"), Rect2(cx + branch_offset - branch_w * 0.5, y0 + pitch, branch_w, node_h))
-	_place(_physical_map_node("battle_1", "COMBATE DEL BOSQUE"), Rect2(cx - center_w * 0.5, y0 + pitch * 2.0, center_w, node_h))
-	_place(_physical_map_node("campfire_1", "FOGATA I"), Rect2(cx - center_w * 0.5, y0 + pitch * 3.0, center_w, node_h))
-	_place(_physical_map_node("gate_1", "UMBRAL DEL BOSQUE"), Rect2(cx - center_w * 0.5, y0 + pitch * 4.0, center_w, node_h))
-	_place(_physical_map_node("choice_2_left", "RASTRO DE BESTIA"), Rect2(cx - branch_offset - branch_w * 0.5, y0 + pitch * 5.0, branch_w, node_h))
-	_place(_physical_map_node("choice_2_right", "RASTRO DE SANGRE"), Rect2(cx + branch_offset - branch_w * 0.5, y0 + pitch * 5.0, branch_w, node_h))
-	_place(_physical_map_node("prospector_event", "TRES ROCAS"), Rect2(cx - branch_offset - branch_w * 0.5, y0 + pitch * 6.0, branch_w, node_h))
-	_place(_physical_map_node("bone_altar", "ALTAR DE HUESOS"), Rect2(cx + branch_offset - branch_w * 0.5, y0 + pitch * 6.0, branch_w, node_h))
-	_place(_physical_map_node("battle_2", "COMBATE PROFUNDO"), Rect2(cx - center_w * 0.5, y0 + pitch * 7.0, center_w, node_h))
-	_place(_physical_map_node("campfire_2", "FOGATA II"), Rect2(cx - center_w * 0.5, y0 + pitch * 8.0, center_w, node_h))
-	_place(_physical_map_node("boss_1", "GUARDIÁN DEL BOSQUE"), Rect2(cx - center_w * 0.5, y0 + pitch * 9.0, center_w, node_h))
-	_place(_physical_map_node("region_complete", "SENDERO SIGUIENTE"), Rect2(cx - center_w * 0.5, y0 + pitch * 10.0, center_w, node_h))
+	if second_segment:
+		_place(_label("SEGUNDO TRAMO · EL BOSQUE CAMBIA", 13, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.28, 63, vw * 0.44, 26))
+		_place(_physical_map_node("region_complete", "ENTRADA AL SEGUNDO TRAMO"), Rect2(cx - center_w * 0.5, y0, center_w, node_h))
+		_place(_physical_map_node("sigil_stones", "PIEDRAS MISTERIOSAS"), Rect2(cx - branch_offset - branch_w * 0.5, y0 + pitch, branch_w, node_h))
+		_place(_physical_map_node("mycologists", "MICÓLOGOS"), Rect2(cx + branch_offset - branch_w * 0.5, y0 + pitch, branch_w, node_h))
+		_place(_physical_map_node("trial_event", "PRUEBA DEL MAZO"), Rect2(cx - center_w * 0.5, y0 + pitch * 2.0, center_w, node_h))
+		_place(_physical_map_node("battle_3", "COMBATE DE LA ARBOLEDA"), Rect2(cx - center_w * 0.5, y0 + pitch * 3.0, center_w, node_h))
+		_place(_physical_map_node("boss_2", "EL TRAMPERO"), Rect2(cx - center_w * 0.5, y0 + pitch * 4.0, center_w, node_h))
+		_place(_physical_map_node("region_2_complete", "TERCER TRAMO"), Rect2(cx - center_w * 0.5, y0 + pitch * 5.0, center_w, node_h))
+	else:
+		_place(_label("PRIMER TRAMO · BOSQUE", 13, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.28, 63, vw * 0.44, 26))
+		var p := 48.0
+		_place(_physical_map_node("start", "LA SENDA"), Rect2(cx - center_w * 0.5, 98, center_w, 34))
+		_place(_physical_map_node("choice_left", "ELEGIR BESTIA"), Rect2(cx - branch_offset - branch_w * 0.5, 98 + p, branch_w, 34))
+		_place(_physical_map_node("choice_right", "ELEGIR COSTE"), Rect2(cx + branch_offset - branch_w * 0.5, 98 + p, branch_w, 34))
+		_place(_physical_map_node("battle_1", "COMBATE DEL BOSQUE"), Rect2(cx - center_w * 0.5, 98 + p * 2.0, center_w, 34))
+		_place(_physical_map_node("campfire_1", "FOGATA I"), Rect2(cx - center_w * 0.5, 98 + p * 3.0, center_w, 34))
+		_place(_physical_map_node("gate_1", "UMBRAL DEL BOSQUE"), Rect2(cx - center_w * 0.5, 98 + p * 4.0, center_w, 34))
+		_place(_physical_map_node("choice_2_left", "RASTRO DE BESTIA"), Rect2(cx - branch_offset - branch_w * 0.5, 98 + p * 5.0, branch_w, 34))
+		_place(_physical_map_node("choice_2_right", "RASTRO DE SANGRE"), Rect2(cx + branch_offset - branch_w * 0.5, 98 + p * 5.0, branch_w, 34))
+		_place(_physical_map_node("prospector_event", "TRES ROCAS"), Rect2(cx - branch_offset - branch_w * 0.5, 98 + p * 6.0, branch_w, 34))
+		_place(_physical_map_node("bone_altar", "ALTAR DE HUESOS"), Rect2(cx + branch_offset - branch_w * 0.5, 98 + p * 6.0, branch_w, 34))
+		_place(_physical_map_node("battle_2", "COMBATE PROFUNDO"), Rect2(cx - center_w * 0.5, 98 + p * 7.0, center_w, 34))
+		_place(_physical_map_node("campfire_2", "FOGATA II"), Rect2(cx - center_w * 0.5, 98 + p * 8.0, center_w, 34))
+		_place(_physical_map_node("boss_1", "GUARDIÁN DEL BOSQUE"), Rect2(cx - center_w * 0.5, 98 + p * 9.0, center_w, 34))
+		_place(_physical_map_node("region_complete", "SEGUNDO TRAMO"), Rect2(cx - center_w * 0.5, 98 + p * 10.0, center_w, 34))
 
 	var current: Dictionary = state.get_node(state.current_node)
 	_place(_label("TU FIGURA ESTÁ EN: %s" % str(current.get("title", state.current_node)), 11, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.27, vh - 28, vw * 0.46, 22))
@@ -368,12 +389,18 @@ func _show_region_gate(node_id: String) -> void:
 	var viewport_size := get_viewport_rect().size
 	var vw := maxf(viewport_size.x, 1280.0)
 	var vh := maxf(viewport_size.y, 720.0)
-	var is_region_end := node_id == "region_complete"
-	var title := "EL PRIMER TRAMO TERMINA AQUÍ" if is_region_end else "ALGO TE ESPERA MÁS ADELANTE"
-	var subtitle := "Derrotaste al Guardián del Bosque. El siguiente mapa será el próximo tramo de campaña." if is_region_end else "Cruza el umbral: todavía quedan cartas, otra fogata y un Guardián por delante."
+	var second_entry := node_id == "region_complete"
+	var final_second := node_id == "region_2_complete"
+	var title := "EL SEGUNDO TRAMO SE ABRE" if second_entry else ("LA SEGUNDA SENDA TERMINA" if final_second else "ALGO TE ESPERA MÁS ADELANTE")
+	var subtitle := "Las Piedras Misteriosas y los Micólogos esperan más allá." if second_entry else ("El siguiente tramo añadirá más objetos, tótems y jefes." if final_second else "Cruza el umbral y continúa.")
 	_place(_label(title, 31, I_INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.18, 42, vw * 0.64, 44))
 	_place(_label(subtitle, 14, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.20, 88, vw * 0.60, 42))
-	if not is_region_end:
+	if second_entry:
+		var enter_second := _small_button("ABRIR SEGUNDO TRAMO", 320)
+		enter_second.pressed.connect(_show_map)
+		enter_second.add_theme_stylebox_override("normal", _panel_style(Color(0.035, 0.050, 0.025, 0.94), I_AMBER, 2, 3))
+		_place(enter_second, Rect2(vw * 0.5 - 160, vh - 127, 320, 54))
+	elif not final_second:
 		var enter := _small_button("CRUZAR EL UMBRAL", 320)
 		enter.pressed.connect(_resolve_simple_node.bind(node_id))
 		enter.add_theme_stylebox_override("normal", _panel_style(Color(0.035, 0.050, 0.025, 0.94), I_AMBER, 2, 3))
@@ -420,7 +447,7 @@ func _immersive_slot(unit, player_side: bool, lane: int) -> Button:
 		card.current_hp = int(unit.get("hp", 1))
 		card.current_atk = battle_state.attack_for_lane(player_side, lane)
 		card.marked = player_side and selected_sacrifices.has(lane)
-		card.disabled = not player_side or battle_state.needs_draw()
+		card.disabled = false
 		return card
 
 	# Casilla vacía casi invisible: la madera/pata ya está dibujada por battle_table.gd.
