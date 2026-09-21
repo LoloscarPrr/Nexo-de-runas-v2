@@ -205,7 +205,7 @@ func trial_preview(node_id: String, trial_type: String) -> Dictionary:
 	var available: Array[String] = deck_ids.duplicate()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(run_seed) ^ int(node_id.hash()) ^ int(trial_type.hash())
-	while cards.size() < mini(3, available.size()):
+	while cards.size() < 3 and not available.is_empty():
 		var index: int = rng.randi_range(0, available.size() - 1)
 		cards.append(available[index])
 		available.remove_at(index)
