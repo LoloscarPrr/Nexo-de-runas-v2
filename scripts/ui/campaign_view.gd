@@ -333,7 +333,7 @@ func _select_hand(hand_index: int) -> void:
 		selected_hand_index = hand_index
 		selected_sacrifices.clear()
 		inspected_card_id = battle_state.hand[hand_index]
-		var card := battle_state.card_for_id(battle_state.hand[hand_index])
+		var card: Dictionary = battle_state.card_for_id(battle_state.hand[hand_index])
 		var blood_cost: int = battle_state.blood_cost_for(hand_index)
 		if blood_cost > 0:
 			battle_state.last_message = "%s exige %d sacrificio(s). Toca tus criaturas." % [str(card.get("name", "La carta")), blood_cost]
