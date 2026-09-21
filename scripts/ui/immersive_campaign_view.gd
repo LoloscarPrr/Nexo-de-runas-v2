@@ -4,7 +4,6 @@ const ImmersiveTableScript = preload("res://scripts/ui/battle_table.gd")
 const ImmersiveCardScript = preload("res://scripts/ui/battle_card.gd")
 const ImmersiveCatalogScript = preload("res://scripts/domain/card_catalog.gd")
 const CampaignBackdropScript = preload("res://scripts/ui/campaign_backdrop.gd")
-const SigilCatalogScript = preload("res://scripts/domain/sigil_catalog.gd")
 
 const I_INK := Color8(199, 213, 103)
 const I_MUTED := Color8(113, 125, 67)
@@ -56,7 +55,7 @@ func _render_battle() -> void:
 
 	# Libro de reglas contextual: en móvil el sello debe entenderse sin hover.
 	if selected_hand_index >= 0 and selected_hand_index < battle_state.hand.size():
-		var selected_data := battle_state.card_for_id(battle_state.hand[selected_hand_index])
+		var selected_data: Dictionary = battle_state.card_for_id(battle_state.hand[selected_hand_index])
 		_place(_label("SELLOS · %s" % str(selected_data.get("name", "CARTA")), maxi(10, int(13 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1326, 194, 188, 26, s, ox, oy))
 		_place(_label(SigilCatalogScript.summary_for_card(selected_data), maxi(8, int(10 * s)), MOCK_INK, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1326, 221, 188, 175, s, ox, oy))
 	else:
@@ -214,7 +213,7 @@ func _show_choice(node_id: String) -> void:
 		var view := _choice_card_button(card_id, _claim_choice.bind(node_id, card_id))
 		var card_x := left + float(index) * (card_w + gap)
 		_place(view, Rect2(card_x, vh * 0.25, card_w, card_h))
-		var info := ImmersiveCatalogScript.find_by_id(card_id)
+		var info: Dictionary = ImmersiveCatalogScript.find_by_id(card_id)
 		_place(_label(SigilCatalogScript.summary_for_card(info), 10, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(card_x - 12, vh * 0.25 + card_h + 10, card_w + 24, 105))
 	var back := _small_button("VOLVER AL MAPA", 230)
 	back.pressed.connect(_show_map)
@@ -252,7 +251,7 @@ func _show_event_reward(title_text: String, card_id: String) -> void:
 	var vw := maxf(viewport_size.x, 1280.0)
 	var vh := maxf(viewport_size.y, 720.0)
 	_place(_label(title_text, 31, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.25, 35, vw * 0.50, 44))
-	var data := _campaign_card(card_id)
+	var data: Dictionary = _campaign_card(card_id)
 	var card := ImmersiveCardScript.new()
 	card.card = data
 	card.disabled = true
@@ -272,7 +271,7 @@ func _show_bone_altar(node_id: String) -> void:
 	_place(_label("Una ofrenda común concede 1 Hueso inicial. La Cabra Negra concede 8.", 13, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.20, 70, vw * 0.60, 30))
 
 	if not selected_event_card_id.is_empty():
-		var selected_data := _campaign_card(selected_event_card_id)
+		var selected_data: Dictionary = _campaign_card(selected_event_card_id)
 		var selected_card := ImmersiveCardScript.new()
 		selected_card.card = selected_data
 		selected_card.chosen = true
@@ -325,7 +324,7 @@ func _show_campfire(node_id: String) -> void:
 		_place(selected_card, Rect2(vw * 0.5 - 88, 135, 176, 242))
 
 		var buff: Dictionary = state.get_card_buff(selected_campfire_card_id)
-		var selected_data := _campaign_card(selected_campfire_card_id)
+		var selected_data: Dictionary = _campaign_card(selected_campfire_card_id)
 		_place(_label("%s  ·  ATQ %d  ·  VIDA %d" % [
 			str(selected_data.get("name", selected_campfire_card_id)),
 			int(selected_data.get("atk", 0)),
