@@ -442,7 +442,7 @@ func _show_prospector_event(node_id: String) -> void:
 func _pick_prospector_boulder(node_id: String, index: int) -> void:
 	if state == null:
 		return
-	var reward := state.claim_prospector_boulder(node_id, index)
+	var reward: String = state.claim_prospector_boulder(node_id, index)
 	if reward.is_empty():
 		return
 	CampaignSaveScript.save_state(state)
