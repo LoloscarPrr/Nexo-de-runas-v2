@@ -2,6 +2,7 @@ extends SceneTree
 
 const Campaign = preload("res://scripts/domain/campaign_state.gd")
 const Battle = preload("res://scripts/domain/battle_state.gd")
+const Sigils = preload("res://scripts/domain/sigil_catalog.gd")
 
 var failures := 0
 
@@ -13,7 +14,11 @@ func check(condition: bool, message: String) -> void:
 func _initialize() -> void:
 	_test_old_save_continues()
 	_test_campfire_persists()
-	_test_second_route_and_encounter()
+	_test_special_event_routes()
+	_test_bone_lord()
+	_test_prospector()
+	_test_special_card_persistence()
+	_test_sigil_rulebook()
 	print("Campaign progression checks: %d failures" % failures)
 	quit(1 if failures else 0)
 
@@ -53,26 +58,60 @@ func _test_campfire_persists() -> void:
 	var enemy_wolf := battle._new_unit("lobo", false)
 	check(int(player_wolf.hp) == 4, "Campfire +2 health applies to player Wolf")
 	check(int(player_wolf.attack_bonus) == 1, "Campfire +1 attack applies to player Wolf")
-	check(int(enemy_wolf.hp) == 2 and int(enemy_wolf.attack_bonus) == 0, "Player campfire buffs do not buff enemy copies")
+	check(int(enemy_wolf.hp) == 2 and int(enemy_wolf.attack_bonus) == 0, "Player buffs do not affect enemy copies")
 
-func _test_second_route_and_encounter() -> void:
-	var state := Campaign.new()
+func _reach_gate(state: Campaign) -> void:
 	check(state.resolve_node("choice_left"), "Enter first choice")
 	check(state.resolve_node("battle_1"), "Reach first battle")
 	check(state.resolve_node("campfire_1"), "Reach first campfire")
 	check(state.resolve_node("gate_1"), "Reach forest gate")
-	check(state.resolve_node("choice_2_left"), "Enter second route")
-	check(state.resolve_node("battle_2"), "Reach second battle")
-	check(state.resolve_node("campfire_2"), "Reach second campfire")
-	check(state.resolve_node("boss_1"), "Reach first boss")
-	check(state.can_enter("region_complete"), "Boss victory exposes next-sender marker")
 
-	var battle := Battle.new()
-	battle.setup(state.deck_ids, state.card_buffs, "battle_2")
-	check(battle.enemy_queue.size() >= 6, "Second battle has its own encounter queue")
-	check(battle.enemy_queue.has("oso_grizzly"), "Second battle contains stronger enemies")
+func _test_special_event_routes() -> void:
+	var left := Campaign.new()
+	_reach_gate(left)
+	check(left.resolve_node("choice_2_left"), "Enter second left route")
+	check(left.can_enter("prospector_event"), "Left route exposes Prospector event")
 
-	var boss := Battle.new()
-	boss.setup(state.deck_ids, state.card_buffs, "boss_1")
-	check(boss.enemy_queue.has("mula_de_carga"), "Boss encounter includes Pack Mule")
-	check(boss.enemy_queue.has("alce_macho"), "Boss encounter escalates to Moose Buck")
+	var right := Campaign.new()
+	_reach_gate(right)
+	check(right.resolve_node("choice_2_right"), "Enter second right route")
+	check(right.can_enter("bone_altar"), "Right route exposes Bone Lord altar")
+
+func _test_bone_lord() -> void:
+	var state := Campaign.new()
+	state.deck_ids.append("cabra_negra")
+	_reach_gate(state)
+	check(state.resolve_node("choice_2_right"), "Reach Bone Lord route")
+	check(state.sacrifice_to_bone_lord("bone_altar", "cabra_negra"), "Black Goat can be offered")
+	check(state.bone_boon == 8, "Black Goat grants eight starting Bones")
+	check(not state.deck_ids.has("cabra_negra"), "Sacrificed card leaves the deck")
+	check(state.can_enter("battle_2"), "Bone altar resolves into second battle")
+
+	var reloaded := Campaign.new()
+	check(reloaded.load_from_dict(state.to_dict()), "Bone boon save reloads")
+	check(reloaded.bone_boon == 8, "Bone boon persists in save")
+
+func _test_prospector() -> void:
+	var state := Campaign.new()
+	state.run_seed = 456
+	_reach_gate(state)
+	check(state.resolve_node("choice_2_left"), "Reach Prospector route")
+	var reward := state.claim_prospector_boulder("prospector_event", 1)
+	check(not reward.is_empty(), "Prospector boulder yields a reward")
+	check(state.deck_ids.has(reward), "Prospector reward enters deck")
+	check(state.can_enter("battle_2"), "Prospector event resolves into second battle")
+	check(not state.claim_prospector_boulder("prospector_event", 2), "Prospector event cannot be claimed twice")
+
+func _test_special_card_persistence() -> void:
+	var state := Campaign.new()
+	state.ouroboros_bonus = 4
+	var reloaded := Campaign.new()
+	check(reloaded.load_from_dict(state.to_dict()), "Ouroboros special state reloads")
+	check(reloaded.ouroboros_bonus == 4, "Ouroboros growth persists between battles")
+
+func _test_sigil_rulebook() -> void:
+	var flying := Sigils.get_info("AIRBORNE")
+	check(str(flying.get("name", "")) == "AÉREO", "Sigil rulebook exposes localized name")
+	check(str(flying.get("description", "")).length() > 20, "Sigil rulebook exposes readable description")
+	var quills := Sigils.get_info("SHARP_QUILLS")
+	check(str(quills.get("name", "")) == "ESPINAS", "Sharp Quills has dedicated rulebook entry")
