@@ -17,6 +17,10 @@ func _initialize() -> void:
 	_test_special_event_routes()
 	_test_bone_lord()
 	_test_prospector()
+	_test_second_segment_from_existing_end()
+	_test_sigil_transfer()
+	_test_mycologists()
+	_test_deck_trial()
 	_test_special_card_persistence()
 	_test_sigil_rulebook()
 	print("Campaign progression checks: %d failures" % failures)
@@ -53,7 +57,7 @@ func _test_campfire_persists() -> void:
 	check(int(reloaded_buff.atk) == 1 and int(reloaded_buff.hp) == 2, "Campfire buffs persist through save")
 
 	var battle := Battle.new()
-	battle.setup(reloaded.deck_ids, reloaded.card_buffs, "battle_2")
+	battle.setup(reloaded.deck_ids, reloaded.card_buffs, "battle_2", reloaded.card_sigils)
 	var player_wolf := battle._new_unit("lobo", true)
 	var enemy_wolf := battle._new_unit("lobo", false)
 	check(int(player_wolf.hp) == 4, "Campfire +2 health applies to player Wolf")
@@ -65,6 +69,15 @@ func _reach_gate(state) -> void:
 	check(state.resolve_node("battle_1"), "Reach first battle")
 	check(state.resolve_node("campfire_1"), "Reach first campfire")
 	check(state.resolve_node("gate_1"), "Reach forest gate")
+
+func _reach_region_complete(state) -> void:
+	_reach_gate(state)
+	check(state.resolve_node("choice_2_left"), "Enter second left route")
+	check(not state.claim_prospector_boulder("prospector_event", 0).is_empty(), "Prospector resolves")
+	check(state.resolve_node("battle_2"), "Reach second battle")
+	check(state.resolve_node("campfire_2"), "Reach second campfire")
+	check(state.resolve_node("boss_1"), "Reach first boss")
+	check(state.resolve_node("region_complete"), "Open second campaign segment")
 
 func _test_special_event_routes() -> void:
 	var left := Campaign.new()
@@ -101,6 +114,69 @@ func _test_prospector() -> void:
 	check(state.deck_ids.has(reward), "Prospector reward enters deck")
 	check(state.can_enter("battle_2"), "Prospector event resolves into second battle")
 	check(state.claim_prospector_boulder("prospector_event", 2).is_empty(), "Prospector event cannot be claimed twice")
+
+func _test_second_segment_from_existing_end() -> void:
+	var save := {
+		"version":2,
+		"run_seed":777,
+		"current_node":"region_complete",
+		"resolved_nodes":["start","choice_left","battle_1","campfire_1","gate_1","choice_2_left","prospector_event","battle_2","campfire_2","boss_1","region_complete"],
+		"claimed_rewards":[],
+		"deck_ids":["armino","lobo","rana_toro"],
+		"victories":2,
+		"defeats":0,
+		"started_at_unix":1
+	}
+	var state := Campaign.new()
+	check(state.load_from_dict(save), "Existing save on old end screen still loads")
+	check(state.can_enter("sigil_stones"), "Old end screen now opens Mystery Stones")
+	check(state.can_enter("mycologists"), "Old end screen now opens Mycologists")
+
+func _test_sigil_transfer() -> void:
+	var state := Campaign.new()
+	state.current_node = "region_complete"
+	state.resolved_nodes.append("region_complete")
+	state.deck_ids = ["gorrion", "lobo", "rana_toro"]
+	check(state.transfer_sigils("sigil_stones", "gorrion", "lobo"), "Mystery Stones transfer a sigil")
+	check(not state.deck_ids.has("gorrion"), "Donor card is destroyed")
+	check(state.get_card_sigils("lobo").has("AIRBORNE"), "Receiver keeps transferred Airborne sigil")
+	check(state.can_enter("trial_event"), "Sigil transfer resolves into deck trial")
+
+	var battle := Battle.new()
+	battle.setup(state.deck_ids, state.card_buffs, "battle_3", state.card_sigils)
+	check(Array(battle.card_for_id("lobo").get("sigils", [])).has("AIRBORNE"), "Transferred sigil is active in battle")
+
+	var reload := Campaign.new()
+	check(reload.load_from_dict(state.to_dict()), "Transferred sigils survive save reload")
+	check(reload.get_card_sigils("lobo").has("AIRBORNE"), "Transferred sigil persists")
+
+func _test_mycologists() -> void:
+	var state := Campaign.new()
+	state.current_node = "region_complete"
+	state.resolved_nodes.append("region_complete")
+	state.deck_ids = ["lobo", "lobo", "rana_toro"]
+	check(state.mycologist_candidates().has("lobo"), "Duplicate Wolf is offered to Mycologists")
+	check(state.fuse_duplicate("mycologists", "lobo"), "Mycologists fuse duplicate cards")
+	check(state.deck_ids.count("lobo") == 1, "Two copies become one")
+	var buff := state.get_card_buff("lobo")
+	check(int(buff.get("atk", 0)) == 3, "Fusion adds base attack")
+	check(int(buff.get("hp", 0)) == 2, "Fusion adds base health")
+	check(state.can_enter("trial_event"), "Mycologist fusion resolves into deck trial")
+
+func _test_deck_trial() -> void:
+	var state := Campaign.new()
+	state.current_node = "sigil_stones"
+	state.resolved_nodes.append("sigil_stones")
+	state.deck_ids = ["urayuli", "urayuli", "urayuli"]
+	var result: Dictionary = state.begin_trial("trial_event", "power")
+	check(not result.is_empty(), "Deck trial starts")
+	check(bool(result.get("passed", false)), "Three Urayuli pass power trial")
+	check(Array(result.get("cards", [])).size() == 3, "Deck trial reveals three cards")
+	var rewards: Array = Array(result.get("rewards", []))
+	check(not rewards.is_empty(), "Successful trial creates rare rewards")
+	if not rewards.is_empty():
+		check(state.claim_trial_reward("trial_event", str(rewards[0])), "Rare reward can be claimed")
+		check(state.can_enter("battle_3"), "Claiming reward opens third battle")
 
 func _test_special_card_persistence() -> void:
 	var state := Campaign.new()
