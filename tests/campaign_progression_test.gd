@@ -60,7 +60,7 @@ func _test_campfire_persists() -> void:
 	check(int(player_wolf.attack_bonus) == 1, "Campfire +1 attack applies to player Wolf")
 	check(int(enemy_wolf.hp) == 2 and int(enemy_wolf.attack_bonus) == 0, "Player buffs do not affect enemy copies")
 
-func _reach_gate(state: Campaign) -> void:
+func _reach_gate(state) -> void:
 	check(state.resolve_node("choice_left"), "Enter first choice")
 	check(state.resolve_node("battle_1"), "Reach first battle")
 	check(state.resolve_node("campfire_1"), "Reach first campfire")
@@ -100,7 +100,7 @@ func _test_prospector() -> void:
 	check(not reward.is_empty(), "Prospector boulder yields a reward")
 	check(state.deck_ids.has(reward), "Prospector reward enters deck")
 	check(state.can_enter("battle_2"), "Prospector event resolves into second battle")
-	check(not state.claim_prospector_boulder("prospector_event", 2), "Prospector event cannot be claimed twice")
+	check(state.claim_prospector_boulder("prospector_event", 2).is_empty(), "Prospector event cannot be claimed twice")
 
 func _test_special_card_persistence() -> void:
 	var state := Campaign.new()
