@@ -381,6 +381,7 @@ func _end_battle_turn() -> void:
 		_show_battle_reward()
 	elif result == "defeat":
 		state.defeats += 1
+		state.ouroboros_bonus = maxi(int(state.ouroboros_bonus), int(battle_state.ouroboros_bonus))
 		CampaignSaveScript.save_state(state)
 		_show_defeat()
 	else:
