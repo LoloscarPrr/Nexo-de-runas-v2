@@ -1,8 +1,9 @@
 class_name CampaignState
 extends RefCounted
 
-# Se conserva la versión 2 para que las partidas de las builds anteriores
-# carguen sin reiniciar la campaña. Los campos nuevos son opcionales.
+const CardCatalogScript = preload("res://scripts/domain/card_catalog.gd")
+
+# Se mantiene versión 2 para cargar saves de las builds anteriores.
 const SAVE_VERSION := 2
 const STARTER_DECK := ["armino", "lobo", "rana_toro"]
 
@@ -13,13 +14,20 @@ const MAP_NODES := {
 	"battle_1": {"title":"COMBATE DEL BOSQUE", "type":"battle", "next":["campfire_1"]},
 	"campfire_1": {"title":"FOGATA I", "type":"campfire", "next":["gate_1"]},
 	"gate_1": {"title":"UMBRAL DEL BOSQUE", "type":"gate", "next":["choice_2_left", "choice_2_right"]},
-	"choice_2_left": {"title":"RASTRO DE BESTIA", "type":"choice", "next":["battle_2"]},
-	"choice_2_right": {"title":"RASTRO DE SANGRE", "type":"choice", "next":["battle_2"]},
+	"choice_2_left": {"title":"RASTRO DE BESTIA", "type":"choice", "next":["prospector_event"]},
+	"choice_2_right": {"title":"RASTRO DE SANGRE", "type":"choice", "next":["bone_altar"]},
+	"prospector_event": {"title":"TRES ROCAS", "type":"prospector", "next":["battle_2"]},
+	"bone_altar": {"title":"ALTAR DE HUESOS", "type":"bone_altar", "next":["battle_2"]},
 	"battle_2": {"title":"COMBATE PROFUNDO", "type":"battle", "next":["campfire_2"]},
 	"campfire_2": {"title":"FOGATA II", "type":"campfire", "next":["boss_1"]},
 	"boss_1": {"title":"GUARDIÁN DEL BOSQUE", "type":"boss", "next":["region_complete"]},
 	"region_complete": {"title":"SENDERO SIGUIENTE", "type":"end", "next":[]}
 }
+
+const PROSPECTOR_INSECTS := [
+	"reina_hormiga", "cucaracha", "gusanos_cadavericos",
+	"mantis", "dios_mantis", "chinche_apestosa"
+]
 
 var version := SAVE_VERSION
 var run_seed := 0
@@ -28,6 +36,9 @@ var resolved_nodes: Array[String] = ["start"]
 var claimed_rewards: Array[String] = []
 var deck_ids: Array[String] = []
 var card_buffs: Dictionary = {}
+var event_results: Dictionary = {}
+var bone_boon := 0
+var ouroboros_bonus := 0
 var victories := 0
 var defeats := 0
 var started_at_unix := 0
@@ -43,6 +54,9 @@ func reset() -> void:
 	claimed_rewards = []
 	deck_ids = []
 	card_buffs = {}
+	event_results = {}
+	bone_boon = 0
+	ouroboros_bonus = 0
 	for card_id in STARTER_DECK:
 		deck_ids.append(card_id)
 	victories = 0
@@ -79,6 +93,13 @@ func resolve_node(node_id: String) -> bool:
 func add_card(card_id: String) -> void:
 	deck_ids.append(card_id)
 
+func remove_one_card(card_id: String) -> bool:
+	var index := deck_ids.find(card_id)
+	if index < 0:
+		return false
+	deck_ids.remove_at(index)
+	return true
+
 func claim_reward(reward_key: String, card_id: String) -> bool:
 	if claimed_rewards.has(reward_key):
 		return false
@@ -111,6 +132,43 @@ func upgrade_card(card_id: String, stat: String) -> bool:
 	card_buffs[card_id] = buff
 	return true
 
+func sacrifice_to_bone_lord(node_id: String, card_id: String) -> bool:
+	if event_results.has(node_id) or not can_enter(node_id):
+		return false
+	if not remove_one_card(card_id):
+		return false
+	var card := CardCatalogScript.find_by_id(card_id)
+	var traits: Array = Array(card.get("traits", []))
+	if card_id == "cabra_negra":
+		bone_boon = maxi(bone_boon, 8)
+	elif traits.has("Pelt"):
+		pass
+	else:
+		bone_boon += 1
+	event_results[node_id] = {"card":card_id, "bone_boon":bone_boon}
+	return resolve_node(node_id)
+
+func prospector_reward(node_id: String, boulder_index: int) -> String:
+	if boulder_index < 0 or boulder_index > 2:
+		return ""
+	var gold_index := abs(int(run_seed) ^ int(node_id.hash())) % 3
+	if boulder_index == gold_index:
+		return "pelaje_dorado"
+	var offset := abs(int(run_seed / 7) + boulder_index * 13 + int(node_id.hash()))
+	return PROSPECTOR_INSECTS[offset % PROSPECTOR_INSECTS.size()]
+
+func claim_prospector_boulder(node_id: String, boulder_index: int) -> String:
+	if event_results.has(node_id) or not can_enter(node_id):
+		return ""
+	var reward := prospector_reward(node_id, boulder_index)
+	if reward.is_empty():
+		return ""
+	add_card(reward)
+	event_results[node_id] = {"boulder":boulder_index, "reward":reward}
+	if not resolve_node(node_id):
+		return ""
+	return reward
+
 func to_dict() -> Dictionary:
 	return {
 		"version": version,
@@ -120,6 +178,9 @@ func to_dict() -> Dictionary:
 		"claimed_rewards": claimed_rewards,
 		"deck_ids": deck_ids,
 		"card_buffs": card_buffs,
+		"event_results": event_results,
+		"bone_boon": bone_boon,
+		"ouroboros_bonus": ouroboros_bonus,
 		"victories": victories,
 		"defeats": defeats,
 		"started_at_unix": started_at_unix
@@ -147,6 +208,12 @@ func load_from_dict(data: Dictionary) -> bool:
 					"atk": int(raw.get("atk", 0)),
 					"hp": int(raw.get("hp", 0))
 				}
+	event_results = {}
+	var loaded_events = data.get("event_results", {})
+	if loaded_events is Dictionary:
+		event_results = loaded_events.duplicate(true)
+	bone_boon = int(data.get("bone_boon", 0))
+	ouroboros_bonus = int(data.get("ouroboros_bonus", 0))
 	victories = int(data.get("victories", 0))
 	defeats = int(data.get("defeats", 0))
 	started_at_unix = int(data.get("started_at_unix", 0))
