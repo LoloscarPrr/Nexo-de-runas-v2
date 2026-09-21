@@ -151,10 +151,10 @@ func sacrifice_to_bone_lord(node_id: String, card_id: String) -> bool:
 func prospector_reward(node_id: String, boulder_index: int) -> String:
 	if boulder_index < 0 or boulder_index > 2:
 		return ""
-	var gold_index := abs(int(run_seed) ^ int(node_id.hash())) % 3
+	var gold_index: int = abs(int(run_seed) ^ int(node_id.hash())) % 3
 	if boulder_index == gold_index:
 		return "pelaje_dorado"
-	var offset := abs(int(run_seed / 7) + boulder_index * 13 + int(node_id.hash()))
+	var offset: int = abs(int(run_seed / 7) + boulder_index * 13 + int(node_id.hash()))
 	return PROSPECTOR_INSECTS[offset % PROSPECTOR_INSECTS.size()]
 
 func claim_prospector_boulder(node_id: String, boulder_index: int) -> String:
