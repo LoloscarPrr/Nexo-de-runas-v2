@@ -325,6 +325,158 @@ func _show_bone_altar(node_id: String) -> void:
 	back.pressed.connect(_leave_special_event)
 	_place(back, Rect2(vw - 215, vh - 48, 190, 36))
 
+func _show_sigil_stones(node_id: String) -> void:
+	_clear_screen()
+	_add_campaign_backdrop("gate")
+	var viewport_size := get_viewport_rect().size
+	var vw := maxf(viewport_size.x, 1280.0)
+	var vh := maxf(viewport_size.y, 720.0)
+	_place(_label("PIEDRAS MISTERIOSAS", 30, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.22, 26, vw * 0.56, 42))
+	_place(_label("Una carta será destruida. Sus sellos pasarán a otra.", 13, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.24, 67, vw * 0.52, 28))
+
+	if selected_event_card_id.is_empty():
+		_place(_label("1 · ELIGE LA CARTA DONANTE", 14, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.30, 112, vw * 0.40, 28))
+	else:
+		var donor: Dictionary = _campaign_card(selected_event_card_id)
+		var donor_card := ImmersiveCardScript.new()
+		donor_card.card = donor
+		donor_card.chosen = true
+		donor_card.disabled = true
+		_place(donor_card, Rect2(vw * 0.5 - 78, 105, 156, 214))
+		_place(_label("2 · TOCA LA CARTA QUE RECIBIRÁ ESTOS SELLOS", 13, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.25, 326, vw * 0.50, 28))
+		_place(_label(SigilCatalogScript.summary_for_card(donor), 11, I_INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.27, 355, vw * 0.46, 64))
+
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_place(scroll, Rect2(90, 430, vw - 180, 190))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	scroll.add_child(row)
+	for card_id in state.deck_ids:
+		var data: Dictionary = _campaign_card(card_id)
+		var card := ImmersiveCardScript.new()
+		card.card = data
+		card.custom_minimum_size = Vector2(126, 172)
+		if selected_event_card_id.is_empty():
+			card.disabled = Array(data.get("sigils", [])).is_empty()
+			card.pressed.connect(_select_sigil_donor.bind(node_id, card_id))
+		else:
+			card.disabled = card_id == selected_event_card_id
+			card.pressed.connect(_finish_sigil_transfer.bind(node_id, card_id))
+		row.add_child(card)
+
+	var back := _small_button("VOLVER AL MAPA", 200)
+	back.pressed.connect(_leave_special_event)
+	_place(back, Rect2(vw - 225, vh - 50, 200, 38))
+
+func _show_mycologists(node_id: String) -> void:
+	_clear_screen()
+	_add_campaign_backdrop("choice")
+	var viewport_size := get_viewport_rect().size
+	var vw := maxf(viewport_size.x, 1280.0)
+	var vh := maxf(viewport_size.y, 720.0)
+	_place(_label("LOS MICÓLOGOS", 31, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.25, 30, vw * 0.50, 42))
+	_place(_label("Dos ejemplares iguales. Un solo cuerpo. Estadísticas sumadas.", 13, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.22, 72, vw * 0.56, 28))
+
+	var candidates: Array[String] = state.mycologist_candidates()
+	if candidates.is_empty():
+		_place(_label("NO TIENES DOS COPIAS IGUALES EN EL MAZO.", 15, I_INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.25, 280, vw * 0.50, 34))
+		var skip := _small_button("CONTINUAR SIN FUSIÓN", 280)
+		skip.pressed.connect(_resolve_simple_node.bind(node_id))
+		_place(skip, Rect2(vw * 0.5 - 140, 340, 280, 48))
+	else:
+		var card_w := 176.0
+		var gap := 50.0
+		var total := card_w * float(candidates.size()) + gap * float(maxi(candidates.size() - 1, 0))
+		var left := maxf(40.0, (vw - total) * 0.5)
+		for i in range(candidates.size()):
+			var card_id := candidates[i]
+			var data: Dictionary = _campaign_card(card_id)
+			var card := ImmersiveCardScript.new()
+			card.card = data
+			card.pressed.connect(_fuse_duplicate.bind(node_id, card_id))
+			_place(card, Rect2(left + float(i) * (card_w + gap), 155, card_w, 242))
+			_place(_label("2 COPIAS → 1 FUSIÓN", 11, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(left + float(i) * (card_w + gap) - 5, 408, card_w + 10, 24))
+
+	var back := _small_button("VOLVER AL MAPA", 200)
+	back.pressed.connect(_show_map)
+	_place(back, Rect2(vw - 225, vh - 50, 200, 38))
+
+func _show_trial(node_id: String) -> void:
+	_clear_screen()
+	_add_campaign_backdrop("choice")
+	var viewport_size := get_viewport_rect().size
+	var vw := maxf(viewport_size.x, 1280.0)
+	var vh := maxf(viewport_size.y, 720.0)
+	_place(_label("PRUEBA DEL MAZO", 31, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.25, 30, vw * 0.50, 42))
+	_place(_label("Elige qué aspecto de tus próximas tres cartas quieres poner a prueba.", 13, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.20, 72, vw * 0.60, 28))
+
+	var defs := [
+		{"type":"power", "title":"PODER", "desc":"ATQ TOTAL ≥ 4"},
+		{"type":"health", "title":"SALUD", "desc":"VIDA TOTAL ≥ 6"},
+		{"type":"blood", "title":"SANGRE", "desc":"COSTE DE SANGRE ≥ 4"},
+		{"type":"wisdom", "title":"SABIDURÍA", "desc":"3 SELLOS EN TOTAL"}
+	]
+	var w := 210.0
+	var gap := 26.0
+	var total := w * 4.0 + gap * 3.0
+	var left := (vw - total) * 0.5
+	for i in range(defs.size()):
+		var trial: Dictionary = defs[i]
+		var button := _small_button("%s\n%s" % [trial["title"], trial["desc"]], int(w))
+		button.add_theme_font_size_override("font_size", 15)
+		button.pressed.connect(_run_trial.bind(node_id, str(trial["type"])))
+		button.add_theme_stylebox_override("normal", _panel_style(Color("11170d"), I_EDGE, 3, 3))
+		_place(button, Rect2(left + float(i) * (w + gap), 220, w, 130))
+
+	var back := _small_button("VOLVER AL MAPA", 200)
+	back.pressed.connect(_show_map)
+	_place(back, Rect2(vw - 225, vh - 50, 200, 38))
+
+func _run_trial(node_id: String, trial_type: String) -> void:
+	var result: Dictionary = state.begin_trial(node_id, trial_type)
+	if result.is_empty():
+		return
+	_clear_screen()
+	_add_campaign_backdrop("reward")
+	var viewport_size := get_viewport_rect().size
+	var vw := maxf(viewport_size.x, 1280.0)
+	var vh := maxf(viewport_size.y, 720.0)
+	var passed := bool(result.get("passed", false))
+	_place(_label("PRUEBA SUPERADA" if passed else "PRUEBA FALLIDA", 30, I_SUCCESS if passed else Color("9d4b36"), HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.25, 25, vw * 0.50, 42))
+	_place(_label("TOTAL %d / %d" % [int(result.get("total", 0)), int(result.get("threshold", 0))], 16, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.38, 68, vw * 0.24, 28))
+
+	var cards: Array = Array(result.get("cards", []))
+	var card_w := 155.0
+	var gap := 40.0
+	var total := card_w * float(cards.size()) + gap * float(maxi(cards.size() - 1, 0))
+	var left := (vw - total) * 0.5
+	for i in range(cards.size()):
+		var card := ImmersiveCardScript.new()
+		card.card = _campaign_card(str(cards[i]))
+		card.disabled = true
+		_place(card, Rect2(left + float(i) * (card_w + gap), 115, card_w, 212))
+
+	if passed:
+		_place(_label("ELIGE UNA RECOMPENSA RARA", 13, I_INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.33, 345, vw * 0.34, 26))
+		var rewards: Array = Array(result.get("rewards", []))
+		var rw := 130.0
+		var rgap := 28.0
+		var rtotal := rw * float(rewards.size()) + rgap * float(maxi(rewards.size() - 1, 0))
+		var rleft := (vw - rtotal) * 0.5
+		for i in range(rewards.size()):
+			var reward_id := str(rewards[i])
+			var reward := ImmersiveCardScript.new()
+			reward.card = _campaign_card(reward_id)
+			reward.pressed.connect(_claim_trial_reward.bind(node_id, reward_id))
+			_place(reward, Rect2(rleft + float(i) * (rw + rgap), 382, rw, 178))
+	else:
+		CampaignSaveScript.save_state(state)
+		var continue_button := _small_button("CONTINUAR", 240)
+		continue_button.pressed.connect(_show_map)
+		_place(continue_button, Rect2(vw * 0.5 - 120, vh - 72, 240, 44))
+
 func _show_campfire(node_id: String) -> void:
 	_clear_screen()
 	_add_campaign_backdrop("campfire")
