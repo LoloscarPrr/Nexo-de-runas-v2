@@ -4,6 +4,7 @@ const ImmersiveTableScript = preload("res://scripts/ui/battle_table.gd")
 const ImmersiveCardScript = preload("res://scripts/ui/battle_card.gd")
 const ImmersiveCatalogScript = preload("res://scripts/domain/card_catalog.gd")
 const CampaignBackdropScript = preload("res://scripts/ui/campaign_backdrop.gd")
+const SigilCatalogScript = preload("res://scripts/domain/sigil_catalog.gd")
 
 const I_INK := Color8(199, 213, 103)
 const I_MUTED := Color8(113, 125, 67)
@@ -53,8 +54,13 @@ func _render_battle() -> void:
 	_place(_label(blood_text, maxi(12, int(20 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(28, 536, 170, 36, s, ox, oy))
 	_place(_label("◆  ◆  ◆", maxi(13, int(22 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(38, 576, 150, 34, s, ox, oy))
 
-	# Mensaje fijo del retrato derecho, como en la referencia.
-	_place(_label("TODO\nVUELVE\nAL CICLO.", maxi(12, int(21 * s)), MOCK_INK, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1344, 215, 144, 108, s, ox, oy))
+	# Libro de reglas contextual: en móvil el sello debe entenderse sin hover.
+	if selected_hand_index >= 0 and selected_hand_index < battle_state.hand.size():
+		var selected_data := battle_state.card_for_id(battle_state.hand[selected_hand_index])
+		_place(_label("SELLOS · %s" % str(selected_data.get("name", "CARTA")), maxi(10, int(13 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1326, 194, 188, 26, s, ox, oy))
+		_place(_label(SigilCatalogScript.summary_for_card(selected_data), maxi(8, int(10 * s)), MOCK_INK, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1326, 221, 188, 175, s, ox, oy))
+	else:
+		_place(_label("TODO\nVUELVE\nAL CICLO.", maxi(12, int(21 * s)), MOCK_INK, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1344, 215, 144, 108, s, ox, oy))
 	var turn_text := "ROBA CARTA" if battle_state.needs_draw() else "TU TURNO"
 	_place(_label(turn_text, maxi(13, int(22 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(1338, 416, 154, 34, s, ox, oy))
 
@@ -160,14 +166,14 @@ func _show_map() -> void:
 	back.pressed.connect(_exit_to_menu)
 	_place(back, Rect2(28, 18, 116, 40))
 	_place(_label("EL MAPA SOBRE LA MESA", 24, I_INK, HORIZONTAL_ALIGNMENT_LEFT), Rect2(170, 18, 470, 36))
-	_place(_label("MAZO %d  ·  VICTORIAS %d" % [state.deck_ids.size(), state.victories], 13, I_AMBER, HORIZONTAL_ALIGNMENT_RIGHT), Rect2(vw - 360, 21, 330, 32))
-	_place(_label("El sendero ya no termina tras la primera fogata.", 12, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.28, 58, vw * 0.44, 25))
+	_place(_label("MAZO %d  ·  VICTORIAS %d  ·  BENDICIÓN %d HUESOS" % [state.deck_ids.size(), state.victories, state.bone_boon], 12, I_AMBER, HORIZONTAL_ALIGNMENT_RIGHT), Rect2(vw - 470, 21, 440, 32))
+	_place(_label("Combate, elecciones y encuentros especiales comparten el mismo sendero.", 12, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.24, 58, vw * 0.52, 25))
 
 	var cx := vw * 0.5
 	var branch_offset := minf(210.0, vw * 0.17)
-	var y0 := 102.0
-	var pitch := minf(56.0, maxf(45.0, (vh - 170.0) / 9.0))
-	var node_h := 38.0
+	var y0 := 100.0
+	var pitch := minf(50.0, maxf(40.0, (vh - 165.0) / 10.0))
+	var node_h := 34.0
 	var branch_w := 190.0
 	var center_w := 210.0
 
@@ -179,13 +185,15 @@ func _show_map() -> void:
 	_place(_physical_map_node("gate_1", "UMBRAL DEL BOSQUE"), Rect2(cx - center_w * 0.5, y0 + pitch * 4.0, center_w, node_h))
 	_place(_physical_map_node("choice_2_left", "RASTRO DE BESTIA"), Rect2(cx - branch_offset - branch_w * 0.5, y0 + pitch * 5.0, branch_w, node_h))
 	_place(_physical_map_node("choice_2_right", "RASTRO DE SANGRE"), Rect2(cx + branch_offset - branch_w * 0.5, y0 + pitch * 5.0, branch_w, node_h))
-	_place(_physical_map_node("battle_2", "COMBATE PROFUNDO"), Rect2(cx - center_w * 0.5, y0 + pitch * 6.0, center_w, node_h))
-	_place(_physical_map_node("campfire_2", "FOGATA II"), Rect2(cx - center_w * 0.5, y0 + pitch * 7.0, center_w, node_h))
-	_place(_physical_map_node("boss_1", "GUARDIÁN DEL BOSQUE"), Rect2(cx - center_w * 0.5, y0 + pitch * 8.0, center_w, node_h))
-	_place(_physical_map_node("region_complete", "SENDERO SIGUIENTE"), Rect2(cx - center_w * 0.5, y0 + pitch * 9.0, center_w, node_h))
+	_place(_physical_map_node("prospector_event", "TRES ROCAS"), Rect2(cx - branch_offset - branch_w * 0.5, y0 + pitch * 6.0, branch_w, node_h))
+	_place(_physical_map_node("bone_altar", "ALTAR DE HUESOS"), Rect2(cx + branch_offset - branch_w * 0.5, y0 + pitch * 6.0, branch_w, node_h))
+	_place(_physical_map_node("battle_2", "COMBATE PROFUNDO"), Rect2(cx - center_w * 0.5, y0 + pitch * 7.0, center_w, node_h))
+	_place(_physical_map_node("campfire_2", "FOGATA II"), Rect2(cx - center_w * 0.5, y0 + pitch * 8.0, center_w, node_h))
+	_place(_physical_map_node("boss_1", "GUARDIÁN DEL BOSQUE"), Rect2(cx - center_w * 0.5, y0 + pitch * 9.0, center_w, node_h))
+	_place(_physical_map_node("region_complete", "SENDERO SIGUIENTE"), Rect2(cx - center_w * 0.5, y0 + pitch * 10.0, center_w, node_h))
 
 	var current: Dictionary = state.get_node(state.current_node)
-	_place(_label("TU FIGURA ESTÁ EN: %s" % str(current.get("title", state.current_node)), 12, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.27, vh - 31, vw * 0.46, 24))
+	_place(_label("TU FIGURA ESTÁ EN: %s" % str(current.get("title", state.current_node)), 11, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.27, vh - 28, vw * 0.46, 22))
 
 func _show_choice(node_id: String) -> void:
 	_clear_screen()
@@ -202,11 +210,100 @@ func _show_choice(node_id: String) -> void:
 	var total := card_w * 3.0 + gap * 2.0
 	var left := (vw - total) * 0.5
 	for index in range(ids.size()):
-		var view := _choice_card_button(ids[index], _claim_choice.bind(node_id, ids[index]))
-		_place(view, Rect2(left + float(index) * (card_w + gap), vh * 0.30, card_w, card_h))
+		var card_id := ids[index]
+		var view := _choice_card_button(card_id, _claim_choice.bind(node_id, card_id))
+		var card_x := left + float(index) * (card_w + gap)
+		_place(view, Rect2(card_x, vh * 0.25, card_w, card_h))
+		var info := ImmersiveCatalogScript.find_by_id(card_id)
+		_place(_label(SigilCatalogScript.summary_for_card(info), 10, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(card_x - 12, vh * 0.25 + card_h + 10, card_w + 24, 105))
 	var back := _small_button("VOLVER AL MAPA", 230)
 	back.pressed.connect(_show_map)
 	_place(back, Rect2(vw * 0.5 - 115, vh - 82, 230, 52))
+
+func _show_prospector_event(node_id: String) -> void:
+	_clear_screen()
+	_add_campaign_backdrop("choice")
+	var viewport_size := get_viewport_rect().size
+	var vw := maxf(viewport_size.x, 1280.0)
+	var vh := maxf(viewport_size.y, 720.0)
+	_place(_label("EL PROSPECTOR APOYA EL PICO EN LA MESA", 28, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.16, 38, vw * 0.68, 42))
+	_place(_label("Elige una roca. Lo que haya dentro será tuyo.", 14, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.23, 82, vw * 0.54, 30))
+
+	var rock_w := 220.0
+	var gap := 80.0
+	var total := rock_w * 3.0 + gap * 2.0
+	var left := (vw - total) * 0.5
+	for index in range(3):
+		var rock := _small_button("ROCA %d\n\n✦" % (index + 1), int(rock_w))
+		rock.add_theme_font_size_override("font_size", 19)
+		rock.pressed.connect(_pick_prospector_boulder.bind(node_id, index))
+		rock.add_theme_stylebox_override("normal", _panel_style(Color("14170d"), I_EDGE, 3, 4))
+		rock.add_theme_stylebox_override("pressed", _panel_style(Color("2a2b18"), I_AMBER, 4, 4))
+		_place(rock, Rect2(left + float(index) * (rock_w + gap), vh * 0.30, rock_w, 210))
+
+	var back := _small_button("VOLVER AL MAPA", 230)
+	back.pressed.connect(_show_map)
+	_place(back, Rect2(vw * 0.5 - 115, vh - 72, 230, 44))
+
+func _show_event_reward(title_text: String, card_id: String) -> void:
+	_clear_screen()
+	_add_campaign_backdrop("reward")
+	var viewport_size := get_viewport_rect().size
+	var vw := maxf(viewport_size.x, 1280.0)
+	var vh := maxf(viewport_size.y, 720.0)
+	_place(_label(title_text, 31, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.25, 35, vw * 0.50, 44))
+	var data := _campaign_card(card_id)
+	var card := ImmersiveCardScript.new()
+	card.card = data
+	card.disabled = true
+	_place(card, Rect2(vw * 0.5 - 95, 125, 190, 260))
+	_place(_label(SigilCatalogScript.summary_for_card(data), 13, I_INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.27, 405, vw * 0.46, 90))
+	var continue_button := _small_button("GUARDAR Y CONTINUAR", 300)
+	continue_button.pressed.connect(_show_map)
+	_place(continue_button, Rect2(vw * 0.5 - 150, vh - 82, 300, 50))
+
+func _show_bone_altar(node_id: String) -> void:
+	_clear_screen()
+	_add_campaign_backdrop("gate")
+	var viewport_size := get_viewport_rect().size
+	var vw := maxf(viewport_size.x, 1280.0)
+	var vh := maxf(viewport_size.y, 720.0)
+	_place(_label("EL ALTAR DEL SEÑOR DE LOS HUESOS", 29, I_BONE, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.18, 28, vw * 0.64, 42))
+	_place(_label("Una ofrenda común concede 1 Hueso inicial. La Cabra Negra concede 8.", 13, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.20, 70, vw * 0.60, 30))
+
+	if not selected_event_card_id.is_empty():
+		var selected_data := _campaign_card(selected_event_card_id)
+		var selected_card := ImmersiveCardScript.new()
+		selected_card.card = selected_data
+		selected_card.chosen = true
+		selected_card.disabled = true
+		_place(selected_card, Rect2(vw * 0.5 - 82, 110, 164, 224))
+		_place(_label(SigilCatalogScript.summary_for_card(selected_data), 11, I_INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.31, 342, vw * 0.38, 62))
+		var offer := _small_button("OFRECER %s" % str(selected_data.get("name", "CARTA")), 330)
+		offer.pressed.connect(_confirm_bone_altar.bind(node_id))
+		offer.add_theme_stylebox_override("normal", _panel_style(Color("160d09"), Color("8a5d3b"), 3, 3))
+		_place(offer, Rect2(vw * 0.5 - 165, 412, 330, 46))
+	else:
+		_place(_label("ELIGE QUÉ CARTA DESAPARECERÁ DEL MAZO", 13, I_AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.30, 355, vw * 0.40, 28))
+
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_place(scroll, Rect2(90, 475, vw - 180, 170))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	scroll.add_child(row)
+	for card_id in state.deck_ids:
+		var card := ImmersiveCardScript.new()
+		card.card = _campaign_card(card_id)
+		card.chosen = card_id == selected_event_card_id
+		card.custom_minimum_size = Vector2(116, 158)
+		card.pressed.connect(_select_bone_altar_card.bind(node_id, card_id))
+		row.add_child(card)
+
+	var back := _small_button("VOLVER AL MAPA", 190)
+	back.pressed.connect(_leave_special_event)
+	_place(back, Rect2(vw - 215, vh - 48, 190, 36))
 
 func _show_campfire(node_id: String) -> void:
 	_clear_screen()
