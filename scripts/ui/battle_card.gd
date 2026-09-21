@@ -93,16 +93,16 @@ func _draw() -> void:
 	var stat_y := h - stat_h - 7.0
 	draw_rect(Rect2(7, stat_y, w - 19, stat_h), PAPER_LIGHT)
 	draw_rect(Rect2(7, stat_y, w - 19, stat_h), INK, false, 2)
-	draw_line(Vector2(w * 0.31, stat_y), Vector2(w * 0.31, stat_y + stat_h), INK, 1)
-	draw_line(Vector2(w * 0.69, stat_y), Vector2(w * 0.69, stat_y + stat_h), INK, 1)
+	draw_line(Vector2(w * 0.27, stat_y), Vector2(w * 0.27, stat_y + stat_h), INK, 1)
+	draw_line(Vector2(w * 0.73, stat_y), Vector2(w * 0.73, stat_y + stat_h), INK, 1)
 
 	var attack_value := current_atk if current_atk >= 0 else int(card.get("atk", 0))
 	var health_value := current_hp if current_hp >= 0 else int(card.get("hp", 1))
 	var stat_size := int(clampf(stat_h * 0.66, 19, 31))
-	draw_string(font, Vector2(9, stat_y + stat_h * 0.76), str(attack_value), HORIZONTAL_ALIGNMENT_CENTER, w * 0.25, stat_size, INK)
-	draw_string(font, Vector2(w * 0.73, stat_y + stat_h * 0.76), str(health_value), HORIZONTAL_ALIGNMENT_CENTER, w * 0.20, stat_size, INK)
+	draw_string(font, Vector2(9, stat_y + stat_h * 0.76), str(attack_value), HORIZONTAL_ALIGNMENT_CENTER, w * 0.20, stat_size, INK)
+	draw_string(font, Vector2(w * 0.78, stat_y + stat_h * 0.76), str(health_value), HORIZONTAL_ALIGNMENT_CENTER, w * 0.15, stat_size, INK)
 
-	_draw_sigils(Rect2(w * 0.32, stat_y + 2, w * 0.36, stat_h - 4))
+	_draw_sigils(Rect2(w * 0.28, stat_y + 1, w * 0.44, stat_h - 2))
 
 	if chosen:
 		draw_rect(Rect2(-1, -1, w - 4, h - 4), GLOW, false, 4)
@@ -162,80 +162,206 @@ func _draw_sigils(rect: Rect2) -> void:
 		_draw_sigil_symbol(str(sigils[i]), pos, radius)
 
 func _draw_sigil_symbol(code: String, pos: Vector2, r: float) -> void:
-	var c := INK
+	var ink := INK
+	var paper := PAPER_LIGHT
+	var lw := maxf(2.0, r * 0.18)
 	match code:
-		"AIRBORNE":
-			draw_line(pos + Vector2(-r, r * 0.35), pos + Vector2(r, -r * 0.35), c, 3)
-			draw_line(pos + Vector2(-r * 0.65, -r * 0.35), pos + Vector2(r * 0.65, r * 0.35), c, 3)
-		"MIGHTY_LEAP":
-			draw_arc(pos, r * 0.72, PI, TAU, 14, c, 3)
-			draw_line(pos + Vector2(-r * 0.7, 0), pos + Vector2(0, -r * 0.95), c, 2)
-			draw_line(pos + Vector2(0, -r * 0.95), pos + Vector2(r * 0.7, 0), c, 2)
 		"TOUCH_OF_DEATH":
-			draw_circle(pos, r * 0.72, c)
-			draw_circle(pos + Vector2(-r * 0.25, -r * 0.08), r * 0.13, PAPER_LIGHT)
-			draw_circle(pos + Vector2(r * 0.25, -r * 0.08), r * 0.13, PAPER_LIGHT)
-			draw_rect(Rect2(pos.x - r * 0.22, pos.y + r * 0.26, r * 0.44, r * 0.20), PAPER_LIGHT)
+			draw_circle(pos + Vector2(0, -r * 0.08), r * 0.58, ink, false, lw)
+			draw_circle(pos + Vector2(-r * 0.22, -r * 0.12), r * 0.11, ink)
+			draw_circle(pos + Vector2(r * 0.22, -r * 0.12), r * 0.11, ink)
+			draw_line(pos + Vector2(-r * 0.28, r * 0.18), pos + Vector2(r * 0.28, r * 0.18), ink, lw)
+			draw_line(pos + Vector2(-r * 0.18, r * 0.20), pos + Vector2(-r * 0.18, r * 0.58), ink, lw)
+			draw_line(pos + Vector2(r * 0.18, r * 0.20), pos + Vector2(r * 0.18, r * 0.58), ink, lw)
+		"LEADER":
+			draw_line(pos + Vector2(0, r), pos + Vector2(0, -r * 0.85), ink, lw)
+			draw_line(pos + Vector2(0, -r * 0.10), pos + Vector2(-r * 0.72, -r * 0.58), ink, lw)
+			draw_line(pos + Vector2(0, -r * 0.10), pos + Vector2(r * 0.72, -r * 0.58), ink, lw)
+			draw_circle(pos + Vector2(0, -r * 0.9), r * 0.12, ink)
+		"AMORPHOUS":
+			draw_arc(pos, r * 0.70, 0.2, 5.2, 20, ink, lw)
+			draw_arc(pos + Vector2(r * 0.12, -r * 0.08), r * 0.34, 1.1, 5.9, 14, ink, lw)
+			draw_circle(pos + Vector2(-r * 0.45, r * 0.22), r * 0.10, ink)
+		"ANT_SPAWNER":
+			draw_circle(pos, r * 0.24, ink)
+			draw_circle(pos + Vector2(0, -r * 0.48), r * 0.18, ink)
+			draw_circle(pos + Vector2(0, r * 0.48), r * 0.22, ink)
+			for side in [-1.0, 1.0]:
+				draw_line(pos + Vector2(side * r * 0.18, -r * 0.10), pos + Vector2(side * r * 0.75, -r * 0.50), ink, lw)
+				draw_line(pos + Vector2(side * r * 0.20, r * 0.10), pos + Vector2(side * r * 0.78, r * 0.05), ink, lw)
+				draw_line(pos + Vector2(side * r * 0.18, r * 0.28), pos + Vector2(side * r * 0.72, r * 0.62), ink, lw)
+		"AIRBORNE":
+			draw_line(pos, pos + Vector2(0, r * 0.85), ink, lw)
+			draw_line(pos, pos + Vector2(-r * 0.86, -r * 0.56), ink, lw)
+			draw_line(pos, pos + Vector2(r * 0.86, -r * 0.56), ink, lw)
+			draw_line(pos + Vector2(-r * 0.86, -r * 0.56), pos + Vector2(-r * 0.45, r * 0.05), ink, lw)
+			draw_line(pos + Vector2(r * 0.86, -r * 0.56), pos + Vector2(r * 0.45, r * 0.05), ink, lw)
+		"DAM_BUILDER":
+			for y in [-0.48, 0.0, 0.48]:
+				draw_line(pos + Vector2(-r * 0.9, y * r), pos + Vector2(r * 0.9, y * r), ink, lw)
+			draw_line(pos + Vector2(-r * 0.55, -r * 0.9), pos + Vector2(-r * 0.05, r * 0.9), ink, lw)
+			draw_line(pos + Vector2(r * 0.05, -r * 0.9), pos + Vector2(r * 0.55, r * 0.9), ink, lw)
+		"BEES_WITHIN":
+			draw_circle(pos, r * 0.30, ink, false, lw)
+			draw_line(pos + Vector2(-r * 0.25, -r * 0.12), pos + Vector2(r * 0.25, -r * 0.12), ink, lw)
+			draw_line(pos + Vector2(-r * 0.25, r * 0.12), pos + Vector2(r * 0.25, r * 0.12), ink, lw)
+			draw_arc(pos + Vector2(-r * 0.45, -r * 0.12), r * 0.42, -1.2, 1.2, 10, ink, lw)
+			draw_arc(pos + Vector2(r * 0.45, -r * 0.12), r * 0.42, 1.95, 4.35, 10, ink, lw)
+			draw_line(pos + Vector2(0, r * 0.30), pos + Vector2(0, r * 0.92), ink, lw)
+		"WORTHY_SACRIFICE":
+			draw_circle(pos, r * 0.55, ink, false, lw)
+			draw_line(pos + Vector2(0, -r), pos + Vector2(0, r), ink, lw)
+			draw_line(pos + Vector2(-r, 0), pos + Vector2(r, 0), ink, lw)
+			draw_circle(pos, r * 0.12, ink)
+		"GUARDIAN":
+			draw_arc(pos, r * 0.82, PI, TAU, 18, ink, lw)
+			draw_line(pos + Vector2(-r * 0.82, 0), pos + Vector2(-r * 0.55, r * 0.70), ink, lw)
+			draw_line(pos + Vector2(r * 0.82, 0), pos + Vector2(r * 0.55, r * 0.70), ink, lw)
+			draw_line(pos + Vector2(-r * 0.55, r * 0.70), pos + Vector2(r * 0.55, r * 0.70), ink, lw)
+			draw_circle(pos + Vector2(0, r * 0.1), r * 0.16, ink)
+		"MIGHTY_LEAP":
+			draw_arc(pos + Vector2(0, r * 0.12), r * 0.70, PI, TAU, 16, ink, lw)
+			draw_line(pos + Vector2(-r * 0.70, r * 0.12), pos + Vector2(0, -r * 0.95), ink, lw)
+			draw_line(pos + Vector2(r * 0.70, r * 0.12), pos + Vector2(0, -r * 0.95), ink, lw)
+			draw_line(pos + Vector2(-r * 0.48, r * 0.62), pos + Vector2(r * 0.48, r * 0.62), ink, lw)
+		"MANY_LIVES":
+			draw_arc(pos, r * 0.72, -2.4, 2.4, 22, ink, lw)
+			draw_line(pos + Vector2(r * 0.5, -r * 0.54), pos + Vector2(r * 0.9, -r * 0.62), ink, lw)
+			draw_line(pos + Vector2(r * 0.5, -r * 0.54), pos + Vector2(r * 0.66, -r * 0.18), ink, lw)
+			draw_circle(pos, r * 0.22, ink, false, lw)
+		"UNKILLABLE":
+			draw_arc(pos, r * 0.72, 0.2, 5.8, 24, ink, lw)
+			draw_line(pos + Vector2(r * 0.58, -r * 0.44), pos + Vector2(r * 0.92, -r * 0.52), ink, lw)
+			draw_line(pos + Vector2(r * 0.58, -r * 0.44), pos + Vector2(r * 0.70, -r * 0.10), ink, lw)
+			draw_line(pos + Vector2(-r * 0.16, -r * 0.45), pos + Vector2(r * 0.18, r * 0.45), ink, lw)
+		"CORPSE_EATER":
+			draw_arc(pos + Vector2(0, -r * 0.12), r * 0.60, 0, PI, 14, ink, lw)
+			draw_line(pos + Vector2(-r * 0.6, -r * 0.12), pos + Vector2(-r * 0.32, r * 0.72), ink, lw)
+			draw_line(pos + Vector2(r * 0.6, -r * 0.12), pos + Vector2(r * 0.32, r * 0.72), ink, lw)
+			draw_line(pos + Vector2(-r * 0.32, r * 0.72), pos + Vector2(r * 0.32, r * 0.72), ink, lw)
+			draw_circle(pos + Vector2(-r * 0.22, -r * 0.16), r * 0.10, ink)
+			draw_circle(pos + Vector2(r * 0.22, -r * 0.16), r * 0.10, ink)
+		"SPRINTER":
+			draw_line(pos + Vector2(-r, -r * 0.50), pos + Vector2(r * 0.35, -r * 0.50), ink, lw)
+			draw_line(pos + Vector2(-r, 0), pos + Vector2(r * 0.55, 0), ink, lw)
+			draw_line(pos + Vector2(-r, r * 0.50), pos + Vector2(r * 0.35, r * 0.50), ink, lw)
+			draw_line(pos + Vector2(r * 0.55, 0), pos + Vector2(r * 0.15, -r * 0.35), ink, lw)
+			draw_line(pos + Vector2(r * 0.55, 0), pos + Vector2(r * 0.15, r * 0.35), ink, lw)
+		"FLEDGLING":
+			draw_arc(pos + Vector2(0, r * 0.15), r * 0.55, PI, TAU, 16, ink, lw)
+			draw_circle(pos + Vector2(0, -r * 0.50), r * 0.14, ink)
+			draw_line(pos + Vector2(0, -r * 0.34), pos + Vector2(0, r * 0.92), ink, lw)
+			draw_line(pos + Vector2(-r * 0.44, r * 0.38), pos + Vector2(0, r * 0.92), ink, lw)
+			draw_line(pos + Vector2(r * 0.44, r * 0.38), pos + Vector2(0, r * 0.92), ink, lw)
+		"FECUNDITY":
+			draw_circle(pos + Vector2(-r * 0.32, 0), r * 0.48, ink, false, lw)
+			draw_circle(pos + Vector2(r * 0.32, 0), r * 0.48, ink, false, lw)
+			draw_line(pos + Vector2(-r * 0.08, -r * 0.62), pos + Vector2(r * 0.08, r * 0.62), ink, lw)
+		"FROZEN_AWAY":
+			for a in range(0, 360, 60):
+				var rad := deg_to_rad(float(a))
+				draw_line(pos, pos + Vector2(cos(rad), sin(rad)) * r * 0.92, ink, lw)
+			draw_circle(pos, r * 0.22, ink, false, lw)
+		"BONE_KING":
+			draw_circle(pos + Vector2(-r * 0.55, 0), r * 0.22, ink, false, lw)
+			draw_circle(pos + Vector2(r * 0.55, 0), r * 0.22, ink, false, lw)
+			draw_line(pos + Vector2(-r * 0.38, -r * 0.16), pos + Vector2(r * 0.38, r * 0.16), ink, lw * 1.5)
+			draw_line(pos + Vector2(-r * 0.38, r * 0.16), pos + Vector2(r * 0.38, -r * 0.16), ink, lw * 1.5)
+			draw_line(pos + Vector2(-r * 0.18, -r * 0.72), pos + Vector2(0, -r * 0.98), ink, lw)
+			draw_line(pos + Vector2(0, -r * 0.98), pos + Vector2(r * 0.18, -r * 0.72), ink, lw)
+		"WATERBORNE":
+			draw_arc(pos + Vector2(0, r * 0.15), r * 0.78, PI, TAU, 18, ink, lw)
+			draw_line(pos + Vector2(-r * 0.88, r * 0.18), pos + Vector2(-r * 0.35, r * 0.58), ink, lw)
+			draw_line(pos + Vector2(-r * 0.35, r * 0.58), pos + Vector2(r * 0.15, r * 0.18), ink, lw)
+			draw_line(pos + Vector2(r * 0.15, r * 0.18), pos + Vector2(r * 0.82, r * 0.62), ink, lw)
+		"STEEL_TRAP":
+			draw_line(pos + Vector2(-r * 0.90, -r * 0.55), pos + Vector2(0, r * 0.10), ink, lw)
+			draw_line(pos + Vector2(r * 0.90, -r * 0.55), pos + Vector2(0, r * 0.10), ink, lw)
+			draw_line(pos + Vector2(-r * 0.90, r * 0.55), pos + Vector2(0, -r * 0.10), ink, lw)
+			draw_line(pos + Vector2(r * 0.90, r * 0.55), pos + Vector2(0, -r * 0.10), ink, lw)
+			draw_circle(pos, r * 0.18, ink)
+		"HOARDER":
+			draw_rect(Rect2(pos - Vector2(r * 0.55, r * 0.68), Vector2(r * 0.82, r * 1.20)), ink, false, lw)
+			draw_rect(Rect2(pos - Vector2(r * 0.18, r * 0.45), Vector2(r * 0.82, r * 1.20)), ink, false, lw)
+			draw_line(pos + Vector2(-r * 0.8, r * 0.72), pos + Vector2(r * 0.8, r * 0.72), ink, lw)
+		"BIFURCATED_STRIKE":
+			draw_line(pos + Vector2(0, r), pos, ink, lw)
+			draw_line(pos, pos + Vector2(-r * 0.82, -r), ink, lw)
+			draw_line(pos, pos + Vector2(r * 0.82, -r), ink, lw)
+			draw_circle(pos, r * 0.12, ink)
+		"TRIFURCATED_STRIKE":
+			draw_line(pos + Vector2(0, r), pos + Vector2(0, -r), ink, lw)
+			draw_line(pos, pos + Vector2(-r * 0.82, -r), ink, lw)
+			draw_line(pos, pos + Vector2(r * 0.82, -r), ink, lw)
+			draw_circle(pos, r * 0.12, ink)
+		"BURROWER":
+			draw_arc(pos + Vector2(0, r * 0.22), r * 0.72, PI, TAU, 18, ink, lw)
+			draw_line(pos + Vector2(-r * 0.72, r * 0.22), pos + Vector2(-r * 0.38, r * 0.72), ink, lw)
+			draw_line(pos + Vector2(r * 0.72, r * 0.22), pos + Vector2(r * 0.38, r * 0.72), ink, lw)
+			draw_circle(pos + Vector2(-r * 0.24, 0), r * 0.10, ink)
+			draw_circle(pos + Vector2(r * 0.24, 0), r * 0.10, ink)
+		"HEFTY":
+			draw_line(pos + Vector2(-r, 0), pos + Vector2(r * 0.55, 0), ink, lw * 1.5)
+			draw_line(pos + Vector2(r * 0.55, 0), pos + Vector2(r * 0.05, -r * 0.48), ink, lw * 1.5)
+			draw_line(pos + Vector2(r * 0.55, 0), pos + Vector2(r * 0.05, r * 0.48), ink, lw * 1.5)
+			draw_rect(Rect2(pos.x - r * 0.78, pos.y - r * 0.72, r * 0.35, r * 1.44), ink, false, lw)
+		"TRINKET_BEARER":
+			draw_rect(Rect2(pos - Vector2(r * 0.62, r * 0.46), Vector2(r * 1.24, r * 0.92)), ink, false, lw)
+			draw_arc(pos + Vector2(0, -r * 0.46), r * 0.35, PI, TAU, 12, ink, lw)
+			draw_circle(pos, r * 0.10, ink)
 		"SHARP_QUILLS":
+			draw_circle(pos, r * 0.22, ink, false, lw)
 			for angle in range(0, 360, 45):
 				var a := deg_to_rad(float(angle))
-				draw_line(pos + Vector2(cos(a), sin(a)) * r * 0.22, pos + Vector2(cos(a), sin(a)) * r, c, 3)
-		"LEADER":
-			draw_line(pos + Vector2(0, -r), pos + Vector2(0, r), c, 3)
-			draw_line(pos, pos + Vector2(-r * 0.8, -r * 0.45), c, 3)
-			draw_line(pos, pos + Vector2(r * 0.8, -r * 0.45), c, 3)
-		"MANY_LIVES":
-			draw_circle(pos, r * 0.72, c, false, 3)
-			draw_arc(pos, r * 0.42, -PI * 0.35, PI * 1.35, 14, c, 3)
-		"UNKILLABLE":
-			draw_arc(pos, r * 0.75, 0, TAU, 20, c, 3)
-			draw_line(pos + Vector2(r * 0.45, -r * 0.6), pos + Vector2(r * 0.85, -r * 0.7), c, 3)
-		"SPRINTER", "HEFTY":
-			for y in [-0.45, 0.0, 0.45]:
-				draw_line(pos + Vector2(-r, y * r), pos + Vector2(r, y * r - r * 0.25), c, 3)
-		"BURROWER", "RABBIT_HOLE":
-			draw_arc(pos, r * 0.78, PI, TAU, 18, c, 4)
-			draw_line(pos + Vector2(-r * 0.75, 0), pos + Vector2(r * 0.75, 0), c, 3)
-		"BIFURCATED_STRIKE":
-			draw_line(pos + Vector2(0, r), pos + Vector2(0, 0), c, 3)
-			draw_line(pos, pos + Vector2(-r * 0.8, -r), c, 3)
-			draw_line(pos, pos + Vector2(r * 0.8, -r), c, 3)
-		"TRIFURCATED_STRIKE":
-			draw_line(pos + Vector2(0, r), pos + Vector2(0, -r), c, 3)
-			draw_line(pos, pos + Vector2(-r * 0.85, -r), c, 3)
-			draw_line(pos, pos + Vector2(r * 0.85, -r), c, 3)
-		"FLEDGLING":
-			draw_arc(pos, r * 0.60, 0, TAU, 16, c, 3)
-			draw_line(pos + Vector2(-r * 0.6, r * 0.7), pos + Vector2(r * 0.6, r * 0.7), c, 3)
+				draw_line(pos + Vector2(cos(a), sin(a)) * r * 0.30, pos + Vector2(cos(a), sin(a)) * r, ink, lw)
+		"RABBIT_HOLE":
+			draw_arc(pos + Vector2(0, r * 0.24), r * 0.66, PI, TAU, 18, ink, lw)
+			draw_line(pos + Vector2(-r * 0.66, r * 0.24), pos + Vector2(-r * 0.42, r * 0.82), ink, lw)
+			draw_line(pos + Vector2(r * 0.66, r * 0.24), pos + Vector2(r * 0.42, r * 0.82), ink, lw)
+			draw_line(pos + Vector2(-r * 0.22, -r * 0.46), pos + Vector2(-r * 0.35, -r), ink, lw)
+			draw_line(pos + Vector2(r * 0.22, -r * 0.46), pos + Vector2(r * 0.35, -r), ink, lw)
 		"STINKY":
 			for x in [-0.55, 0.0, 0.55]:
 				var px: float = pos.x + float(x) * r
-				draw_arc(Vector2(px, pos.y), r * 0.35, -PI * 0.5, PI * 0.5, 8, c, 2)
-		"WORTHY_SACRIFICE":
-			draw_circle(pos, r * 0.62, c, false, 3)
-			draw_line(pos + Vector2(0, -r), pos + Vector2(0, r), c, 3)
-			draw_line(pos + Vector2(-r * 0.7, 0), pos + Vector2(r * 0.7, 0), c, 3)
+				draw_arc(Vector2(px, pos.y), r * 0.36, -1.35, 1.35, 10, ink, lw)
+		"LOOSE_TAIL":
+			draw_arc(pos, r * 0.72, -2.4, 2.2, 20, ink, lw)
+			draw_line(pos + Vector2(r * 0.50, r * 0.48), pos + Vector2(r * 0.92, r * 0.78), ink, lw)
+			draw_line(pos + Vector2(r * 0.55, r * 0.48), pos + Vector2(r * 0.86, r * 0.28), ink, lw)
+		"BELLIST":
+			draw_arc(pos + Vector2(0, -r * 0.05), r * 0.62, PI, TAU, 16, ink, lw)
+			draw_line(pos + Vector2(-r * 0.62, -r * 0.05), pos + Vector2(-r * 0.38, r * 0.62), ink, lw)
+			draw_line(pos + Vector2(r * 0.62, -r * 0.05), pos + Vector2(r * 0.38, r * 0.62), ink, lw)
+			draw_line(pos + Vector2(-r * 0.38, r * 0.62), pos + Vector2(r * 0.38, r * 0.62), ink, lw)
+			draw_circle(pos + Vector2(0, r * 0.80), r * 0.12, ink)
+		"REPULSIVE":
+			draw_circle(pos, r * 0.76, ink, false, lw)
+			draw_line(pos + Vector2(-r * 0.55, -r * 0.55), pos + Vector2(r * 0.55, r * 0.55), ink, lw * 1.4)
 		"STAT_ANTS":
-			draw_circle(pos, r * 0.32, c)
-			draw_circle(pos + Vector2(-r * 0.38, -r * 0.25), r * 0.18, c)
-			draw_circle(pos + Vector2(r * 0.38, -r * 0.25), r * 0.18, c)
-			draw_line(pos + Vector2(-r * 0.2, r * 0.2), pos + Vector2(-r * 0.65, r * 0.75), c, 2)
-			draw_line(pos + Vector2(r * 0.2, r * 0.2), pos + Vector2(r * 0.65, r * 0.75), c, 2)
+			draw_circle(pos, r * 0.22, ink)
+			draw_circle(pos + Vector2(0, -r * 0.44), r * 0.16, ink)
+			draw_circle(pos + Vector2(0, r * 0.44), r * 0.18, ink)
+			for side in [-1.0, 1.0]:
+				draw_line(pos + Vector2(side * r * 0.14, -r * 0.08), pos + Vector2(side * r * 0.72, -r * 0.50), ink, lw)
+				draw_line(pos + Vector2(side * r * 0.16, r * 0.10), pos + Vector2(side * r * 0.72, r * 0.42), ink, lw)
 		"STAT_BELL":
-			draw_arc(pos, r * 0.7, PI, TAU, 14, c, 3)
-			draw_line(pos + Vector2(-r * 0.7, 0), pos + Vector2(-r * 0.5, r * 0.75), c, 3)
-			draw_line(pos + Vector2(r * 0.7, 0), pos + Vector2(r * 0.5, r * 0.75), c, 3)
-			draw_line(pos + Vector2(-r * 0.5, r * 0.75), pos + Vector2(r * 0.5, r * 0.75), c, 3)
+			draw_arc(pos + Vector2(0, -r * 0.05), r * 0.64, PI, TAU, 16, ink, lw)
+			draw_line(pos + Vector2(-r * 0.64, -r * 0.05), pos + Vector2(-r * 0.40, r * 0.66), ink, lw)
+			draw_line(pos + Vector2(r * 0.64, -r * 0.05), pos + Vector2(r * 0.40, r * 0.66), ink, lw)
+			draw_line(pos + Vector2(-r * 0.40, r * 0.66), pos + Vector2(r * 0.40, r * 0.66), ink, lw)
+			draw_line(pos + Vector2(0, r * 0.66), pos + Vector2(0, r), ink, lw)
 		"STAT_CARDS_IN_HAND":
-			draw_rect(Rect2(pos - Vector2(r * 0.65, r * 0.8), Vector2(r * 1.05, r * 1.35)), c, false, 2)
-			draw_rect(Rect2(pos - Vector2(r * 0.35, r * 0.55), Vector2(r * 1.05, r * 1.35)), c, false, 2)
+			draw_rect(Rect2(pos - Vector2(r * 0.72, r * 0.74), Vector2(r * 0.95, r * 1.28)), ink, false, lw)
+			draw_rect(Rect2(pos - Vector2(r * 0.38, r * 0.50), Vector2(r * 0.95, r * 1.28)), ink, false, lw)
+			draw_rect(Rect2(pos - Vector2(r * 0.04, r * 0.26), Vector2(r * 0.95, r * 1.28)), ink, false, lw)
 		"STAT_MIRROR":
-			draw_rect(Rect2(pos - Vector2(r * 0.55, r * 0.8), Vector2(r * 1.1, r * 1.6)), c, false, 3)
-			draw_line(pos + Vector2(0, -r * 0.7), pos + Vector2(0, r * 0.7), c, 2)
+			draw_rect(Rect2(pos - Vector2(r * 0.60, r * 0.82), Vector2(r * 1.20, r * 1.64)), ink, false, lw)
+			draw_line(pos + Vector2(0, -r * 0.70), pos + Vector2(0, r * 0.70), ink, lw)
+			draw_line(pos + Vector2(-r * 0.45, 0), pos + Vector2(r * 0.45, 0), ink, lw)
 		_:
-			# Runa genérica para sellos menos frecuentes; evita texto ilegible.
-			draw_rect(Rect2(pos - Vector2(r * 0.62, r * 0.62), Vector2(r * 1.24, r * 1.24)), c, false, 3)
-			draw_line(pos + Vector2(-r * 0.45, r * 0.45), pos + Vector2(r * 0.45, -r * 0.45), c, 2)
+			# Último recurso deliberadamente rúnico, no un símbolo Unicode/emoji.
+			draw_circle(pos, r * 0.72, ink, false, lw)
+			draw_line(pos + Vector2(-r * 0.55, r * 0.55), pos + Vector2(r * 0.55, -r * 0.55), ink, lw)
 
 func _get_full_card_texture(card_id: String) -> Texture2D:
 	if _cached_full_id == card_id:
