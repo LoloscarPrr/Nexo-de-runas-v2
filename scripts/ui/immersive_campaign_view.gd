@@ -174,7 +174,7 @@ func _show_map() -> void:
 	_place(_label("EL MAPA SOBRE LA MESA", 24, I_INK, HORIZONTAL_ALIGNMENT_LEFT), Rect2(170, 18, 470, 36))
 	_place(_label("MAZO %d  ·  VICTORIAS %d  ·  BENDICIÓN %d HUESOS" % [state.deck_ids.size(), state.victories, state.bone_boon], 12, I_AMBER, HORIZONTAL_ALIGNMENT_RIGHT), Rect2(vw - 470, 21, 440, 32))
 
-	var second_segment := state.resolved_nodes.has("region_complete") or state.current_node in [
+	var second_segment: bool = bool(state.resolved_nodes.has("region_complete")) or state.current_node in [
 		"region_complete", "sigil_stones", "mycologists", "trial_event", "battle_3", "boss_2", "region_2_complete"
 	]
 	var cx := vw * 0.5
