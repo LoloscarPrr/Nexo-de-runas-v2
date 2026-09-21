@@ -10,11 +10,14 @@ var enemy_lanes := [null, null, null, null]
 var enemy_queue: Array[String] = []
 var encounter_id := "battle_1"
 var run_buffs: Dictionary = {}
+var run_sigils: Dictionary = {}
 
 const ENCOUNTERS := {
 	"battle_1": ["coyote", "rana_toro", "lobo", "puercoespin", "cascabel", "cuervo"],
 	"battle_2": ["puercoespin", "cascabel", "sabueso", "cuervo", "alce", "oso_grizzly"],
-	"boss_1": ["mula_de_carga", "coyote", "trampa_saltarina", "sabueso", "cascabel", "oso_grizzly", "alce_macho"]
+	"boss_1": ["mula_de_carga", "coyote", "trampa_saltarina", "sabueso", "cascabel", "oso_grizzly", "alce_macho"],
+	"battle_3": ["urraca", "mofeta", "alce", "cucaracha", "gran_tiburon_blanco", "oso_grizzly"],
+	"boss_2": ["trampa_saltarina", "puercoespin", "cascabel", "sabueso", "buitre_pavo", "urayuli"]
 }
 var enemy_queue_index := 0
 var bones := 0
@@ -33,9 +36,10 @@ const AMORPHOUS_POOL := [
 	"BURROWER", "SPRINTER", "UNKILLABLE", "FLEDGLING"
 ]
 
-func setup(deck_ids: Array[String], buffs: Dictionary = {}, battle_id: String = "battle_1") -> void:
+func setup(deck_ids: Array[String], buffs: Dictionary = {}, battle_id: String = "battle_1", sigil_mods: Dictionary = {}) -> void:
 	encounter_id = battle_id
 	run_buffs = buffs.duplicate(true)
+	run_sigils = sigil_mods.duplicate(true)
 	enemy_queue = []
 	var encounter_cards = ENCOUNTERS.get(battle_id, ENCOUNTERS["battle_1"])
 	for enemy_id in encounter_cards:
@@ -72,6 +76,15 @@ func card_for_id(card_id: String) -> Dictionary:
 		var buff: Dictionary = run_buffs[card_id]
 		card["atk"] = int(card.get("atk", 0)) + int(buff.get("atk", 0))
 		card["hp"] = int(card.get("hp", 1)) + int(buff.get("hp", 0))
+	if run_sigils.has(card_id):
+		var merged: Array[String] = []
+		for sigil in Array(card.get("sigils", [])):
+			var code := str(sigil)
+			if not merged.has(code): merged.append(code)
+		for sigil in Array(run_sigils[card_id]):
+			var code := str(sigil)
+			if not merged.has(code): merged.append(code)
+		card["sigils"] = merged
 	return card
 
 func needs_draw() -> bool:
@@ -232,7 +245,7 @@ func _new_unit(card_id: String, player_owned: bool = false) -> Dictionary:
 func _sigils(unit) -> Array:
 	if unit == null:
 		return []
-	var card := CardCatalogScript.find_by_id(str(unit.get("id", "")))
+	var card := card_for_id(str(unit.get("id", "")))
 	var result_sigils: Array = Array(card.get("sigils", [])).duplicate()
 	for sigil in Array(unit.get("extra_sigils", [])):
 		if not result_sigils.has(sigil):
