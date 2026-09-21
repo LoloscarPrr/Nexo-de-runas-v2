@@ -8,6 +8,7 @@ const BattleStateScript = preload("res://scripts/domain/battle_state.gd")
 const CardCatalogScript = preload("res://scripts/domain/card_catalog.gd")
 const BattleTableScript = preload("res://scripts/ui/battle_table.gd")
 const BattleCardScript = preload("res://scripts/ui/battle_card.gd")
+const SigilCatalogScript = preload("res://scripts/domain/sigil_catalog.gd")
 
 const CardViewScript = preload("res://scripts/ui/card_view.gd")
 
@@ -30,6 +31,7 @@ var active_battle_node := ""
 var selected_hand_index := -1
 var selected_sacrifices: Array[int] = []
 var selected_campfire_card_id := ""
+var selected_event_card_id := ""
 
 func has_save() -> bool:
 	return CampaignSaveScript.exists()
@@ -157,6 +159,10 @@ func _enter_node(node_id: String) -> void:
 			_start_battle(node_id)
 		"campfire":
 			_show_campfire(node_id)
+		"prospector":
+			_show_prospector_event(node_id)
+		"bone_altar":
+			_show_bone_altar(node_id)
 		"gate":
 			_show_region_gate(node_id)
 		"end":
@@ -211,6 +217,8 @@ func _start_battle(node_id: String) -> void:
 	selected_sacrifices.clear()
 	battle_state = BattleStateScript.new()
 	battle_state.setup(state.deck_ids, state.card_buffs, node_id)
+	battle_state.bones = maxi(battle_state.bones, int(state.bone_boon))
+	battle_state.ouroboros_bonus = int(state.ouroboros_bonus)
 	_render_battle()
 
 func _render_battle() -> void:
@@ -395,6 +403,7 @@ func _claim_battle_reward(card_id: String) -> void:
 		return
 	if state.claim_reward("battle:%s" % active_battle_node, card_id):
 		state.victories += 1
+		state.ouroboros_bonus = maxi(int(state.ouroboros_bonus), int(battle_state.ouroboros_bonus))
 		state.resolve_node(active_battle_node)
 		CampaignSaveScript.save_state(state)
 	_show_map()
@@ -410,6 +419,95 @@ func _show_defeat() -> void:
 	var map_button := _wide_button("REGRESAR AL MAPA")
 	map_button.pressed.connect(_show_map)
 	box.add_child(map_button)
+
+func _show_prospector_event(node_id: String) -> void:
+	_clear_screen()
+	var box := _screen_box()
+	box.add_child(_label("EL PROSPECTOR SONRÍE", 34, AMBER, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("Tres rocas. Una puede ocultar oro; las otras, algo vivo.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 24)
+	box.add_child(row)
+	for index in range(3):
+		var pick := _wide_button("ROCA %d" % (index + 1))
+		pick.custom_minimum_size = Vector2(210, 150)
+		pick.pressed.connect(_pick_prospector_boulder.bind(node_id, index))
+		row.add_child(pick)
+	var back := _small_button("VOLVER AL MAPA", 260)
+	back.pressed.connect(_show_map)
+	box.add_child(back)
+
+func _pick_prospector_boulder(node_id: String, index: int) -> void:
+	if state == null:
+		return
+	var reward := state.claim_prospector_boulder(node_id, index)
+	if reward.is_empty():
+		return
+	CampaignSaveScript.save_state(state)
+	_show_event_reward("LA ROCA SE PARTE", reward)
+
+func _show_event_reward(title_text: String, card_id: String) -> void:
+	_clear_screen()
+	var box := _screen_box()
+	box.add_child(_label(title_text, 34, SUCCESS, HORIZONTAL_ALIGNMENT_CENTER))
+	var card := BattleCardScript.new()
+	card.card = _campaign_card(card_id)
+	card.custom_minimum_size = Vector2(190, 260)
+	card.disabled = true
+	box.add_child(card)
+	box.add_child(_label(SigilCatalogScript.summary_for_card(card.card), 14, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	var continue_button := _wide_button("CONTINUAR")
+	continue_button.pressed.connect(_show_map)
+	box.add_child(continue_button)
+
+func _show_bone_altar(node_id: String) -> void:
+	_clear_screen()
+	var box := _screen_box()
+	box.add_child(_label("EL ALTAR EXIGE UNA OFRENDA", 34, BONE, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("Sacrifica una carta para comenzar los combates con Huesos. La Cabra Negra concede una bendición mayor.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 290)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	scroll.add_child(row)
+	for card_id in state.deck_ids:
+		var card := BattleCardScript.new()
+		card.card = _campaign_card(card_id)
+		card.chosen = card_id == selected_event_card_id
+		card.custom_minimum_size = Vector2(155, 215)
+		card.pressed.connect(_select_bone_altar_card.bind(node_id, card_id))
+		row.add_child(card)
+	if selected_event_card_id.is_empty():
+		box.add_child(_label("ELIGE UNA CARTA", 14, AMBER, HORIZONTAL_ALIGNMENT_CENTER))
+	else:
+		var selected := _campaign_card(selected_event_card_id)
+		box.add_child(_label(SigilCatalogScript.summary_for_card(selected), 13, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+		var offer := _wide_button("OFRECER %s" % str(selected.get("name", "CARTA")))
+		offer.pressed.connect(_confirm_bone_altar.bind(node_id))
+		box.add_child(offer)
+	var back := _small_button("VOLVER AL MAPA", 260)
+	back.pressed.connect(_leave_special_event)
+	box.add_child(back)
+
+func _select_bone_altar_card(node_id: String, card_id: String) -> void:
+	selected_event_card_id = card_id
+	_show_bone_altar(node_id)
+
+func _confirm_bone_altar(node_id: String) -> void:
+	if state == null or selected_event_card_id.is_empty():
+		return
+	if state.sacrifice_to_bone_lord(node_id, selected_event_card_id):
+		CampaignSaveScript.save_state(state)
+	selected_event_card_id = ""
+	_show_map()
+
+func _leave_special_event() -> void:
+	selected_event_card_id = ""
+	_show_map()
 
 func _show_campfire(node_id: String) -> void:
 	_clear_screen()
