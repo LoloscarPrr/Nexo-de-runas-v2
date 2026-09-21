@@ -549,7 +549,7 @@ func _show_region_gate(node_id: String) -> void:
 	_place(_label(subtitle, 14, I_MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.20, 88, vw * 0.60, 42))
 	if second_entry:
 		var enter_second := _small_button("ABRIR SEGUNDO TRAMO", 320)
-		enter_second.pressed.connect(_show_map)
+		enter_second.pressed.connect(_resolve_simple_node.bind(node_id))
 		enter_second.add_theme_stylebox_override("normal", _panel_style(Color(0.035, 0.050, 0.025, 0.94), I_AMBER, 2, 3))
 		_place(enter_second, Rect2(vw * 0.5 - 160, vh - 127, 320, 54))
 	elif not final_second:
