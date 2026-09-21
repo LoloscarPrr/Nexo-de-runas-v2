@@ -163,6 +163,12 @@ func _enter_node(node_id: String) -> void:
 			_show_prospector_event(node_id)
 		"bone_altar":
 			_show_bone_altar(node_id)
+		"sigil_stones":
+			_show_sigil_stones(node_id)
+		"mycologists":
+			_show_mycologists(node_id)
+		"trial":
+			_show_trial(node_id)
 		"gate":
 			_show_region_gate(node_id)
 		"end":
@@ -216,7 +222,7 @@ func _start_battle(node_id: String) -> void:
 	selected_hand_index = -1
 	selected_sacrifices.clear()
 	battle_state = BattleStateScript.new()
-	battle_state.setup(state.deck_ids, state.card_buffs, node_id)
+	battle_state.setup(state.deck_ids, state.card_buffs, node_id, state.card_sigils)
 	battle_state.bones = maxi(battle_state.bones, int(state.bone_boon))
 	battle_state.ouroboros_bonus = int(state.ouroboros_bonus)
 	_render_battle()
@@ -510,6 +516,145 @@ func _leave_special_event() -> void:
 	selected_event_card_id = ""
 	_show_map()
 
+func _show_sigil_stones(node_id: String) -> void:
+	_clear_screen()
+	var box := _screen_box()
+	box.add_child(_label("PIEDRAS MISTERIOSAS", 34, AMBER, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("Elige una carta con sello para destruirla y transferir sus sellos a otra.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	if selected_event_card_id.is_empty():
+		box.add_child(_label("PRIMERO ELIGE LA CARTA DONANTE", 14, AMBER, HORIZONTAL_ALIGNMENT_CENTER))
+	else:
+		var donor := _campaign_card(selected_event_card_id)
+		box.add_child(_label("DONANTE: %s" % str(donor.get("name", selected_event_card_id)), 15, INK, HORIZONTAL_ALIGNMENT_CENTER))
+		box.add_child(_label(SigilCatalogScript.summary_for_card(donor), 13, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 10)
+	box.add_child(row)
+	for card_id in state.deck_ids:
+		var data := _campaign_card(card_id)
+		var button := BattleCardScript.new()
+		button.card = data
+		button.custom_minimum_size = Vector2(135, 185)
+		if selected_event_card_id.is_empty():
+			button.disabled = Array(data.get("sigils", [])).is_empty()
+			button.pressed.connect(_select_sigil_donor.bind(node_id, card_id))
+		else:
+			button.disabled = card_id == selected_event_card_id
+			button.pressed.connect(_finish_sigil_transfer.bind(node_id, card_id))
+		row.add_child(button)
+	var back := _small_button("VOLVER AL MAPA", 240)
+	back.pressed.connect(_leave_special_event)
+	box.add_child(back)
+
+func _select_sigil_donor(node_id: String, card_id: String) -> void:
+	selected_event_card_id = card_id
+	_show_sigil_stones(node_id)
+
+func _finish_sigil_transfer(node_id: String, receiver_id: String) -> void:
+	if state != null and not selected_event_card_id.is_empty():
+		if state.transfer_sigils(node_id, selected_event_card_id, receiver_id):
+			CampaignSaveScript.save_state(state)
+	selected_event_card_id = ""
+	_show_map()
+
+func _show_mycologists(node_id: String) -> void:
+	_clear_screen()
+	var box := _screen_box()
+	box.add_child(_label("LOS MICÓLOGOS", 34, SUCCESS, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("Solo pueden trabajar con dos copias iguales. Las unirán en una carta más fuerte.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	var candidates: Array[String] = state.mycologist_candidates()
+	if candidates.is_empty():
+		box.add_child(_label("NO TIENES DOS COPIAS IGUALES.", 15, AMBER, HORIZONTAL_ALIGNMENT_CENTER))
+		var skip := _wide_button("DEJARLOS TRABAJAR OTRO DÍA")
+		skip.pressed.connect(_resolve_simple_node.bind(node_id))
+		box.add_child(skip)
+	else:
+		var row := HBoxContainer.new()
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_theme_constant_override("separation", 16)
+		box.add_child(row)
+		for card_id in candidates:
+			var data := _campaign_card(card_id)
+			var card := BattleCardScript.new()
+			card.card = data
+			card.custom_minimum_size = Vector2(165, 225)
+			card.pressed.connect(_fuse_duplicate.bind(node_id, card_id))
+			row.add_child(card)
+	var back := _small_button("VOLVER AL MAPA", 240)
+	back.pressed.connect(_show_map)
+	box.add_child(back)
+
+func _fuse_duplicate(node_id: String, card_id: String) -> void:
+	if state != null and state.fuse_duplicate(node_id, card_id):
+		CampaignSaveScript.save_state(state)
+	_show_map()
+
+func _show_trial(node_id: String) -> void:
+	_clear_screen()
+	var box := _screen_box()
+	box.add_child(_label("PRUEBA DEL MAZO", 34, INK, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("Elige una prueba. Se revelarán tres cartas de tu mazo.", 15, MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	for trial_type in ["power", "health", "blood", "wisdom"]:
+		var labels := {
+			"power":"PRUEBA DE PODER · ATQ TOTAL 4",
+			"health":"PRUEBA DE SALUD · VIDA TOTAL 6",
+			"blood":"PRUEBA DE SANGRE · COSTE TOTAL 4",
+			"wisdom":"PRUEBA DE SABIDURÍA · 3 SELLOS"
+		}
+		var b := _wide_button(str(labels[trial_type]))
+		b.pressed.connect(_run_trial.bind(node_id, trial_type))
+		box.add_child(b)
+	var back := _small_button("VOLVER AL MAPA", 240)
+	back.pressed.connect(_show_map)
+	box.add_child(back)
+
+func _run_trial(node_id: String, trial_type: String) -> void:
+	var result: Dictionary = state.begin_trial(node_id, trial_type)
+	if result.is_empty():
+		return
+	_clear_screen()
+	var box := _screen_box()
+	box.add_child(_label("LAS CARTAS SE REVELAN", 32, AMBER, HORIZONTAL_ALIGNMENT_CENTER))
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 14)
+	box.add_child(row)
+	for card_id in Array(result.get("cards", [])):
+		var card := BattleCardScript.new()
+		card.card = _campaign_card(str(card_id))
+		card.custom_minimum_size = Vector2(155, 215)
+		card.disabled = true
+		row.add_child(card)
+	var passed := bool(result.get("passed", false))
+	box.add_child(_label("TOTAL %d / %d  ·  %s" % [
+		int(result.get("total", 0)),
+		int(result.get("threshold", 0)),
+		"SUPERADA" if passed else "FALLIDA"
+	], 18, SUCCESS if passed else DANGER, HORIZONTAL_ALIGNMENT_CENTER))
+	if passed:
+		box.add_child(_label("ELIGE TU RECOMPENSA RARA", 14, INK, HORIZONTAL_ALIGNMENT_CENTER))
+		var rewards := HBoxContainer.new()
+		rewards.alignment = BoxContainer.ALIGNMENT_CENTER
+		rewards.add_theme_constant_override("separation", 14)
+		box.add_child(rewards)
+		for card_id in Array(result.get("rewards", [])):
+			var card := BattleCardScript.new()
+			card.card = _campaign_card(str(card_id))
+			card.custom_minimum_size = Vector2(145, 200)
+			card.pressed.connect(_claim_trial_reward.bind(node_id, str(card_id)))
+			rewards.add_child(card)
+	else:
+		CampaignSaveScript.save_state(state)
+		var continue_button := _wide_button("CONTINUAR")
+		continue_button.pressed.connect(_show_map)
+		box.add_child(continue_button)
+
+func _claim_trial_reward(node_id: String, card_id: String) -> void:
+	if state != null and state.claim_trial_reward(node_id, card_id):
+		CampaignSaveScript.save_state(state)
+	_show_map()
+
 func _show_campfire(node_id: String) -> void:
 	_clear_screen()
 	var box := _screen_box()
@@ -567,6 +712,7 @@ func _campaign_card(card_id: String) -> Dictionary:
 	var buff: Dictionary = state.get_card_buff(card_id)
 	card["atk"] = int(card.get("atk", 0)) + int(buff.get("atk", 0))
 	card["hp"] = int(card.get("hp", 1)) + int(buff.get("hp", 0))
+	card["sigils"] = state.get_card_sigils(card_id)
 	return card
 
 func _select_campfire_card(node_id: String, card_id: String) -> void:
