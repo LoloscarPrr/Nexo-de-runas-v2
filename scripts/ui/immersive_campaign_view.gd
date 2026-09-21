@@ -234,7 +234,7 @@ func _show_prospector_event(node_id: String) -> void:
 	var total := rock_w * 3.0 + gap * 2.0
 	var left := (vw - total) * 0.5
 	for index in range(3):
-		var rock := _small_button("ROCA %d\n\n✦" % (index + 1), int(rock_w))
+		var rock := _small_button("ROCA %d\nGOLPEAR" % (index + 1), int(rock_w))
 		rock.add_theme_font_size_override("font_size", 19)
 		rock.pressed.connect(_pick_prospector_boulder.bind(node_id, index))
 		rock.add_theme_stylebox_override("normal", _panel_style(Color("14170d"), I_EDGE, 3, 4))
