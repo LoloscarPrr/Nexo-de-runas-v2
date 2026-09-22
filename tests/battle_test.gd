@@ -16,6 +16,7 @@ func _initialize() -> void:
 	_test_many_lives()
 	_test_combat_sigils()
 	_test_evolution_and_generation()
+	_test_starvation_rules()
 	print("Battle checks: %d failures" % failures)
 	quit(1 if failures else 0)
 
@@ -108,3 +109,44 @@ func _test_evolution_and_generation() -> void:
 	beaver._on_card_played(true, 1)
 	check(beaver.player_lanes[0] != null and beaver.player_lanes[0].id == "represa", "Beaver creates left Dam")
 	check(beaver.player_lanes[2] != null and beaver.player_lanes[2].id == "represa", "Beaver creates right Dam")
+
+func _test_starvation_rules() -> void:
+	var battle := Battle.new()
+	battle.setup(["lobo", "rana_toro", "armino", "coyote"])
+	battle.enemy_lanes = [null, null, null, null]
+	battle.enemy_queue = ["oso_grizzly"]
+	battle.enemy_queue_index = 0
+
+	# Aún hay cartas en el mazo principal: no debe aparecer Hambruna.
+	battle._spawn_starvation_if_needed()
+	check(battle.starvation_level == 0, "Starvation does not start while the main deck still has cards")
+
+	# El mazo principal se agota, aunque sigan quedando Ardillas.
+	battle.draw_pile.clear()
+	battle.squirrel_pile_count = 7
+	battle._spawn_starvation_if_needed()
+	check(battle.starvation_level == 1, "First Starvation appears when main deck is exhausted")
+	check(battle.enemy_lanes[0] != null and battle.enemy_lanes[0].id == "hambruna", "First Starvation uses normal form")
+	check(int(battle.enemy_lanes[0].attack_override) == 1 and int(battle.enemy_lanes[0].hp) == 1, "First Starvation is 1/1")
+	check(battle._has_sigil(battle.enemy_lanes[0], "REPULSIVE"), "Starvation carries Repulsive from the first copy")
+	check(battle.enemy_queue_index == 0, "Starvation timing is independent of the normal enemy queue")
+
+	# Las siguientes suben +1/+1; Aéreo recién desde la quinta.
+	for level in range(2, 6):
+		battle.enemy_lanes = [null, null, null, null]
+		battle._spawn_starvation_if_needed()
+		var unit = battle.enemy_lanes[0]
+		check(int(unit.attack_override) == level and int(unit.hp) == level, "Starvation %d scales to %d/%d" % [level, level, level])
+		if level < 5:
+			check(not battle._has_sigil(unit, "AIRBORNE"), "Starvation %d is not Airborne yet" % level)
+		else:
+			check(unit.id == "hambruna_voladora", "Fifth Starvation uses flying visual form")
+			check(battle._has_sigil(unit, "AIRBORNE"), "Fifth Starvation gains Airborne")
+
+	# La novena añade además presión directa sobre la balanza.
+	battle.starvation_level = 8
+	battle.scale = 0
+	battle.enemy_lanes = [null, null, null, null]
+	battle._spawn_starvation_if_needed()
+	check(battle.starvation_level == 9, "Ninth Starvation is counted correctly")
+	check(battle.scale == -1, "Ninth Starvation adds one point of pressure against the player")
