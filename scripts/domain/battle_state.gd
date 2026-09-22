@@ -95,6 +95,9 @@ func needs_draw() -> bool:
 	return draw_pending and result == "ongoing"
 
 func draw_from_deck() -> bool:
+	if cpu_surrender_pending:
+		last_message = "Primero responde a la rendición de la CPU."
+		return false
 	if not needs_draw():
 		return false
 	if draw_pile.is_empty():
@@ -106,6 +109,9 @@ func draw_from_deck() -> bool:
 	return true
 
 func draw_squirrel() -> bool:
+	if cpu_surrender_pending:
+		last_message = "Primero responde a la rendición de la CPU."
+		return false
 	if not needs_draw():
 		return false
 	if squirrel_pile_count <= 0:
@@ -139,6 +145,8 @@ func blood_value_for_sacrifices(sacrifice_lanes: Array[int]) -> int:
 	return total
 
 func can_play(hand_index: int, lane_index: int, sacrifice_lanes: Array[int]) -> String:
+	if cpu_surrender_pending:
+		return "Primero responde a la rendición de la CPU."
 	if result != "ongoing":
 		return "La batalla ya terminó."
 	if draw_pending:
@@ -204,6 +212,9 @@ func play_card(hand_index: int, lane_index: int, sacrifice_lanes: Array[int]) ->
 	return true
 
 func end_turn() -> String:
+	if cpu_surrender_pending:
+		last_message = "Primero responde a la rendición de la CPU."
+		return result
 	if result != "ongoing":
 		return result
 	if draw_pending:
