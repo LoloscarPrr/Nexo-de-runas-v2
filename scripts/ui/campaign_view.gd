@@ -296,9 +296,16 @@ func _render_battle() -> void:
 	cancel.pressed.connect(_cancel_sacrifices)
 	_place(cancel, Rect2(46, 565, 192, 60))
 	var bell := _small_button("CAMPANA\nTerminar turno", 240)
-	bell.disabled = battle_state.needs_draw()
+	bell.disabled = battle_state.needs_draw() or battle_state.cpu_surrender_pending
 	bell.pressed.connect(_end_battle_turn)
 	_place(bell, Rect2(984, 615, 240, 70))
+	if battle_state.cpu_surrender_pending:
+		var accept := _small_button("ACEPTAR\nRENDICIÓN", 150)
+		accept.pressed.connect(_accept_cpu_surrender)
+		_place(accept, Rect2(972, 560, 150, 48))
+		var reject := _small_button("RECHAZAR", 110)
+		reject.pressed.connect(_reject_cpu_surrender)
+		_place(reject, Rect2(1128, 560, 110, 48))
 
 func _place(control: Control, rect: Rect2) -> void:
 	add_child(control)
@@ -412,6 +419,20 @@ func _end_battle_turn() -> void:
 		_show_defeat()
 	else:
 		_render_battle()
+
+func _accept_cpu_surrender() -> void:
+	if battle_state == null:
+		return
+	if battle_state.accept_cpu_surrender() == "victory":
+		_show_battle_reward()
+	else:
+		_render_battle()
+
+func _reject_cpu_surrender() -> void:
+	if battle_state == null:
+		return
+	battle_state.reject_cpu_surrender()
+	_render_battle()
 
 func _show_battle_reward() -> void:
 	_clear_screen()
