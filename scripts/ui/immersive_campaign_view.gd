@@ -126,10 +126,21 @@ func _render_battle() -> void:
 
 	# Columna derecha: finalizar como botón grande de papel.
 	var bell := _small_button("FINALIZAR", int(170 * s))
-	bell.disabled = battle_state.needs_draw()
+	bell.disabled = battle_state.needs_draw() or battle_state.cpu_surrender_pending
 	bell.pressed.connect(_end_battle_turn)
 	_mock_button_style(bell, false, true)
 	_place(bell, _mock_rect(1330, 492, 170, 96, s, ox, oy))
+
+	if battle_state.cpu_surrender_pending:
+		_place(_label("LA CPU OFRECE\nRENDIRSE", maxi(12, int(17 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(1310, 595, 210, 58, s, ox, oy))
+		var accept := _small_button("ACEPTAR", int(100 * s))
+		accept.pressed.connect(_accept_cpu_surrender)
+		_mock_button_style(accept, false, true)
+		_place(accept, _mock_rect(1310, 660, 100, 46, s, ox, oy))
+		var reject := _small_button("SEGUIR", int(100 * s))
+		reject.pressed.connect(_reject_cpu_surrender)
+		_mock_button_style(reject, false, false)
+		_place(reject, _mock_rect(1420, 660, 100, 46, s, ox, oy))
 
 	if not selected_sacrifices.is_empty():
 		var cancel := _small_button("CANCELAR", int(160 * s))
