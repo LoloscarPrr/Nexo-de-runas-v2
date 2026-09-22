@@ -28,6 +28,8 @@ var turn := 1
 var result := "ongoing"
 var last_message := "Elige una carta. Las cartas de Sangre exigen sacrificios."
 var starvation_level := 0
+var cpu_surrender_pending := false
+var cpu_surrender_declined := false
 var items_generated := 0
 var ouroboros_bonus := 0
 
@@ -60,6 +62,8 @@ func setup(deck_ids: Array[String], buffs: Dictionary = {}, battle_id: String = 
 	turn = 1
 	result = "ongoing"
 	starvation_level = 0
+	cpu_surrender_pending = false
+	cpu_surrender_declined = false
 	items_generated = 0
 	last_message = "Elige una carta. Las cartas de Sangre exigen sacrificios."
 	_draw_regular_if_possible()
@@ -215,9 +219,11 @@ func end_turn() -> String:
 	_end_side_phase(false)
 	turn += 1
 	draw_pending = not draw_pile.is_empty() or squirrel_pile_count > 0
-	_spawn_enemy()
-	_spawn_starvation_if_needed()
-	last_message = "Turno %d · elige entre tu mazo y la reserva de Ardillas." % turn if draw_pending else "No quedan cartas. Juega tu mano o toca la campana."
+	var spawned_enemy := _spawn_enemy()
+	if not spawned_enemy:
+		_offer_cpu_surrender_if_exhausted()
+	if not cpu_surrender_pending:
+		last_message = "Turno %d · elige entre tu mazo y la reserva de Ardillas." % turn if draw_pending else "No quedan cartas en tu mazo principal."
 	return result
 
 func _new_unit(card_id: String, player_owned: bool = false) -> Dictionary:
@@ -581,18 +587,43 @@ func _draw_regular_if_possible() -> void:
 	if not draw_pile.is_empty():
 		hand.append(draw_pile.pop_front())
 
-func _spawn_enemy() -> void:
+func _spawn_enemy() -> bool:
 	if result != "ongoing":
-		return
+		return false
 	var lane_index := _first_empty_enemy_lane()
 	if lane_index == -1:
-		return
+		return false
 	if enemy_queue_index < enemy_queue.size():
 		var card_id := enemy_queue[enemy_queue_index]
 		enemy_queue_index += 1
 		_trigger_guardian(true, lane_index)
 		enemy_lanes[lane_index] = _new_unit(card_id)
 		_on_card_played(false, lane_index)
+		return true
+	return false
+
+func _offer_cpu_surrender_if_exhausted() -> void:
+	if result != "ongoing" or cpu_surrender_declined or cpu_surrender_pending:
+		return
+	if enemy_queue_index < enemy_queue.size():
+		return
+	cpu_surrender_pending = true
+	last_message = "La CPU se ha quedado sin cartas y ofrece rendirse."
+
+func accept_cpu_surrender() -> String:
+	if not cpu_surrender_pending or result != "ongoing":
+		return result
+	cpu_surrender_pending = false
+	result = "victory"
+	last_message = "Aceptaste la rendición de la CPU."
+	return result
+
+func reject_cpu_surrender() -> void:
+	if not cpu_surrender_pending or result != "ongoing":
+		return
+	cpu_surrender_pending = false
+	cpu_surrender_declined = true
+	last_message = "Rechazaste la rendición. La CPU no tiene más cartas que jugar."
 
 func _spawn_starvation_if_needed() -> void:
 	# Hambruna no depende de que el oponente se quede sin su cola normal:
