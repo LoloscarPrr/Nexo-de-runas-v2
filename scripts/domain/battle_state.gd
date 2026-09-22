@@ -216,6 +216,7 @@ func end_turn() -> String:
 	turn += 1
 	draw_pending = not draw_pile.is_empty() or squirrel_pile_count > 0
 	_spawn_enemy()
+	_spawn_starvation_if_needed()
 	last_message = "Turno %d · elige entre tu mazo y la reserva de Ardillas." % turn if draw_pending else "No quedan cartas. Juega tu mano o toca la campana."
 	return result
 
@@ -592,15 +593,31 @@ func _spawn_enemy() -> void:
 		_trigger_guardian(true, lane_index)
 		enemy_lanes[lane_index] = _new_unit(card_id)
 		_on_card_played(false, lane_index)
+
+func _spawn_starvation_if_needed() -> void:
+	# Hambruna no depende de que el oponente se quede sin su cola normal:
+	# aparece cuando el jugador empieza un turno sin cartas en el mazo principal.
+	if result != "ongoing" or not draw_pile.is_empty():
 		return
-	if draw_pile.is_empty():
-		starvation_level += 1
-		var starvation_id := "hambruna_voladora" if starvation_level >= 3 else "hambruna"
-		var unit := _new_unit(starvation_id)
-		unit.attack_override = starvation_level
-		unit.hp = starvation_level + 1
-		_trigger_guardian(true, lane_index)
-		enemy_lanes[lane_index] = unit
+	starvation_level += 1
+	var starvation_id := "hambruna_voladora" if starvation_level >= 5 else "hambruna"
+	var unit := _new_unit(starvation_id)
+	unit.attack_override = starvation_level
+	unit.hp = starvation_level
+	# Desde la quinta Hambruna obtiene Aéreo. La ilustración alternativa
+	# representa visualmente ese cambio.
+	if starvation_level >= 5 and not Array(unit.extra_sigils).has("AIRBORNE"):
+		unit.extra_sigils.append("AIRBORNE")
+	# Desde la novena, cada aparición castiga además la balanza.
+	if starvation_level >= 9:
+		scale -= 1
+		if _check_result() != "ongoing":
+			return
+	var lane_index := _first_empty_enemy_lane()
+	if lane_index == -1:
+		lane_index = 0
+	_trigger_guardian(true, lane_index)
+	enemy_lanes[lane_index] = unit
 
 func _first_empty_enemy_lane() -> int:
 	for i in range(enemy_lanes.size()):
