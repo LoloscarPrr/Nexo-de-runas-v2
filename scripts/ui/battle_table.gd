@@ -67,9 +67,7 @@ func _draw_reference() -> void:
 	_draw_frame(Rect2(1320, 404, 190, 58), 3)
 	_draw_frame(Rect2(1320, 478, 190, 124), 3)
 
-	# Pilas de mazo inferiores.
-	_draw_card_stack(Vector2(36, 696), 11, false)
-	_draw_card_stack(Vector2(1414, 696), 8, true)
+	# Las pilas inferiores fueron extraídas del fondo y ahora son botones animables.
 
 	# Ruido/dithering determinista para acercar el acabado de la referencia.
 	for i in range(180):
