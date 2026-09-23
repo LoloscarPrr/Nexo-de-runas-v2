@@ -8,6 +8,9 @@ const AnimatedScaleScript = preload("res://scripts/ui/mockup_hud/animated_scale.
 const AnimatedTotemScript = preload("res://scripts/ui/mockup_hud/animated_totem.gd")
 const AnimatedEnemyPortraitScript = preload("res://scripts/ui/mockup_hud/animated_enemy_portrait.gd")
 const AnimatedActionButtonScript = preload("res://scripts/ui/mockup_hud/animated_action_button.gd")
+const AnimatedCounterScript = preload("res://scripts/ui/mockup_hud/animated_counter.gd")
+const AnimatedCrystalBarScript = preload("res://scripts/ui/mockup_hud/animated_crystal_bar.gd")
+const AnimatedDeckButtonScript = preload("res://scripts/ui/mockup_hud/animated_deck_button.gd")
 
 const I_INK := Color8(199, 213, 103)
 const I_MUTED := Color8(113, 125, 67)
@@ -27,6 +30,9 @@ const MOCK_PAPER := Color8(171, 166, 92)
 var _hud_battle_id := -1
 var _hud_last_scale := 0
 var _hud_last_bones := 0
+var _hud_last_draw_count := -1
+var _hud_last_squirrel_count := -1
+var _hud_last_blood_ready := 0
 
 func _render_battle() -> void:
 	_clear_screen()
@@ -39,15 +45,26 @@ func _render_battle() -> void:
 
 	var battle_id: int = int(battle_state.get_instance_id())
 	var first_hud_frame: bool = battle_id != _hud_battle_id
+	var blood_cost: int = battle_state.blood_cost_for(selected_hand_index)
+	var blood_ready: int = battle_state.blood_value_for_sacrifices(selected_sacrifices)
 	var scale_delta: int = 0
 	var bones_delta: int = 0
+	var draw_delta: int = 0
+	var squirrel_delta: int = 0
+	var blood_delta: int = 0
 	if first_hud_frame:
 		_hud_battle_id = battle_id
 		_hud_last_scale = battle_state.scale
 		_hud_last_bones = battle_state.bones
+		_hud_last_draw_count = battle_state.draw_pile.size()
+		_hud_last_squirrel_count = battle_state.squirrel_pile_count
+		_hud_last_blood_ready = blood_ready
 	else:
 		scale_delta = battle_state.scale - _hud_last_scale
 		bones_delta = battle_state.bones - _hud_last_bones
+		draw_delta = battle_state.draw_pile.size() - _hud_last_draw_count
+		squirrel_delta = battle_state.squirrel_pile_count - _hud_last_squirrel_count
+		blood_delta = blood_ready - _hud_last_blood_ready
 
 	var table := ImmersiveTableScript.new()
 	table.balance = battle_state.scale
@@ -85,11 +102,18 @@ func _render_battle() -> void:
 	if scale_delta > 0:
 		enemy_portrait.hit()
 
-	var blood_cost: int = battle_state.blood_cost_for(selected_hand_index)
-	var blood_ready: int = battle_state.blood_value_for_sacrifices(selected_sacrifices)
 	var blood_text := "SANGRE  %d/%d" % [blood_ready, blood_cost] if blood_cost > 0 else "HUESOS  %d" % battle_state.bones
-	_place(_label(blood_text, maxi(12, int(20 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(28, 536, 170, 36, s, ox, oy))
-	_place(_label("◆  ◆  ◆", maxi(13, int(22 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(38, 576, 150, 34, s, ox, oy))
+	var resource_counter := AnimatedCounterScript.new()
+	resource_counter.text_value = blood_text
+	_place(resource_counter, _mock_rect(28, 531, 170, 42, s, ox, oy))
+	if bones_delta != 0 or blood_delta != 0:
+		resource_counter.animate_change()
+
+	var crystals := AnimatedCrystalBarScript.new()
+	crystals.filled = mini(3, blood_ready) if blood_cost > 0 else 0
+	_place(crystals, _mock_rect(38, 574, 150, 38, s, ox, oy))
+	if blood_delta != 0:
+		crystals.flash()
 
 	# Libro de reglas contextual: en móvil el sello debe entenderse sin hover.
 	var inspect_data: Dictionary = {}
@@ -154,18 +178,28 @@ func _render_battle() -> void:
 	else:
 		_place(_label("TU MANO ESTÁ VACÍA", maxi(12, int(18 * s)), MOCK_MUTED, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(570, 735, 400, 32, s, ox, oy))
 
-	# Pilas de mazo en las esquinas inferiores. Son los propios objetivos táctiles.
-	var draw_deck := _small_button("MAZO\n%d" % battle_state.draw_pile.size(), int(104 * s))
+	# Pilas físicas independientes: respiración idle y tirón al robar.
+	var draw_deck := AnimatedDeckButtonScript.new()
+	draw_deck.deck_label = "MAZO"
+	draw_deck.count = battle_state.draw_pile.size()
+	draw_deck.mirrored = false
+	draw_deck.pulse_active = battle_state.needs_draw() and not battle_state.draw_pile.is_empty()
 	draw_deck.disabled = not battle_state.needs_draw() or battle_state.draw_pile.is_empty()
 	draw_deck.pressed.connect(_draw_regular)
-	_mock_button_style(draw_deck, true)
 	_place(draw_deck, _mock_rect(28, 696, 112, 128, s, ox, oy))
+	if draw_delta < 0:
+		draw_deck.animate_draw()
 
-	var squirrels := _small_button("ARDILLAS\n%d" % battle_state.squirrel_pile_count, int(104 * s))
+	var squirrels := AnimatedDeckButtonScript.new()
+	squirrels.deck_label = "ARDILLAS"
+	squirrels.count = battle_state.squirrel_pile_count
+	squirrels.mirrored = true
+	squirrels.pulse_active = battle_state.needs_draw() and battle_state.squirrel_pile_count > 0
 	squirrels.disabled = not battle_state.needs_draw() or battle_state.squirrel_pile_count <= 0
 	squirrels.pressed.connect(_draw_squirrel)
-	_mock_button_style(squirrels, true)
 	_place(squirrels, _mock_rect(1396, 696, 112, 128, s, ox, oy))
+	if squirrel_delta < 0:
+		squirrels.animate_draw()
 
 	# Columna derecha: finalizar como botón grande de papel.
 	var bell := AnimatedActionButtonScript.new()
@@ -195,6 +229,9 @@ func _render_battle() -> void:
 
 	_hud_last_scale = battle_state.scale
 	_hud_last_bones = battle_state.bones
+	_hud_last_draw_count = battle_state.draw_pile.size()
+	_hud_last_squirrel_count = battle_state.squirrel_pile_count
+	_hud_last_blood_ready = blood_ready
 
 func _mock_rect(x: float, y: float, w: float, h: float, s: float, ox: float, oy: float) -> Rect2:
 	return Rect2(ox + x * s, oy + y * s, w * s, h * s)
