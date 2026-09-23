@@ -4,6 +4,10 @@ const ImmersiveTableScript = preload("res://scripts/ui/battle_table.gd")
 const ImmersiveCardScript = preload("res://scripts/ui/battle_card.gd")
 const ImmersiveCatalogScript = preload("res://scripts/domain/card_catalog.gd")
 const CampaignBackdropScript = preload("res://scripts/ui/campaign_backdrop.gd")
+const AnimatedScaleScript = preload("res://scripts/ui/mockup_hud/animated_scale.gd")
+const AnimatedTotemScript = preload("res://scripts/ui/mockup_hud/animated_totem.gd")
+const AnimatedEnemyPortraitScript = preload("res://scripts/ui/mockup_hud/animated_enemy_portrait.gd")
+const AnimatedActionButtonScript = preload("res://scripts/ui/mockup_hud/animated_action_button.gd")
 
 const I_INK := Color8(199, 213, 103)
 const I_MUTED := Color8(113, 125, 67)
@@ -20,6 +24,10 @@ const MOCK_PANEL := Color8(18, 24, 13)
 const MOCK_EDGE := Color8(78, 91, 39)
 const MOCK_PAPER := Color8(171, 166, 92)
 
+var _hud_battle_id := -1
+var _hud_last_scale := 0
+var _hud_last_bones := 0
+
 func _render_battle() -> void:
 	_clear_screen()
 	var viewport_size := get_viewport_rect().size
@@ -29,23 +37,53 @@ func _render_battle() -> void:
 	var ox := (vw - 1536.0 * s) * 0.5
 	var oy := (vh - 864.0 * s) * 0.5
 
+	var battle_id := battle_state.get_instance_id()
+	var first_hud_frame := battle_id != _hud_battle_id
+	var scale_delta := 0
+	var bones_delta := 0
+	if first_hud_frame:
+		_hud_battle_id = battle_id
+		_hud_last_scale = battle_state.scale
+		_hud_last_bones = battle_state.bones
+	else:
+		scale_delta = battle_state.scale - _hud_last_scale
+		bones_delta = battle_state.bones - _hud_last_bones
+
 	var table := ImmersiveTableScript.new()
 	table.balance = battle_state.scale
 	table.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(table)
 
-	# Encabezado idéntico al lenguaje del mockup: título pequeño sobre el tablero.
+	# Encabezado del mockup.
 	_place(_label("NEXO DE RUNAS", maxi(14, int(23 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(24, 12, 205, 36, s, ox, oy))
-	var leave := _small_button("MAPA", int(82 * s))
+	var leave := AnimatedActionButtonScript.new()
+	leave.text = "MAPA"
 	leave.pressed.connect(_show_map)
+	leave.pulse_active = false
 	_mock_button_style(leave, false)
 	_place(leave, _mock_rect(214, 12, 82, 32, s, ox, oy))
 
-	# Valores de la balanza bajo los platos.
-	var left_weight := 2 + maxi(battle_state.scale, 0)
-	var right_weight := 2 + maxi(-battle_state.scale, 0)
-	_place(_label(str(left_weight), maxi(15, int(28 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(29, 183, 48, 42, s, ox, oy))
-	_place(_label(str(right_weight), maxi(15, int(28 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(142, 183, 48, 42, s, ox, oy))
+	# Balanza extraída de la mesa: ahora es un nodo animable independiente.
+	var animated_scale := AnimatedScaleScript.new()
+	animated_scale.balance = battle_state.scale
+	animated_scale.left_value = 2 + maxi(battle_state.scale, 0)
+	animated_scale.right_value = 2 + maxi(-battle_state.scale, 0)
+	_place(animated_scale, _mock_rect(13, 72, 194, 205, s, ox, oy))
+	if scale_delta != 0:
+		animated_scale.animate_change(scale_delta)
+
+	# Tótem/calavera extraído del fondo.
+	var animated_totem := AnimatedTotemScript.new()
+	_place(animated_totem, _mock_rect(55, 286, 110, 118, s, ox, oy))
+	if scale_delta < 0 or bones_delta != 0:
+		animated_totem.flash()
+
+	# Retrato rival independiente. Respira, parpadea y reacciona al daño/rendición.
+	var enemy_portrait := AnimatedEnemyPortraitScript.new()
+	enemy_portrait.set_surrendering(battle_state.cpu_surrender_pending)
+	_place(enemy_portrait, _mock_rect(1334, 24, 164, 164, s, ox, oy))
+	if scale_delta > 0:
+		enemy_portrait.hit()
 
 	var blood_cost: int = battle_state.blood_cost_for(selected_hand_index)
 	var blood_ready: int = battle_state.blood_value_for_sacrifices(selected_sacrifices)
@@ -65,7 +103,12 @@ func _render_battle() -> void:
 	else:
 		_place(_label("TOCA UNA CARTA\nPARA LEER\nSU SELLO.", maxi(11, int(17 * s)), MOCK_INK, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1330, 220, 170, 100, s, ox, oy))
 	var turn_text := "ROBA CARTA" if battle_state.needs_draw() else "TU TURNO"
-	_place(_label(turn_text, maxi(13, int(22 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(1338, 416, 154, 34, s, ox, oy))
+	var turn_plate := AnimatedActionButtonScript.new()
+	turn_plate.text = turn_text
+	turn_plate.pulse_active = true
+	turn_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_mock_button_style(turn_plate, false)
+	_place(turn_plate, _mock_rect(1330, 408, 170, 50, s, ox, oy))
 
 	# Cuatro cartas del rival y cuatro del jugador, alineadas como la captura.
 	var lane_x0 := 350.0
@@ -125,7 +168,9 @@ func _render_battle() -> void:
 	_place(squirrels, _mock_rect(1396, 696, 112, 128, s, ox, oy))
 
 	# Columna derecha: finalizar como botón grande de papel.
-	var bell := _small_button("FINALIZAR", int(170 * s))
+	var bell := AnimatedActionButtonScript.new()
+	bell.text = "FINALIZAR"
+	bell.pulse_active = not battle_state.needs_draw() and not battle_state.cpu_surrender_pending
 	bell.disabled = battle_state.needs_draw() or battle_state.cpu_surrender_pending
 	bell.pressed.connect(_end_battle_turn)
 	_mock_button_style(bell, false, true)
@@ -147,6 +192,9 @@ func _render_battle() -> void:
 		cancel.pressed.connect(_cancel_sacrifices)
 		_mock_button_style(cancel, false)
 		_place(cancel, _mock_rect(31, 618, 160, 46, s, ox, oy))
+
+	_hud_last_scale = battle_state.scale
+	_hud_last_bones = battle_state.bones
 
 func _mock_rect(x: float, y: float, w: float, h: float, s: float, ox: float, oy: float) -> Rect2:
 	return Rect2(ox + x * s, oy + y * s, w * s, h * s)
