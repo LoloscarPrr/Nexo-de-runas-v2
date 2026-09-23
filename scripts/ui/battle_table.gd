@@ -1,7 +1,6 @@
 extends Control
 
 var balance := 0
-var ambience_time := 0.0
 
 const REF_SIZE := Vector2(1536.0, 864.0)
 const BG := Color("070a06")
@@ -17,11 +16,6 @@ const INK := Color("080b06")
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	resized.connect(queue_redraw)
-	set_process(true)
-	queue_redraw()
-
-func _process(delta: float) -> void:
-	ambience_time += delta
 	queue_redraw()
 
 func _draw() -> void:
@@ -65,36 +59,8 @@ func _draw_reference() -> void:
 	draw_line(Vector2(190, 620), Vector2(1348, 620), EDGE, 4)
 	draw_line(Vector2(190, 846), Vector2(1348, 846), EDGE_DIM, 3)
 
-	# Balanza izquierda.
-	var sx := 108.0
-	var tilt := float(clampi(balance, -5, 5)) * 4.0
-	draw_line(Vector2(sx, 92), Vector2(sx, 245), GLOW, 6)
-	draw_line(Vector2(sx - 33, 246), Vector2(sx + 33, 246), GLOW, 6)
-	draw_line(Vector2(sx - 78, 130 - tilt), Vector2(sx + 78, 130 + tilt), GLOW, 4)
-	draw_circle(Vector2(sx, 130), 8, GLOW)
-	for side in [-1.0, 1.0]:
-		var pivot := Vector2(sx + 78.0 * side, 130.0 + tilt * side)
-		draw_line(pivot, pivot + Vector2(-20, 44), GLOW, 2)
-		draw_line(pivot, pivot + Vector2(20, 44), GLOW, 2)
-		draw_arc(pivot + Vector2(0, 48), 25, 0, PI, 18, GLOW, 3)
-	_draw_skull_rune(Vector2(110, 340), 1.0)
-
-	# Retrato derecho: calavera encapuchada con ojos verdes.
-	_draw_frame(Rect2(1334, 24, 164, 164), 4)
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(1346, 176), Vector2(1364, 60), Vector2(1402, 30),
-		Vector2(1458, 32), Vector2(1489, 69), Vector2(1494, 178)
-	]), Color("050705"))
-	draw_circle(Vector2(1420, 92), 49, Color("272a18"))
-	draw_rect(Rect2(1387, 83, 66, 57), Color("878344"))
-	draw_circle(Vector2(1404, 92), 12, Color("050705"))
-	draw_circle(Vector2(1437, 92), 12, Color("050705"))
-	var pulse := 0.82 + sin(ambience_time * 2.0) * 0.12
-	draw_circle(Vector2(1404, 92), 4, Color(0.78, 0.93, 0.24, pulse))
-	draw_circle(Vector2(1437, 92), 4, Color(0.78, 0.93, 0.24, pulse))
-	draw_rect(Rect2(1411, 118, 19, 16), Color("050705"))
-	for i in range(4):
-		draw_line(Vector2(1396 + i * 14, 143), Vector2(1396 + i * 14, 154), Color("0a0d07"), 3)
+	# La balanza, el tótem y el retrato fueron extraídos de la mesa.
+	# Ahora son nodos independientes animables creados por immersive_campaign_view.gd.
 
 	# Caja de diálogo y marcos de controles derechos.
 	_draw_frame(Rect2(1320, 196, 190, 142), 3)
