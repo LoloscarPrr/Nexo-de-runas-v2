@@ -37,10 +37,10 @@ func _render_battle() -> void:
 	var ox := (vw - 1536.0 * s) * 0.5
 	var oy := (vh - 864.0 * s) * 0.5
 
-	var battle_id := battle_state.get_instance_id()
-	var first_hud_frame := battle_id != _hud_battle_id
-	var scale_delta := 0
-	var bones_delta := 0
+	var battle_id: int = int(battle_state.get_instance_id())
+	var first_hud_frame: bool = battle_id != _hud_battle_id
+	var scale_delta: int = 0
+	var bones_delta: int = 0
 	if first_hud_frame:
 		_hud_battle_id = battle_id
 		_hud_last_scale = battle_state.scale
