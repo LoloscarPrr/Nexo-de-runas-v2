@@ -11,6 +11,8 @@ const AnimatedActionButtonScript = preload("res://scripts/ui/mockup_hud/animated
 const AnimatedCounterScript = preload("res://scripts/ui/mockup_hud/animated_counter.gd")
 const AnimatedCrystalBarScript = preload("res://scripts/ui/mockup_hud/animated_crystal_bar.gd")
 const AnimatedDeckButtonScript = preload("res://scripts/ui/mockup_hud/animated_deck_button.gd")
+const AnimatedEnergyBarScript = preload("res://scripts/ui/mockup_hud/animated_energy_bar.gd")
+const AnimatedMoxBarScript = preload("res://scripts/ui/mockup_hud/animated_mox_bar.gd")
 
 const I_INK := Color8(199, 213, 103)
 const I_MUTED := Color8(113, 125, 67)
@@ -33,6 +35,9 @@ var _hud_last_bones := 0
 var _hud_last_draw_count := -1
 var _hud_last_squirrel_count := -1
 var _hud_last_blood_ready := 0
+var _hud_last_energy_current := -1
+var _hud_last_energy_max := -1
+var _hud_last_mox_mask := -1
 
 func _render_battle() -> void:
 	_clear_screen()
@@ -47,11 +52,15 @@ func _render_battle() -> void:
 	var first_hud_frame: bool = battle_id != _hud_battle_id
 	var blood_cost: int = battle_state.blood_cost_for(selected_hand_index)
 	var blood_ready: int = battle_state.blood_value_for_sacrifices(selected_sacrifices)
+	var mox_state: Dictionary = battle_state.active_mox()
+	var mox_mask: int = (1 if bool(mox_state.get("green", false)) else 0) + (2 if bool(mox_state.get("orange", false)) else 0) + (4 if bool(mox_state.get("blue", false)) else 0)
 	var scale_delta: int = 0
 	var bones_delta: int = 0
 	var draw_delta: int = 0
 	var squirrel_delta: int = 0
 	var blood_delta: int = 0
+	var energy_changed := false
+	var mox_changed := false
 	if first_hud_frame:
 		_hud_battle_id = battle_id
 		_hud_last_scale = battle_state.scale
@@ -59,12 +68,17 @@ func _render_battle() -> void:
 		_hud_last_draw_count = battle_state.draw_pile.size()
 		_hud_last_squirrel_count = battle_state.squirrel_pile_count
 		_hud_last_blood_ready = blood_ready
+		_hud_last_energy_current = battle_state.energy_current
+		_hud_last_energy_max = battle_state.energy_max
+		_hud_last_mox_mask = mox_mask
 	else:
 		scale_delta = battle_state.scale - _hud_last_scale
 		bones_delta = battle_state.bones - _hud_last_bones
 		draw_delta = battle_state.draw_pile.size() - _hud_last_draw_count
 		squirrel_delta = battle_state.squirrel_pile_count - _hud_last_squirrel_count
 		blood_delta = blood_ready - _hud_last_blood_ready
+		energy_changed = battle_state.energy_current != _hud_last_energy_current or battle_state.energy_max != _hud_last_energy_max
+		mox_changed = mox_mask != _hud_last_mox_mask
 
 	var table := ImmersiveTableScript.new()
 	table.balance = battle_state.scale
@@ -101,6 +115,22 @@ func _render_battle() -> void:
 	_place(enemy_portrait, _mock_rect(1334, 24, 164, 164, s, ox, oy))
 	if scale_delta > 0:
 		enemy_portrait.hit()
+
+	# Recursos de las nuevas familias: color funcional, geometría propia y sin estética Acto 2.
+	var energy_bar := AnimatedEnergyBarScript.new()
+	energy_bar.current = battle_state.energy_current
+	energy_bar.maximum = battle_state.energy_max
+	_place(energy_bar, _mock_rect(30, 418, 168, 48, s, ox, oy))
+	if energy_changed:
+		energy_bar.flash()
+
+	var mox_bar := AnimatedMoxBarScript.new()
+	mox_bar.green_active = bool(mox_state.get("green", false))
+	mox_bar.orange_active = bool(mox_state.get("orange", false))
+	mox_bar.blue_active = bool(mox_state.get("blue", false))
+	_place(mox_bar, _mock_rect(38, 470, 152, 52, s, ox, oy))
+	if mox_changed:
+		mox_bar.flash()
 
 	var blood_text := "SANGRE  %d/%d" % [blood_ready, blood_cost] if blood_cost > 0 else "HUESOS  %d" % battle_state.bones
 	var resource_counter := AnimatedCounterScript.new()
@@ -232,6 +262,9 @@ func _render_battle() -> void:
 	_hud_last_draw_count = battle_state.draw_pile.size()
 	_hud_last_squirrel_count = battle_state.squirrel_pile_count
 	_hud_last_blood_ready = blood_ready
+	_hud_last_energy_current = battle_state.energy_current
+	_hud_last_energy_max = battle_state.energy_max
+	_hud_last_mox_mask = mox_mask
 
 func _mock_rect(x: float, y: float, w: float, h: float, s: float, ox: float, oy: float) -> Rect2:
 	return Rect2(ox + x * s, oy + y * s, w * s, h * s)
