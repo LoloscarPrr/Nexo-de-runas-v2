@@ -21,6 +21,17 @@ const ENCOUNTERS := {
 }
 var enemy_queue_index := 0
 var bones := 0
+# Recursos multi-familia. Energía se recarga al máximo al comenzar cada turno
+# del jugador y su capacidad aumenta gradualmente hasta 6.
+var energy_current := 1
+var energy_max := 1
+const ENERGY_CAP := 6
+
+# Mox no se consume: su presencia depende de cristales/unidades activas en mesa.
+var mox_green_active := false
+var mox_orange_active := false
+var mox_blue_active := false
+
 var squirrel_pile_count := 10
 var draw_pending := false
 var scale := 0
@@ -56,6 +67,11 @@ func setup(deck_ids: Array[String], buffs: Dictionary = {}, battle_id: String = 
 	enemy_lanes = [null, null, null, null]
 	enemy_queue_index = 0
 	bones = 0
+	energy_max = 1
+	energy_current = 1
+	mox_green_active = false
+	mox_orange_active = false
+	mox_blue_active = false
 	squirrel_pile_count = 10
 	draw_pending = false
 	scale = 0
@@ -90,6 +106,98 @@ func card_for_id(card_id: String) -> Dictionary:
 			if not merged.has(code): merged.append(code)
 		card["sigils"] = merged
 	return card
+
+func can_pay_energy(cost: int) -> bool:
+	return cost <= 0 or energy_current >= cost
+
+func spend_energy(cost: int) -> bool:
+	if cost <= 0:
+		return true
+	if not can_pay_energy(cost):
+		return false
+	energy_current -= cost
+	return true
+
+func recharge_energy_for_new_turn() -> void:
+	energy_max = mini(ENERGY_CAP, energy_max + 1)
+	energy_current = energy_max
+
+func refresh_mox_presence() -> Dictionary:
+	mox_green_active = false
+	mox_orange_active = false
+	mox_blue_active = false
+	for unit in player_lanes:
+		if unit == null:
+			continue
+		var provided: Array[String] = _mox_provided_by_unit(unit)
+		for color in provided:
+			match color:
+				"green":
+					mox_green_active = true
+				"orange":
+					mox_orange_active = true
+				"blue":
+					mox_blue_active = true
+	return {
+		"green": mox_green_active,
+		"orange": mox_orange_active,
+		"blue": mox_blue_active
+	}
+
+func active_mox() -> Dictionary:
+	return refresh_mox_presence()
+
+func has_required_mox(requirements: Array) -> bool:
+	if requirements.is_empty():
+		return true
+	var state := refresh_mox_presence()
+	for raw_color in requirements:
+		var color := str(raw_color).to_lower()
+		if color not in ["green", "orange", "blue"]:
+			return false
+		if not bool(state.get(color, false)):
+			return false
+	return true
+
+func _card_mox_requirements(card: Dictionary) -> Array:
+	var result: Array = []
+	var raw = card.get("mox_requirements", [])
+	if raw is String:
+		if not str(raw).is_empty():
+			result.append(str(raw).to_lower())
+	elif raw is Array:
+		for item in raw:
+			var color := str(item).to_lower()
+			if not color.is_empty() and not result.has(color):
+				result.append(color)
+	return result
+
+func _mox_provided_by_unit(unit) -> Array[String]:
+	var result: Array[String] = []
+	if unit == null:
+		return result
+	var raw = unit.get("mox_provides", [])
+	if raw is String:
+		var direct := str(raw).to_lower()
+		if not direct.is_empty():
+			result.append(direct)
+	elif raw is Array:
+		for item in raw:
+			var direct := str(item).to_lower()
+			if not direct.is_empty() and not result.has(direct):
+				result.append(direct)
+	var card := card_for_id(str(unit.get("id", "")))
+	var card_raw = card.get("mox_provides", [])
+	if card_raw is String:
+		var from_card := str(card_raw).to_lower()
+		if not from_card.is_empty() and not result.has(from_card):
+			result.append(from_card)
+	elif card_raw is Array:
+		for item in card_raw:
+			var from_card := str(item).to_lower()
+			if not from_card.is_empty() and not result.has(from_card):
+				result.append(from_card)
+	return result
 
 func needs_draw() -> bool:
 	return draw_pending and result == "ongoing"
@@ -182,6 +290,13 @@ func can_play(hand_index: int, lane_index: int, sacrifice_lanes: Array[int]) -> 
 		return "Esa casilla está ocupada."
 	if resource == "bones" and bones < cost:
 		return "Huesos insuficientes."
+	if resource == "energy" and not can_pay_energy(cost):
+		return "Energía insuficiente."
+	var mox_requirements: Array = _card_mox_requirements(card)
+	if resource == "mox" and mox_requirements.is_empty():
+		return "La carta Mox no define un cristal requerido."
+	if not has_required_mox(mox_requirements):
+		return "Falta un cristal Mox requerido en la mesa."
 	return ""
 
 func play_card(hand_index: int, lane_index: int, sacrifice_lanes: Array[int]) -> bool:
@@ -201,6 +316,10 @@ func play_card(hand_index: int, lane_index: int, sacrifice_lanes: Array[int]) ->
 			_sacrifice_player_unit(lane)
 	elif resource == "bones":
 		bones -= int(card.get("cost_value", 0))
+	elif resource == "energy":
+		if not spend_energy(int(card.get("cost_value", 0))):
+			last_message = "Energía insuficiente."
+			return false
 	if player_lanes[lane_index] != null:
 		last_message = "La casilla sigue ocupada tras el sacrificio."
 		return false
@@ -208,6 +327,7 @@ func play_card(hand_index: int, lane_index: int, sacrifice_lanes: Array[int]) ->
 	player_lanes[lane_index] = _new_unit(card_id, true)
 	_on_card_played(true, lane_index)
 	_trigger_guardian(false, lane_index)
+	refresh_mox_presence()
 	last_message = "%s entra en la casilla %d." % [str(card.get("name", card_id)), lane_index + 1]
 	return true
 
@@ -229,6 +349,8 @@ func end_turn() -> String:
 		return result
 	_end_side_phase(false)
 	turn += 1
+	recharge_energy_for_new_turn()
+	refresh_mox_presence()
 	draw_pending = not draw_pile.is_empty() or squirrel_pile_count > 0
 	var spawned_enemy := _spawn_enemy()
 	if not spawned_enemy:
@@ -253,6 +375,7 @@ func _new_unit(card_id: String, player_owned: bool = false) -> Dictionary:
 		"sacrifice_count": 0,
 		"tail_used": false,
 		"extra_sigils": [],
+		"mox_provides": card.get("mox_provides", []),
 		"attack_bonus": persistent_atk + ouro_bonus
 	}
 	if Array(card.get("sigils", [])).has("AMORPHOUS"):
