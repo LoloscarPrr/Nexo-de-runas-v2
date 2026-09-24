@@ -1,5 +1,7 @@
 extends Button
 
+const ResourcePaletteScript = preload("res://scripts/ui/mockup_hud/resource_palette.gd")
+
 const INK := Color("090c06")
 const PAPER := Color("aaa65c")
 const PAPER_LIGHT := Color("c1bb70")
@@ -60,12 +62,26 @@ func _draw() -> void:
 	var head_h := clampf(h * 0.155, 28.0, 41.0)
 	var cost_box := head_h - 5.0
 
-	# Coste arriba a la izquierda.
-	draw_rect(Rect2(7, 7, cost_box, cost_box), PAPER_LIGHT)
-	draw_rect(Rect2(7, 7, cost_box, cost_box), INK, false, 2)
+	# Coste arriba a la izquierda. Sangre/Huesos conservan la lectura clásica;
+	# Energía y Mox reciben acentos funcionales propios del mockup.
+	var cost_rect := Rect2(7, 7, cost_box, cost_box)
+	var resource := str(card.get("resource", "none"))
+	var cost_fill := PAPER_LIGHT
+	if resource == "energy":
+		cost_fill = ResourcePaletteScript.ENERGY.darkened(0.18)
+	elif resource == "mox":
+		cost_fill = Color("353a28")
+	draw_rect(cost_rect, cost_fill)
+	draw_rect(cost_rect, INK, false, 2)
 	var cost_value := int(card.get("cost_value", 0))
 	var cost_size := int(clampf(head_h * 0.62, 15, 24))
-	draw_string(font, Vector2(10, 7 + head_h * 0.72), str(cost_value), HORIZONTAL_ALIGNMENT_CENTER, cost_box - 6, cost_size, INK)
+	if resource == "mox":
+		_draw_mox_cost(cost_rect)
+	else:
+		draw_string(font, Vector2(10, 7 + head_h * 0.72), str(cost_value), HORIZONTAL_ALIGNMENT_CENTER, cost_box - 6, cost_size, INK)
+		if resource == "energy":
+			# Dos cortes rectos refuerzan el código visual mecánico/rúnico.
+			draw_line(cost_rect.position + Vector2(5, cost_rect.size.y - 7), cost_rect.position + Vector2(cost_rect.size.x - 5, cost_rect.size.y - 7), Color(0.04,0.08,0.09,0.65), 2)
 
 	# Nombre centrado, reduciendo tamaño en nombres largos.
 	var title_x := head_h + 6.0
@@ -110,6 +126,35 @@ func _draw() -> void:
 		draw_rect(Rect2(1, 1, w - 7, h - 7), BLOOD_MARK, false, 5)
 		draw_line(Vector2(13, art_top + 7), Vector2(w - 20, art_bottom - 7), BLOOD_MARK, 5)
 		draw_line(Vector2(w - 20, art_top + 7), Vector2(13, art_bottom - 7), BLOOD_MARK, 5)
+
+func _draw_mox_cost(rect: Rect2) -> void:
+	var requirements: Array[String] = []
+	var raw = card.get("mox_requirements", [])
+	if raw is String:
+		var single := str(raw).to_lower()
+		if not single.is_empty():
+			requirements.append(single)
+	elif raw is Array:
+		for item in raw:
+			var color := str(item).to_lower()
+			if not color.is_empty() and not requirements.has(color):
+				requirements.append(color)
+	if requirements.is_empty():
+		requirements.append("blue")
+	var count := mini(requirements.size(), 3)
+	var r := minf(rect.size.x, rect.size.y) * (0.18 if count > 1 else 0.26)
+	for i in range(count):
+		var x := rect.position.x + rect.size.x * (float(i + 1) / float(count + 1))
+		var center := Vector2(x, rect.get_center().y)
+		var points := PackedVector2Array([
+			center + Vector2(0, -r),
+			center + Vector2(r * 0.72, 0),
+			center + Vector2(0, r),
+			center + Vector2(-r * 0.72, 0)
+		])
+		var color := ResourcePaletteScript.mox_color(requirements[i], true)
+		draw_colored_polygon(points, color)
+		draw_polyline(PackedVector2Array([points[0], points[1], points[2], points[3], points[0]]), INK, 1.5)
 
 func _draw_nexo_art(rect: Rect2) -> void:
 	var texture := _get_full_card_texture(str(card.get("id", "")))
