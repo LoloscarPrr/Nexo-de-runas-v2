@@ -16,6 +16,7 @@ func _initialize() -> void:
 	_test_many_lives()
 	_test_combat_sigils()
 	_test_evolution_and_generation()
+	_test_energy_and_mox()
 	_test_cpu_surrender()
 	print("Battle checks: %d failures" % failures)
 	quit(1 if failures else 0)
@@ -109,6 +110,34 @@ func _test_evolution_and_generation() -> void:
 	beaver._on_card_played(true, 1)
 	check(beaver.player_lanes[0] != null and beaver.player_lanes[0].id == "represa", "Beaver creates left Dam")
 	check(beaver.player_lanes[2] != null and beaver.player_lanes[2].id == "represa", "Beaver creates right Dam")
+
+func _test_energy_and_mox() -> void:
+	var energy := Battle.new()
+	energy.setup(["lobo", "rana_toro", "armino", "coyote"])
+	check(energy.energy_max == 1 and energy.energy_current == 1, "Energy starts at one full cell")
+	check(energy.can_pay_energy(1), "One Energy can be paid on the opening turn")
+	check(energy.spend_energy(1), "Energy spending succeeds when enough charge exists")
+	check(energy.energy_current == 0, "Energy spending removes current charge")
+	check(not energy.can_pay_energy(1), "Spent Energy cannot be reused during the same turn")
+	energy.recharge_energy_for_new_turn()
+	check(energy.energy_max == 2 and energy.energy_current == 2, "Energy capacity grows and fully recharges next turn")
+	for i in range(10):
+		energy.recharge_energy_for_new_turn()
+	check(energy.energy_max == 6 and energy.energy_current == 6, "Energy capacity is capped at six")
+
+	var mox := Battle.new()
+	mox.setup(["lobo", "rana_toro", "armino", "coyote"])
+	mox.player_lanes = [mox._new_unit("ardilla", true), mox._new_unit("armino", true), null, null]
+	mox.player_lanes[0]["mox_provides"] = ["green"]
+	mox.player_lanes[1]["mox_provides"] = ["blue"]
+	var state: Dictionary = mox.active_mox()
+	check(bool(state.green) and bool(state.blue) and not bool(state.orange), "Mox presence is derived from active board crystals")
+	check(mox.has_required_mox(["green"]), "Green Mox requirement is satisfied by a green crystal")
+	check(mox.has_required_mox(["green", "blue"]), "Multiple Mox requirements can be satisfied together")
+	check(not mox.has_required_mox(["orange"]), "Missing orange Mox rejects its requirement")
+	mox.player_lanes[0] = null
+	state = mox.active_mox()
+	check(not bool(state.green) and bool(state.blue), "Removing a crystal immediately updates Mox presence")
 
 func _test_cpu_surrender() -> void:
 	var battle := Battle.new()
