@@ -10,6 +10,9 @@ func run() -> void:
 	if not ResourceLoader.exists("res://assets/card_full/ardilla.png"):
 		_fail("Missing canonical full card: ardilla.png")
 		return
+	if not ResourceLoader.exists("res://assets/mockup_sketches/sketch_atlas.webp"):
+		_fail("Missing canonical animated mockup sketch atlas")
+		return
 
 	root.size = Vector2i(1280, 720)
 	await process_frame
@@ -41,7 +44,7 @@ func run() -> void:
 	view._select_hand(0)
 	view._on_player_lane_pressed(0)
 	await process_frame
-	print("Mockup battle UI instantiated; 94-card visual set loaded; controls fit 1280x720")
+	print("Mockup battle UI instantiated; canonical sketch atlas loaded; controls fit 1280x720")
 	quit(0)
 
 func _fail(message: String) -> void:
