@@ -92,6 +92,10 @@ func _render_battle() -> void:
 	var title_sketch := AnimatedSketchSpriteScript.new()
 	title_sketch.sketch_key = "title"
 	title_sketch.pulse_glow = true
+	title_sketch.glow_strength = 0.055
+	title_sketch.breathe_scale = 0.006
+	title_sketch.drift_pixels = Vector2(0.8, 0.35)
+	title_sketch.phase_offset = 0.35
 	_place(title_sketch, _mock_rect(18, 8, 238, 48, s, ox, oy))
 
 	var leave := SketchActionButtonScript.new()
@@ -103,9 +107,12 @@ func _render_battle() -> void:
 	# La balanza es literalmente el boceto ornamental aprobado.
 	var balance_sketch := AnimatedSketchSpriteScript.new()
 	balance_sketch.sketch_key = "balance"
-	balance_sketch.sway_degrees = 1.4
+	balance_sketch.sway_degrees = 2.15
+	balance_sketch.float_pixels = 0.45
+	balance_sketch.drift_pixels = Vector2(0.35, 0.20)
 	balance_sketch.pivot_ratio = Vector2(0.5, 0.10)
-	balance_sketch.target_rotation_degrees = float(clampi(battle_state.scale, -5, 5)) * 1.35
+	balance_sketch.phase_offset = 1.10
+	balance_sketch.target_rotation_degrees = float(clampi(battle_state.scale, -5, 5)) * 1.55
 	_place(balance_sketch, _mock_rect(6, 65, 208, 222, s, ox, oy))
 	if scale_delta != 0:
 		balance_sketch.hit()
@@ -114,9 +121,14 @@ func _render_battle() -> void:
 	# Tótem/calavera del boceto: flotación vertical y pulso ritual.
 	var totem_sketch := AnimatedSketchSpriteScript.new()
 	totem_sketch.sketch_key = "totem"
-	totem_sketch.float_pixels = 2.5
-	totem_sketch.breathe_scale = 0.008
+	totem_sketch.float_pixels = 4.2
+	totem_sketch.drift_pixels = Vector2(1.1, 0.55)
+	totem_sketch.sway_degrees = 0.75
+	totem_sketch.breathe_scale = 0.014
 	totem_sketch.pulse_glow = true
+	totem_sketch.glow_strength = 0.065
+	totem_sketch.flicker_strength = 0.010
+	totem_sketch.phase_offset = 2.30
 	_place(totem_sketch, _mock_rect(56, 280, 108, 138, s, ox, oy))
 	if scale_delta < 0 or bones_delta != 0:
 		totem_sketch.flash()
@@ -124,9 +136,14 @@ func _render_battle() -> void:
 	# Retrato real del boceto: respira, flota y se sacude con daño.
 	var enemy_portrait := AnimatedSketchSpriteScript.new()
 	enemy_portrait.sketch_key = "portrait"
-	enemy_portrait.float_pixels = 1.5
-	enemy_portrait.breathe_scale = 0.009
+	enemy_portrait.float_pixels = 2.4
+	enemy_portrait.drift_pixels = Vector2(0.75, 0.45)
+	enemy_portrait.sway_degrees = 0.32
+	enemy_portrait.breathe_scale = 0.015
 	enemy_portrait.pulse_glow = true
+	enemy_portrait.glow_strength = 0.050
+	enemy_portrait.flicker_strength = 0.008
+	enemy_portrait.phase_offset = 3.60
 	enemy_portrait.surrender_dim = battle_state.cpu_surrender_pending
 	_place(enemy_portrait, _mock_rect(1330, 18, 172, 172, s, ox, oy))
 	if scale_delta > 0:
@@ -174,11 +191,19 @@ func _render_battle() -> void:
 		var rule_sketch := AnimatedSketchSpriteScript.new()
 		rule_sketch.sketch_key = "rule_panel"
 		rule_sketch.pulse_glow = true
+		rule_sketch.glow_strength = 0.040
+		rule_sketch.breathe_scale = 0.006
+		rule_sketch.drift_pixels = Vector2(0.45, 0.75)
+		rule_sketch.phase_offset = 1.75
 		_place(rule_sketch, _mock_rect(1318, 194, 194, 142, s, ox, oy))
 	var turn_plate := AnimatedSketchSpriteScript.new()
 	turn_plate.sketch_key = "draw" if battle_state.needs_draw() else "turn"
 	turn_plate.pulse_glow = true
-	turn_plate.breathe_scale = 0.012
+	turn_plate.glow_strength = 0.070 if battle_state.needs_draw() else 0.045
+	turn_plate.breathe_scale = 0.020 if battle_state.needs_draw() else 0.010
+	turn_plate.float_pixels = 1.6 if battle_state.needs_draw() else 0.8
+	turn_plate.drift_pixels = Vector2(0.35, 0.25)
+	turn_plate.phase_offset = 0.90
 	_place(turn_plate, _mock_rect(1324, 402, 182, 62, s, ox, oy))
 
 	# Cuatro cartas del rival y cuatro del jugador, alineadas como la captura.
