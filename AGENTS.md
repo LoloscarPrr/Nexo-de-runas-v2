@@ -6,41 +6,55 @@ Antes de implementar una función grande, leer en este orden:
 2. `specs/001-core-reconstruction/spec.md`
 3. `specs/001-core-reconstruction/plan.md`
 4. `specs/001-core-reconstruction/tasks.md`
+5. Documento Maestro Canónico v1.0 de Fuentes, cuando esté disponible en el contexto del proyecto.
 
-## Reglas obligatorias
+## Dirección activa
+- Nexo de Runas es un juego original de cartas tácticas para Android horizontal.
+- La dirección anterior de réplica del Acto 1 queda archivada y no debe gobernar nuevas funciones.
+- Los cuatro dominios activos son Bosque Salvaje, Cripta de Hueso, Torre Arcana y Fundición Antigua.
+- La UI y el arte deben seguir los mockups canónicos aprobados: fantasía oscura premium, materiales físicos, runas, profundidad e iluminación cinematográfica.
+- La batalla usa exactamente cuatro carriles por lado y una arquitectura HUD compartida por los cuatro dominios.
+- Usar siempre el término `sello`, nunca `sigilo`, en UI y documentación nueva.
+
+## Reglas jugables activas
+- Integridad inicial del Nexo: 20.
+- Mazo base: 20 cartas + 1 Guardián externo.
+- Mano inicial: 4; máximo de mano: 8.
+- Energía Rúnica: capacidad progresiva 1→6 y recarga completa por turno.
+- 6 es el máximo estándar; 12 es límite absoluto extraordinario mediante efectos.
+- Máximo 3 Sellos y 2 Reliquias activas.
+- Recursos por dominio: Instinto, Restos, Conocimiento y Calor.
+- El set mínimo canónico inicial contiene 48 cartas: 12 por dominio.
+
+## Arquitectura
 - Mantener Godot 4.x + GDScript.
-- La dirección activa es exclusivamente Acto 1: terror de cabaña, mesa física, mapa, sacrificios, objetos, puzzles y jefes.
-- No introducir estética pixel-art del Acto 2, pestañas de cuatro facciones ni UI de TCG genérico en el flujo principal.
-- Recursos activos del combate: Sangre, Huesos y Ninguno. Ardillas en reserva separada.
-- Energía y Runas/Mox quedan fuera de la experiencia actual.
-- Usar el término `sello`, no `sigilo`, en UI y documentación del proyecto.
-- El mazo principal se construye durante la expedición; no mediante un constructor de cuatro facciones.
-- Los sacrificios deben ser una acción explícita del jugador, no un pago automático oculto.
-- Mantener reglas y estado separados de UI/3D.
+- Reglas y estado separados de UI/3D.
+- Datos serializables para guardado, CPU y futura red.
+- La presentación observa el estado y emite acciones; nunca decide resultados.
 - Diseñar primero para Android horizontal y controles táctiles.
-- No introducir comportamientos que dependan exclusivamente de hover.
-- Nueva partida y Continuar tienen prioridad sobre modos secundarios.
-- Multijugador local se aplaza hasta completar el núcleo del Acto 1.
-- No fusionar cambios que rompan el export Android.
+- No introducir comportamiento esencial dependiente de hover.
 
-## Dirección visual
-- Objetivo final: cabaña/mesa 2.5D o 3D con madera, papel envejecido, luz cálida puntual y sombras profundas.
-- Los Controls 2D planos pueden usarse únicamente como transición funcional.
-- Las cartas deben sentirse como objetos físicos y conservar arte, coste, ataque, salud y sello legibles.
+## Migración desde el motor antiguo
+- El motor Acto 1 existente puede permanecer temporalmente para mantener el APK verde.
+- El nuevo core canónico debe implementarse en paralelo y cubrirse con pruebas antes de reemplazar la UI/flujo legado.
+- No borrar firma Android, saves existentes ni pipeline mientras dure la migración.
+- Los assets del set antiguo pueden permanecer como compatibilidad temporal; no definen el catálogo canónico nuevo.
+
+## Flujo principal objetivo
+Splash → Menú principal → Jugar → Campaña / Vs CPU / Local / Online.
+El menú principal también expone Constructor de Mazos, Colección, Perfil, Logros y Ajustes.
 
 ## Flujo de trabajo
 1. Actualizar spec/plan/tasks si cambia el alcance.
 2. Implementar la unidad mínima coherente.
 3. Ejecutar `python tools/validate_project.py`.
-4. Confirmar que Godot puede importar/exportar el proyecto.
-5. Marcar tareas completadas solo cuando el criterio sea observable en el APK.
+4. Ejecutar las pruebas GDScript del core canónico.
+5. Confirmar import/export con Godot 4.3.
+6. Mantener APK Android verde.
 
 ## Convenciones
 - Escenas: `snake_case.tscn`.
 - Scripts: `snake_case.gd`.
-- Clases con `class_name` cuando sean parte del dominio reutilizable.
-- Señales para comunicar presentación → controlador; evitar acoplar nodos visuales al motor de reglas.
-- Datos serializables para todo estado persistente o futuro estado de red.
-
-## Política de cambios
-Los cambios deben ser incrementales. Si una modificación obliga a reescribir varias capas, dividirla en commits funcionales y mantener una ruta de APK verde entre etapas siempre que sea posible.
+- Clases reutilizables con `class_name`.
+- Señales para presentación → controlador.
+- Cambios incrementales, con una ruta exportable entre etapas.
