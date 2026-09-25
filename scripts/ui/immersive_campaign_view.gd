@@ -13,6 +13,9 @@ const AnimatedCrystalBarScript = preload("res://scripts/ui/mockup_hud/animated_c
 const AnimatedDeckButtonScript = preload("res://scripts/ui/mockup_hud/animated_deck_button.gd")
 const AnimatedEnergyBarScript = preload("res://scripts/ui/mockup_hud/animated_energy_bar.gd")
 const AnimatedMoxBarScript = preload("res://scripts/ui/mockup_hud/animated_mox_bar.gd")
+const AnimatedSketchSpriteScript = preload("res://scripts/ui/mockup_hud/animated_sketch_sprite.gd")
+const SketchActionButtonScript = preload("res://scripts/ui/mockup_hud/sketch_action_button.gd")
+const SketchDeckButtonScript = preload("res://scripts/ui/mockup_hud/sketch_deck_button.gd")
 
 const I_INK := Color8(199, 213, 103)
 const I_MUTED := Color8(113, 125, 67)
@@ -85,34 +88,47 @@ func _render_battle() -> void:
 	table.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(table)
 
-	# Encabezado del mockup.
-	_place(_label("NEXO DE RUNAS", maxi(14, int(23 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(24, 12, 205, 36, s, ox, oy))
-	var leave := AnimatedActionButtonScript.new()
-	leave.text = "MAPA"
+	# Bocetos canónicos: el arte generado es ahora el HUD real, no una reconstrucción procedural.
+	var title_sketch := AnimatedSketchSpriteScript.new()
+	title_sketch.sketch_key = "title"
+	title_sketch.pulse_glow = true
+	_place(title_sketch, _mock_rect(18, 8, 238, 48, s, ox, oy))
+
+	var leave := SketchActionButtonScript.new()
+	leave.sketch_key = "map"
 	leave.pressed.connect(_show_map)
 	leave.pulse_active = false
-	_mock_button_style(leave, false)
-	_place(leave, _mock_rect(214, 12, 82, 32, s, ox, oy))
+	_place(leave, _mock_rect(258, 10, 94, 36, s, ox, oy))
 
-	# Balanza extraída de la mesa: ahora es un nodo animable independiente.
-	var animated_scale := AnimatedScaleScript.new()
-	animated_scale.balance = battle_state.scale
-	animated_scale.left_value = 2 + maxi(battle_state.scale, 0)
-	animated_scale.right_value = 2 + maxi(-battle_state.scale, 0)
-	_place(animated_scale, _mock_rect(13, 72, 194, 205, s, ox, oy))
+	# La balanza es literalmente el boceto ornamental aprobado.
+	var balance_sketch := AnimatedSketchSpriteScript.new()
+	balance_sketch.sketch_key = "balance"
+	balance_sketch.sway_degrees = 1.4
+	balance_sketch.pivot_ratio = Vector2(0.5, 0.10)
+	balance_sketch.target_rotation_degrees = float(clampi(battle_state.scale, -5, 5)) * 1.35
+	_place(balance_sketch, _mock_rect(6, 65, 208, 222, s, ox, oy))
 	if scale_delta != 0:
-		animated_scale.animate_change(scale_delta)
+		balance_sketch.hit()
+		balance_sketch.flash()
 
-	# Tótem/calavera extraído del fondo.
-	var animated_totem := AnimatedTotemScript.new()
-	_place(animated_totem, _mock_rect(55, 286, 110, 118, s, ox, oy))
+	# Tótem/calavera del boceto: flotación vertical y pulso ritual.
+	var totem_sketch := AnimatedSketchSpriteScript.new()
+	totem_sketch.sketch_key = "totem"
+	totem_sketch.float_pixels = 2.5
+	totem_sketch.breathe_scale = 0.008
+	totem_sketch.pulse_glow = true
+	_place(totem_sketch, _mock_rect(56, 280, 108, 138, s, ox, oy))
 	if scale_delta < 0 or bones_delta != 0:
-		animated_totem.flash()
+		totem_sketch.flash()
 
-	# Retrato rival independiente. Respira, parpadea y reacciona al daño/rendición.
-	var enemy_portrait := AnimatedEnemyPortraitScript.new()
-	enemy_portrait.set_surrendering(battle_state.cpu_surrender_pending)
-	_place(enemy_portrait, _mock_rect(1334, 24, 164, 164, s, ox, oy))
+	# Retrato real del boceto: respira, flota y se sacude con daño.
+	var enemy_portrait := AnimatedSketchSpriteScript.new()
+	enemy_portrait.sketch_key = "portrait"
+	enemy_portrait.float_pixels = 1.5
+	enemy_portrait.breathe_scale = 0.009
+	enemy_portrait.pulse_glow = true
+	enemy_portrait.surrender_dim = battle_state.cpu_surrender_pending
+	_place(enemy_portrait, _mock_rect(1330, 18, 172, 172, s, ox, oy))
 	if scale_delta > 0:
 		enemy_portrait.hit()
 
@@ -155,14 +171,15 @@ func _render_battle() -> void:
 		_place(_label("SELLOS · %s" % str(inspect_data.get("name", "CARTA")), maxi(10, int(13 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1312, 184, 210, 28, s, ox, oy))
 		_place(_label(SigilCatalogScript.summary_for_card(inspect_data), maxi(8, int(10 * s)), MOCK_INK, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1312, 216, 210, 190, s, ox, oy))
 	else:
-		_place(_label("TOCA UNA CARTA\nPARA LEER\nSU SELLO.", maxi(11, int(17 * s)), MOCK_INK, HORIZONTAL_ALIGNMENT_LEFT), _mock_rect(1330, 220, 170, 100, s, ox, oy))
-	var turn_text := "ROBA CARTA" if battle_state.needs_draw() else "TU TURNO"
-	var turn_plate := AnimatedActionButtonScript.new()
-	turn_plate.text = turn_text
-	turn_plate.pulse_active = true
-	turn_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_mock_button_style(turn_plate, false)
-	_place(turn_plate, _mock_rect(1330, 408, 170, 50, s, ox, oy))
+		var rule_sketch := AnimatedSketchSpriteScript.new()
+		rule_sketch.sketch_key = "rule_panel"
+		rule_sketch.pulse_glow = true
+		_place(rule_sketch, _mock_rect(1318, 194, 194, 142, s, ox, oy))
+	var turn_plate := AnimatedSketchSpriteScript.new()
+	turn_plate.sketch_key = "draw" if battle_state.needs_draw() else "turn"
+	turn_plate.pulse_glow = true
+	turn_plate.breathe_scale = 0.012
+	_place(turn_plate, _mock_rect(1324, 402, 182, 62, s, ox, oy))
 
 	# Cuatro cartas del rival y cuatro del jugador, alineadas como la captura.
 	var lane_x0 := 350.0
@@ -208,37 +225,34 @@ func _render_battle() -> void:
 	else:
 		_place(_label("TU MANO ESTÁ VACÍA", maxi(12, int(18 * s)), MOCK_MUTED, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(570, 735, 400, 32, s, ox, oy))
 
-	# Pilas físicas independientes: respiración idle y tirón al robar.
-	var draw_deck := AnimatedDeckButtonScript.new()
-	draw_deck.deck_label = "MAZO"
+	# Pilas del boceto real, con el número de muestra cubierto por el conteo vivo.
+	var draw_deck := SketchDeckButtonScript.new()
+	draw_deck.sketch_key = "deck"
 	draw_deck.count = battle_state.draw_pile.size()
-	draw_deck.mirrored = false
 	draw_deck.pulse_active = battle_state.needs_draw() and not battle_state.draw_pile.is_empty()
 	draw_deck.disabled = not battle_state.needs_draw() or battle_state.draw_pile.is_empty()
 	draw_deck.pressed.connect(_draw_regular)
-	_place(draw_deck, _mock_rect(28, 696, 112, 128, s, ox, oy))
+	_place(draw_deck, _mock_rect(24, 684, 128, 146, s, ox, oy))
 	if draw_delta < 0:
 		draw_deck.animate_draw()
 
-	var squirrels := AnimatedDeckButtonScript.new()
-	squirrels.deck_label = "ARDILLAS"
+	var squirrels := SketchDeckButtonScript.new()
+	squirrels.sketch_key = "squirrels"
 	squirrels.count = battle_state.squirrel_pile_count
-	squirrels.mirrored = true
 	squirrels.pulse_active = battle_state.needs_draw() and battle_state.squirrel_pile_count > 0
 	squirrels.disabled = not battle_state.needs_draw() or battle_state.squirrel_pile_count <= 0
 	squirrels.pressed.connect(_draw_squirrel)
-	_place(squirrels, _mock_rect(1396, 696, 112, 128, s, ox, oy))
+	_place(squirrels, _mock_rect(1384, 680, 128, 150, s, ox, oy))
 	if squirrel_delta < 0:
 		squirrels.animate_draw()
 
-	# Columna derecha: finalizar como botón grande de papel.
-	var bell := AnimatedActionButtonScript.new()
-	bell.text = "FINALIZAR"
+	# FINALIZAR usa el boceto original de papel, no un botón reconstruido.
+	var bell := SketchActionButtonScript.new()
+	bell.sketch_key = "end"
 	bell.pulse_active = not battle_state.needs_draw() and not battle_state.cpu_surrender_pending
 	bell.disabled = battle_state.needs_draw() or battle_state.cpu_surrender_pending
 	bell.pressed.connect(_end_battle_turn)
-	_mock_button_style(bell, false, true)
-	_place(bell, _mock_rect(1330, 492, 170, 96, s, ox, oy))
+	_place(bell, _mock_rect(1328, 478, 176, 118, s, ox, oy))
 
 	if battle_state.cpu_surrender_pending:
 		_place(_label("LA CPU OFRECE\nRENDIRSE", maxi(12, int(17 * s)), MOCK_GLOW, HORIZONTAL_ALIGNMENT_CENTER), _mock_rect(1310, 595, 210, 58, s, ox, oy))
