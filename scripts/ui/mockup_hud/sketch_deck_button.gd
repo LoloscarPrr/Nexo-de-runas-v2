@@ -76,7 +76,8 @@ func _process(delta: float) -> void:
 	if pulse_active and not disabled:
 		pulse += sin(time * TAU / 2.0) * 0.008
 	scale = Vector2.ONE * pulse * (1.0 - press_strength * 0.03)
-	if _base_set:\n\t\tposition = _base_position + Vector2(0, -8.0 * sin(draw_strength * PI))
+	if _base_set:
+		position = _base_position + Vector2(0, -8.0 * sin(draw_strength * PI))
 	modulate = Color(0.45, 0.47, 0.34, 0.58) if disabled else Color.WHITE
 
 func _on_down() -> void:
