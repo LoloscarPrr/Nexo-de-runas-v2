@@ -62,10 +62,9 @@ func _draw_reference() -> void:
 	# La balanza, el tótem y el retrato fueron extraídos de la mesa.
 	# Ahora son nodos independientes animables creados por immersive_campaign_view.gd.
 
-	# Caja de diálogo y marcos de controles derechos.
+	# El libro de reglas mantiene un soporte oscuro. Los controles inferiores
+	# ahora usan directamente los bocetos de papel, sin marcos duplicados.
 	_draw_frame(Rect2(1320, 196, 190, 142), 3)
-	_draw_frame(Rect2(1320, 404, 190, 58), 3)
-	_draw_frame(Rect2(1320, 478, 190, 124), 3)
 
 	# Las pilas inferiores fueron extraídas del fondo y ahora son botones animables.
 
