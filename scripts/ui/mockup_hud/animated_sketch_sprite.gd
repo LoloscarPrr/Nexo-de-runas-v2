@@ -7,6 +7,7 @@ var float_pixels := 0.0
 var sway_degrees := 0.0
 var breathe_scale := 0.0
 var pulse_glow := false
+var pivot_ratio := Vector2(0.5, 0.5)
 var target_rotation_degrees := 0.0
 var time := 0.0
 var hit_strength := 0.0
@@ -22,14 +23,18 @@ func _ready() -> void:
 	stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	if not sketch_key.is_empty():
 		texture = SketchAtlasScript.texture_for(sketch_key)
-	pivot_offset = size * 0.5
+	pivot_offset = size * pivot_ratio
+	resized.connect(_update_pivot)
 	set_process(true)
 	call_deferred("_capture_base")
 
 func _capture_base() -> void:
 	_base_position = position
 	_base_set = true
-	pivot_offset = size * 0.5
+	_update_pivot()
+
+func _update_pivot() -> void:
+	pivot_offset = size * pivot_ratio
 
 func hit() -> void:
 	hit_strength = 1.0
