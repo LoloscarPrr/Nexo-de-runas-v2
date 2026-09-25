@@ -48,9 +48,9 @@ func _ready() -> void:
 	button_down.connect(_on_down)
 	button_up.connect(_on_up)
 	set_process(true)
-	call_deferred("_layout_children")
+	call_deferred("_layout_children")\n\tcall_deferred("_capture_base")
 
-func _layout_children() -> void:
+func _capture_base() -> void:\n\t_base_position = position\n\t_base_set = true\n\nfunc _layout_children() -> void:
 	pivot_offset = size * 0.5
 	if _art != null:
 		_art.position = Vector2.ZERO
@@ -71,7 +71,7 @@ func _process(delta: float) -> void:
 	if pulse_active and not disabled:
 		pulse += sin(time * TAU / 2.0) * 0.008
 	scale = Vector2.ONE * pulse * (1.0 - press_strength * 0.03)
-	position.y -= 8.0 * sin(draw_strength * PI) * delta * 4.5
+	if _base_set:\n\t\tposition = _base_position + Vector2(0, -8.0 * sin(draw_strength * PI))
 	modulate = Color(0.45, 0.47, 0.34, 0.58) if disabled else Color.WHITE
 
 func _on_down() -> void:
