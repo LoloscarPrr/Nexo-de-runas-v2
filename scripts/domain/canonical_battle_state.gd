@@ -430,7 +430,7 @@ func _expire_temporary_bonuses() -> void:
 
 func _guard_interceptor(lanes: Array, target_lane: int) -> int:
 	for offset in [-1, 1]:
-		var candidate_lane := target_lane + offset
+		var candidate_lane: int = target_lane + int(offset)
 		if candidate_lane < 0 or candidate_lane >= LANE_COUNT:
 			continue
 		var candidate = lanes[candidate_lane]
