@@ -2,11 +2,18 @@ extends TextureRect
 
 const SketchAtlasScript = preload("res://scripts/ui/mockup_hud/sketch_atlas.gd")
 
+## Animador común para los bocetos canónicos extraídos del mockup.
+## El movimiento debe sentirse físico: respiración, flotación, deriva y reacción,
+## nunca como widgets flotantes independientes del tablero.
 var sketch_key := ""
 var float_pixels := 0.0
+var drift_pixels := Vector2.ZERO
 var sway_degrees := 0.0
 var breathe_scale := 0.0
 var pulse_glow := false
+var glow_strength := 0.045
+var flicker_strength := 0.0
+var phase_offset := 0.0
 var pivot_ratio := Vector2(0.5, 0.5)
 var target_rotation_degrees := 0.0
 var time := 0.0
@@ -44,21 +51,34 @@ func flash() -> void:
 
 func _process(delta: float) -> void:
 	time += delta
-	hit_strength = maxf(0.0, hit_strength - delta * 6.5)
-	flash_strength = maxf(0.0, flash_strength - delta * 3.5)
+	hit_strength = maxf(0.0, hit_strength - delta * 5.4)
+	flash_strength = maxf(0.0, flash_strength - delta * 2.8)
 	if not _base_set:
 		return
 
-	var float_y := sin(time * TAU / 1.9) * float_pixels
-	var shake_x := sin(time * 72.0) * 4.0 * hit_strength
-	position = _base_position + Vector2(shake_x, float_y)
-	rotation_degrees = target_rotation_degrees + sin(time * TAU / 2.2) * sway_degrees
+	var phase := time + phase_offset
+	var float_y := sin(phase * TAU / 2.15) * float_pixels
+	var drift_x := sin(phase * TAU / 3.7 + 0.65) * drift_pixels.x
+	var drift_y := cos(phase * TAU / 3.1 + 1.10) * drift_pixels.y
+	var shake_x := sin(time * 76.0 + phase_offset) * 5.0 * hit_strength
+	var shake_y := cos(time * 58.0 + phase_offset * 0.7) * 1.8 * hit_strength
+	position = _base_position + Vector2(drift_x + shake_x, float_y + drift_y + shake_y)
 
-	var breathing := 1.0 + sin(time * TAU / 2.3) * breathe_scale
-	var flash_pop := 1.0 + flash_strength * 0.035
-	scale = Vector2.ONE * breathing * flash_pop
+	var idle_sway := sin(phase * TAU / 2.55) * sway_degrees
+	var impact_sway := sin(time * 91.0) * 1.5 * hit_strength
+	rotation_degrees = target_rotation_degrees + idle_sway + impact_sway
 
-	var alpha := 0.72 if surrender_dim else 1.0
-	var glow := 0.04 * sin(time * 2.1) if pulse_glow else 0.0
-	var add := 0.10 * flash_strength + glow
+	var breath_wave := sin(phase * TAU / 2.45)
+	var breathing := 1.0 + breath_wave * breathe_scale
+	var flash_pop := 1.0 + flash_strength * 0.045
+	var hit_squash := 1.0 - hit_strength * 0.018
+	scale = Vector2(breathing * flash_pop, breathing * flash_pop * hit_squash)
+
+	var alpha := 0.68 if surrender_dim else 1.0
+	var glow_wave := 0.5 + 0.5 * sin(phase * 2.25)
+	var glow := glow_strength * glow_wave if pulse_glow else 0.0
+	var flicker := 0.0
+	if flicker_strength > 0.0:
+		flicker = (sin(phase * 13.7) * 0.5 + sin(phase * 31.1) * 0.25) * flicker_strength
+	var add := 0.12 * flash_strength + glow + flicker
 	modulate = Color(1.0 + add, 1.0 + add, 1.0 + add * 0.55, alpha)
