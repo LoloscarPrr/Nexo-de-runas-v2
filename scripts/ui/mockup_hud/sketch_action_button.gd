@@ -18,7 +18,6 @@ func _ready() -> void:
 	_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	if not sketch_key.is_empty():
 		_art.texture = SketchAtlasScript.texture_for(sketch_key)
 	add_child(_art)
@@ -27,9 +26,13 @@ func _ready() -> void:
 	button_down.connect(_on_down)
 	button_up.connect(_on_up)
 	set_process(true)
+	call_deferred("_sync_pivot")
 
 func _sync_pivot() -> void:
 	pivot_offset = size * 0.5
+	if _art != null:
+		_art.position = Vector2.ZERO
+		_art.size = size
 
 func _process(delta: float) -> void:
 	time += delta
