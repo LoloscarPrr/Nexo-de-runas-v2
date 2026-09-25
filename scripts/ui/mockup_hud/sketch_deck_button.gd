@@ -10,6 +10,8 @@ var draw_strength := 0.0
 var press_strength := 0.0
 var _art: TextureRect
 var _count_label: Label
+var _base_position := Vector2.ZERO
+var _base_set := false
 
 func _ready() -> void:
 	text = ""
