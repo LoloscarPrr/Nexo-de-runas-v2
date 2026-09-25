@@ -29,7 +29,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Restore canonical Nexo Act I card set
+      - name: Restore legacy card visual bundle for migration
         shell: bash
         run: |
           rm -rf assets/card_full
@@ -47,7 +47,7 @@ jobs:
           assert len({card["id"] for card in manifest}) == 94
           for card in manifest:
               assert Path("assets/card_full", card["file"]).is_file(), card
-          print("Canonical Act I visual set:", len(manifest), "cards, all straight and normalized")
+          print("Legacy migration visual set:", len(manifest), "cards available")
           PY
 
       - name: Validate project structure
