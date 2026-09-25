@@ -48,9 +48,14 @@ func _ready() -> void:
 	button_down.connect(_on_down)
 	button_up.connect(_on_up)
 	set_process(true)
-	call_deferred("_layout_children")\n\tcall_deferred("_capture_base")
+	call_deferred("_layout_children")
+	call_deferred("_capture_base")
 
-func _capture_base() -> void:\n\t_base_position = position\n\t_base_set = true\n\nfunc _layout_children() -> void:
+func _capture_base() -> void:
+	_base_position = position
+	_base_set = true
+
+func _layout_children() -> void:
 	pivot_offset = size * 0.5
 	if _art != null:
 		_art.position = Vector2.ZERO
