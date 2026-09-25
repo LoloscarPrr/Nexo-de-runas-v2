@@ -7,6 +7,8 @@ var pulse_active := false
 var time := 0.0
 var press_strength := 0.0
 var _art: TextureRect
+var _base_position := Vector2.ZERO
+var _base_set := false
 
 func _ready() -> void:
 	text = ""
@@ -27,6 +29,11 @@ func _ready() -> void:
 	button_up.connect(_on_up)
 	set_process(true)
 	call_deferred("_sync_pivot")
+	call_deferred("_capture_base")
+
+func _capture_base() -> void:
+	_base_position = position
+	_base_set = true
 
 func _sync_pivot() -> void:
 	pivot_offset = size * 0.5
@@ -38,10 +45,21 @@ func _process(delta: float) -> void:
 	time += delta
 	press_strength = move_toward(press_strength, 0.0, delta * 8.0)
 	var pulse := 1.0
+	var lift := 0.0
+	var sway := 0.0
 	if pulse_active and not disabled:
-		pulse += sin(time * TAU / 1.25) * 0.018
-	scale = Vector2.ONE * pulse * (1.0 - press_strength * 0.035)
-	modulate = Color(0.46, 0.48, 0.35, 0.58) if disabled else Color.WHITE
+		pulse += sin(time * TAU / 1.35) * 0.022
+		lift = sin(time * TAU / 1.8) * 1.4
+		sway = sin(time * TAU / 2.7) * 0.35
+	scale = Vector2.ONE * pulse * (1.0 - press_strength * 0.045)
+	rotation_degrees = sway + sin(time * 34.0) * press_strength * 0.35
+	if _base_set:
+		position = _base_position + Vector2(0, lift + press_strength * 2.0)
+	if disabled:
+		modulate = Color(0.46, 0.48, 0.35, 0.58)
+	else:
+		var glow := 0.025 + (0.025 * (0.5 + 0.5 * sin(time * 4.2)) if pulse_active else 0.0)
+		modulate = Color(1.0 + glow, 1.0 + glow, 1.0 + glow * 0.55, 1.0)
 
 func _on_down() -> void:
 	press_strength = 1.0
