@@ -72,15 +72,29 @@ func animate_draw() -> void:
 
 func _process(delta: float) -> void:
 	time += delta
-	draw_strength = maxf(0.0, draw_strength - delta * 4.5)
+	draw_strength = maxf(0.0, draw_strength - delta * 3.8)
 	press_strength = maxf(0.0, press_strength - delta * 8.0)
+
+	var phase := 1.7 if sketch_key == "squirrels" else 0.0
+	var idle_sway := sin(time * TAU / 3.1 + phase) * 0.55
+	var idle_bob := sin(time * TAU / 2.6 + phase) * 0.8
 	var pulse := 1.0
 	if pulse_active and not disabled:
-		pulse += sin(time * TAU / 2.0) * 0.008
-	scale = Vector2.ONE * pulse * (1.0 - press_strength * 0.03)
+		pulse += sin(time * TAU / 1.7 + phase) * 0.014
+
+	var draw_arc := sin(draw_strength * PI)
+	var draw_kick := -15.0 * draw_arc
+	var draw_tilt := (2.2 if sketch_key == "deck" else -2.2) * draw_arc
+	scale = Vector2.ONE * pulse * (1.0 + draw_arc * 0.045) * (1.0 - press_strength * 0.035)
+	rotation_degrees = idle_sway + draw_tilt + sin(time * 38.0) * press_strength * 0.25
 	if _base_set:
-		position = _base_position + Vector2(0, -8.0 * sin(draw_strength * PI))
-	modulate = Color(0.45, 0.47, 0.34, 0.58) if disabled else Color.WHITE
+		position = _base_position + Vector2(0, idle_bob + draw_kick + press_strength * 2.0)
+
+	if disabled:
+		modulate = Color(0.45, 0.47, 0.34, 0.58)
+	else:
+		var glow := 0.025 * (0.5 + 0.5 * sin(time * 4.0 + phase)) if pulse_active else 0.0
+		modulate = Color(1.0 + glow, 1.0 + glow, 1.0 + glow * 0.55, 1.0)
 
 func _on_down() -> void:
 	press_strength = 1.0
