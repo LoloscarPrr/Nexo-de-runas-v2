@@ -47,6 +47,7 @@ func _ready() -> void:
 	button_up.connect(_restore_pose)
 	mouse_entered.connect(_hover_pose)
 	mouse_exited.connect(_restore_pose)
+	scale = Vector2(1.045, 1.045) if selected else Vector2.ONE
 	queue_redraw()
 
 func configure(data: Dictionary, atk: int = -1, hp: int = -1, is_selected: bool = false, is_compact: bool = false, is_ready: bool = true) -> void:
@@ -59,7 +60,9 @@ func configure(data: Dictionary, atk: int = -1, hp: int = -1, is_selected: bool 
 	_cached_art_id = ""
 	_cached_texture = null
 	custom_minimum_size = Vector2(128, 182) if compact else Vector2(148, 205)
-	_restore_pose()
+	scale = Vector2(1.045, 1.045) if selected else Vector2.ONE
+	if is_inside_tree():
+		_restore_pose()
 	queue_redraw()
 
 func _hover_pose() -> void:
