@@ -4,7 +4,6 @@ extends Button
 const CardScript = preload("res://scripts/ui/canonical_forest_card.gd")
 const Catalog = preload("res://scripts/domain/canonical_card_catalog.gd")
 
-const BARK := Color("241c12")
 const BARK_DARK := Color("0c0b08")
 const MOSS := Color("45582b")
 const RUNE := Color("899b43")
@@ -42,10 +41,9 @@ func set_unit(value, is_target: bool = false) -> void:
 		var card := Catalog.find_by_id(str(unit.get("id", "")))
 		_card_view.configure(card, int(unit.get("attack", 0)), int(unit.get("hp", 0)), false, true, bool(unit.get("ready", false)))
 		add_child(_card_view)
-		# La carta ocupa el hueco, no el hueco a la carta. Mantener aire visible
-		# alrededor ayuda a leer los cuatro carriles como posiciones físicas.
-		var card_h := minf(size.y * 0.84, 128.0)
-		var card_w := minf(size.x * 0.58, card_h * 0.72)
+		# V4: más presencia visual que v3, manteniendo aire visible del carril.
+		var card_h := minf(size.y * 0.92, 142.0)
+		var card_w := minf(size.x * 0.72, card_h * 0.72)
 		_card_view.position = Vector2((size.x - card_w) * 0.5, (size.y - card_h) * 0.48)
 		_card_view.size = Vector2(card_w, card_h)
 	queue_redraw()
