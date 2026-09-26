@@ -6,7 +6,8 @@ Antes de implementar una función grande, leer en este orden:
 2. `specs/001-core-reconstruction/spec.md`
 3. `specs/001-core-reconstruction/plan.md`
 4. `specs/001-core-reconstruction/tasks.md`
-5. Documento Maestro Canónico v1.0 de Fuentes, cuando esté disponible en el contexto del proyecto.
+5. `docs/CLEAN_ARCHITECTURE.md`
+6. Documento Maestro Canónico v1.0 de Fuentes, cuando esté disponible en el contexto del proyecto.
 
 ## Dirección activa
 - Nexo de Runas es un juego original de cartas tácticas para Android horizontal.
@@ -26,13 +27,55 @@ Antes de implementar una función grande, leer en este orden:
 - Recursos por dominio: Instinto, Restos, Conocimiento y Calor.
 - El set mínimo canónico inicial contiene 48 cartas: 12 por dominio.
 
-## Arquitectura
-- Mantener Godot 4.x + GDScript.
-- Reglas y estado separados de UI/3D.
-- Datos serializables para guardado, CPU y futura red.
-- La presentación observa el estado y emite acciones; nunca decide resultados.
-- Diseñar primero para Android horizontal y controles táctiles.
-- No introducir comportamiento esencial dependiente de hover.
+## Clean Architecture obligatoria para código nuevo
+Las dependencias apuntan hacia adentro:
+
+`Presentation → Application → Domain`
+
+`Infrastructure → Application Ports`
+
+### Domain — `scripts/domain/`
+- Reglas, estado y modelos puros del juego.
+- No puede importar Application, Infrastructure, Presentation ni `scripts/ui`.
+- No conoce escenas, botones, sprites, assets, archivos ni red.
+
+### Application — `scripts/application/`
+- Casos de uso y orquestación.
+- Puede depender de Domain.
+- No puede depender de Infrastructure, Presentation ni `scripts/ui`.
+- La presentación recibe snapshots/DTOs y emite comandos mediante esta capa.
+
+### Infrastructure — `scripts/infrastructure/`
+- Persistencia, networking, Android y adapters externos.
+- Implementa puertos declarados en Application.
+- No contiene reglas de juego ni composición visual.
+
+### Presentation — `scripts/presentation/`
+- Pantallas, HUD, themes, assets, animaciones y shaders.
+- Puede depender de Application.
+- No importa Domain directamente.
+- La nueva producción de assets canónicos debe integrarse aquí.
+
+### `scripts/ui/` legado
+- Se conserva temporalmente para mantener el APK verde.
+- No introducir nueva lógica de negocio aquí.
+- Migrar pantalla por pantalla hacia `scripts/presentation`.
+- Retirar sólo cuando el reemplazo esté probado y conectado.
+
+## Assets canónicos
+La producción nueva se organiza por dominio:
+
+`assets/common/`
+
+`assets/domains/forest/{battle,cards,hud,fx,menu}`
+
+`assets/domains/crypt/{battle,cards,hud,fx,menu}`
+
+`assets/domains/tower/{battle,cards,hud,fx,menu}`
+
+`assets/domains/forge/{battle,cards,hud,fx,menu}`
+
+La geometría de batalla es compartida; los assets y Theme cambian por dominio.
 
 ## Migración desde el motor antiguo
 - El motor Acto 1 existente puede permanecer temporalmente para mantener el APK verde.
@@ -47,10 +90,12 @@ El menú principal también expone Constructor de Mazos, Colección, Perfil, Log
 ## Flujo de trabajo
 1. Actualizar spec/plan/tasks si cambia el alcance.
 2. Implementar la unidad mínima coherente.
-3. Ejecutar `python tools/validate_project.py`.
-4. Ejecutar las pruebas GDScript del core canónico.
-5. Confirmar import/export con Godot 4.3.
-6. Mantener APK Android verde.
+3. Respetar `docs/CLEAN_ARCHITECTURE.md`.
+4. Ejecutar `python tools/validate_project.py`.
+5. Ejecutar `tests/clean_architecture_test.gd` y tests de la capa modificada.
+6. Ejecutar las pruebas GDScript del core canónico.
+7. Confirmar import/export con Godot 4.3.
+8. Mantener APK Android verde.
 
 ## Convenciones
 - Escenas: `snake_case.tscn`.
@@ -58,3 +103,4 @@ El menú principal también expone Constructor de Mazos, Colección, Perfil, Log
 - Clases reutilizables con `class_name`.
 - Señales para presentación → controlador.
 - Cambios incrementales, con una ruta exportable entre etapas.
+- No crear abstracciones sin consumidor real; Clean Architecture debe reducir acoplamiento, no aumentar ceremonia.

@@ -27,20 +27,30 @@ Cada dominio debe tener identidad mecánica propia sin alterar el layout fundame
 ## V. Modos y metajuego
 El flujo objetivo contempla Campaña, Vs CPU, Jugar Local y Jugar Online. El menú principal también contiene Constructor de Mazos, Colección, Perfil, Logros y Ajustes. El multiplayer se implementa después de estabilizar el core de batalla y la campaña, pero forma parte del diseño canónico.
 
-## VI. Reglas separadas de presentación
+## VI. Clean Architecture y separación de responsabilidades
 Estado, cartas, mazos, recursos, turnos, efectos, campaña y progreso viven separados de la UI. El mismo core debe poder alimentar CPU, guardado, local y online.
+
+La arquitectura canónica se divide en cuatro capas:
+- **Domain**: reglas y estado puro del juego.
+- **Application**: casos de uso que orquestan el Domain y devuelven snapshots/DTOs.
+- **Infrastructure**: persistencia, red, Android y adaptadores externos mediante puertos de Application.
+- **Presentation**: pantallas, HUD, themes, assets, animaciones y shaders.
+
+La dirección de dependencias es `Presentation → Application → Domain` e `Infrastructure → Application Ports`. Domain nunca depende de capas externas. Presentation no puede importar Domain directamente en código nuevo.
+
+`scripts/ui` se considera adaptador legado durante la migración y se retira de manera incremental, nunca mediante una reescritura que rompa el APK o saves.
 
 ## VII. Interacción móvil
 Objetivo primario: Android horizontal 1280×720 de referencia, escalado responsivo y touch-first. Ninguna acción esencial puede depender de hover. La UI debe ser legible con el pulgar y conservar el tablero como foco.
 
 ## VIII. Persistencia y compatibilidad
-La firma Android persistente y los saves existentes no deben romperse durante la migración. Los nuevos datos deben ser versionables y migrables.
+La firma Android persistente y los saves existentes no deben romperse durante la migración. Los nuevos datos deben ser versionables y migrables. La persistencia concreta vive en Infrastructure y no en Domain o Presentation.
 
 ## IX. Build verde como contrato
-Todo cambio en main debe mantener proyecto importable y APK Android exportable. La migración desde el core legado se hace por unidades coherentes y probadas.
+Todo cambio en main debe mantener proyecto importable y APK Android exportable. La migración desde el core legado se hace por unidades coherentes y probadas. Las reglas de dependencia de Clean Architecture forman parte del CI.
 
 ## X. Spec antes de implementación grande
 Todo cambio relevante se refleja en Constitución → Spec → Plan → Tasks → Implementación → Verificación.
 
 ## Criterio de convergencia
-Una fase se cierra cuando sus reglas canónicas están implementadas, cubiertas por pruebas, observables en Android y el APK exporta en CI sin reintroducir reglas antiguas como autoridad del nuevo diseño.
+Una fase se cierra cuando sus reglas canónicas están implementadas, cubiertas por pruebas, observables en Android y el APK exporta en CI sin reintroducir reglas antiguas como autoridad del nuevo diseño ni violar los límites de arquitectura.
