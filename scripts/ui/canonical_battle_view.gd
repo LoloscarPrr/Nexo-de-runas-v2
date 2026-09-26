@@ -6,34 +6,41 @@ signal exit_requested
 const BattleScript = preload("res://scripts/domain/canonical_cpu_battle.gd")
 const Catalog = preload("res://scripts/domain/canonical_card_catalog.gd")
 const BackdropScript = preload("res://scripts/ui/canonical_forest_battle_backdrop.gd")
+const CardScript = preload("res://scripts/ui/canonical_forest_card.gd")
+const LaneScript = preload("res://scripts/ui/canonical_forest_lane.gd")
+const NexusScript = preload("res://scripts/ui/canonical_forest_nexus.gd")
 
-const BG_PANEL := Color(0.055, 0.065, 0.035, 0.94)
-const WOOD := Color(0.13, 0.105, 0.055, 0.96)
-const EDGE := Color(0.39, 0.49, 0.18, 0.92)
-const GOLD := Color(0.80, 0.68, 0.32, 1.0)
-const INK := Color(0.90, 0.89, 0.69, 1.0)
-const MUTED := Color(0.62, 0.66, 0.45, 1.0)
-const DANGER := Color(0.72, 0.22, 0.16, 1.0)
-const SELECT := Color(0.62, 0.76, 0.28, 1.0)
+const INK := Color("e5d8a1")
+const MUTED := Color("9ba16d")
+const GOLD := Color("d3aa4d")
+const MOSS := Color("6f8740")
+const WOOD := Color("251a10")
+const WOOD_DARK := Color("0d0c08")
+const PAPER := Color("b5a56d")
+const DANGER := Color("873429")
+const SELECT := Color("a9c755")
 
 var battle: CanonicalCpuBattle
 var selected_hand_index := -1
 
-var player_lane_buttons: Array[Button] = []
-var enemy_lane_buttons: Array[Button] = []
-var hand_box: HBoxContainer
-var hand_scroll: ScrollContainer
+var player_lanes: Array = []
+var enemy_lanes: Array = []
+var hand_area: Control
 var energy_label: Label
 var essence_label: Label
-var seals_label: Label
-var relics_label: Label
+var status_label: Label
 var deck_button: Button
 var discard_button: Button
-var player_nexus: Label
-var enemy_nexus: Label
-var status_label: Label
+var player_nexus
+var enemy_nexus
 var end_turn_button: Button
 var result_overlay: Control
+var seal_sockets: Array[Panel] = []
+var relic_sockets: Array[Panel] = []
+
+var _vw := 1280.0
+var _vh := 720.0
+var _board_rect := Rect2()
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -49,203 +56,233 @@ func start_battle() -> void:
 	_refresh()
 
 func _build_ui() -> void:
+	_vw = maxf(get_viewport_rect().size.x, 1280.0)
+	_vh = maxf(get_viewport_rect().size.y, 720.0)
 	var backdrop := BackdropScript.new()
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(backdrop)
-
 	var vignette := ColorRect.new()
-	vignette.color = Color(0.0, 0.0, 0.0, 0.18)
+	vignette.color = Color(0.0, 0.0, 0.0, 0.12)
 	vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(vignette)
-
-	var exit := _button("VOLVER", 15)
+	var left_w := clampf(_vw * 0.13, 170.0, 205.0)
+	var right_w := clampf(_vw * 0.145, 205.0, 236.0)
+	_board_rect = Rect2(left_w + 26.0, 76.0, _vw - left_w - right_w - 58.0, 382.0)
+	var exit := _wood_button("VOLVER", 14)
 	exit.pressed.connect(func(): emit_signal("exit_requested"))
-	_place(exit, Rect2(24, 20, 112, 44))
-
-	var title := _label("BOSQUE SALVAJE", 26, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	_place(title, Rect2(430, 18, 420, 42))
-	var subtitle := _label("BATALLA DEL NEXO · 4 CARRILES", 11, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
-	_place(subtitle, Rect2(430, 55, 420, 24))
-
-	var enemy_panel := _panel(BG_PANEL, EDGE, 2, 12)
-	_place(enemy_panel, Rect2(28, 82, 218, 98))
-	var enemy_name := _label("GUARDIÁN DEL BOSQUE", 14, INK, HORIZONTAL_ALIGNMENT_CENTER)
-	enemy_panel.add_child(enemy_name)
-	enemy_name.position = Vector2(8, 8)
-	enemy_name.size = Vector2(202, 28)
-	enemy_nexus = _label("NEXO 20", 24, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	enemy_panel.add_child(enemy_nexus)
-	enemy_nexus.position = Vector2(8, 40)
-	enemy_nexus.size = Vector2(202, 44)
-
-	var board_panel := _panel(Color(0.07, 0.075, 0.037, 0.76), Color(0.31, 0.39, 0.15, 0.78), 2, 18)
-	_place(board_panel, Rect2(264, 88, 746, 366))
-
-	for lane in range(4):
-		var x := 282.0 + float(lane) * 178.0
-		var enemy_button := _lane_button()
-		enemy_button.disabled = true
-		enemy_lane_buttons.append(enemy_button)
-		_place(enemy_button, Rect2(x, 112, 158, 132))
-
-		var player_button := _lane_button()
-		var lane_index := lane
-		player_button.pressed.connect(func(): _on_player_lane_pressed(lane_index))
-		player_lane_buttons.append(player_button)
-		_place(player_button, Rect2(x, 292, 158, 142))
-
-	var center_hint := _label("✦   ✦   ✦   ✦", 18, Color(0.61, 0.72, 0.29, 0.48), HORIZONTAL_ALIGNMENT_CENTER)
-	_place(center_hint, Rect2(360, 252, 550, 32))
-
-	var nexus_panel := _panel(BG_PANEL, EDGE, 2, 14)
-	_place(nexus_panel, Rect2(38, 272, 194, 162))
-	var nexus_title := _label("TU NEXO", 12, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
-	nexus_panel.add_child(nexus_title)
-	nexus_title.position = Vector2(10, 12)
-	nexus_title.size = Vector2(174, 24)
-	player_nexus = _label("20", 54, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	nexus_panel.add_child(player_nexus)
-	player_nexus.position = Vector2(10, 39)
-	player_nexus.size = Vector2(174, 74)
-	var nexus_caption := _label("INTEGRIDAD", 11, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
-	nexus_panel.add_child(nexus_caption)
-	nexus_caption.position = Vector2(10, 116)
-	nexus_caption.size = Vector2(174, 26)
-
-	var hud := _panel(BG_PANEL, EDGE, 2, 14)
-	_place(hud, Rect2(30, 474, 218, 210))
-	energy_label = _label("", 15, INK, HORIZONTAL_ALIGNMENT_LEFT)
-	essence_label = _label("", 15, INK, HORIZONTAL_ALIGNMENT_LEFT)
-	seals_label = _label("", 13, MUTED, HORIZONTAL_ALIGNMENT_LEFT)
-	relics_label = _label("", 13, MUTED, HORIZONTAL_ALIGNMENT_LEFT)
-	for data in [[energy_label, 14.0], [essence_label, 53.0], [seals_label, 96.0], [relics_label, 130.0]]:
-		hud.add_child(data[0])
-		data[0].position = Vector2(14, data[1])
-		data[0].size = Vector2(190, 31)
-	status_label = _label("", 10, MUTED, HORIZONTAL_ALIGNMENT_LEFT)
+	_place(exit, Rect2(18, 18, 112, 43))
+	var title := _label("BOSQUE SALVAJE", 25, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	_place(title, Rect2(_vw * 0.5 - 220, 16, 440, 38))
+	var subtitle := _label("EL NEXO RESPIRA ENTRE RAÍCES", 10, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	_place(subtitle, Rect2(_vw * 0.5 - 210, 48, 420, 20))
+	_build_nexus_rail(left_w)
+	_build_board()
+	_build_hand()
+	_build_support_rail(right_w)
+	status_label = _label("", 11, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hud.add_child(status_label)
-	status_label.position = Vector2(14, 164)
-	status_label.size = Vector2(190, 38)
-
-	hand_scroll = ScrollContainer.new()
-	hand_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	hand_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	hand_scroll.clip_contents = true
-	_place(hand_scroll, Rect2(266, 478, 720, 206))
-	hand_box = HBoxContainer.new()
-	hand_box.add_theme_constant_override("separation", 10)
-	hand_scroll.add_child(hand_box)
-
-	var support := _panel(BG_PANEL, EDGE, 2, 14)
-	_place(support, Rect2(1018, 300, 232, 384))
-	var support_title := _label("RECURSOS", 12, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
-	support.add_child(support_title)
-	support_title.position = Vector2(10, 10)
-	support_title.size = Vector2(212, 24)
-
-	deck_button = _button("MAZO\n0", 15)
-	deck_button.pressed.connect(_show_deck_info)
-	support.add_child(deck_button)
-	deck_button.position = Vector2(12, 44)
-	deck_button.size = Vector2(98, 70)
-	discard_button = _button("DESCARTE\n0", 15)
-	discard_button.pressed.connect(_show_discard_info)
-	support.add_child(discard_button)
-	discard_button.position = Vector2(122, 44)
-	discard_button.size = Vector2(98, 70)
-
-	var seals_caption := _label("SELLOS ACTIVOS", 11, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
-	support.add_child(seals_caption)
-	seals_caption.position = Vector2(10, 130)
-	seals_caption.size = Vector2(212, 24)
-	var relic_caption := _label("RELIQUIAS ACTIVAS", 11, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
-	support.add_child(relic_caption)
-	relic_caption.position = Vector2(10, 184)
-	relic_caption.size = Vector2(212, 24)
-
-	end_turn_button = _button("FINALIZAR TURNO", 17)
-	end_turn_button.add_theme_color_override("font_color", Color(0.98, 0.91, 0.63, 1.0))
-	end_turn_button.add_theme_stylebox_override("normal", _style(Color(0.23, 0.14, 0.055, 0.98), Color(0.71, 0.50, 0.17, 1.0), 3, 10))
-	end_turn_button.add_theme_stylebox_override("pressed", _style(Color(0.36, 0.11, 0.055, 1.0), DANGER, 3, 10))
-	end_turn_button.pressed.connect(_on_end_turn)
-	support.add_child(end_turn_button)
-	end_turn_button.position = Vector2(12, 286)
-	end_turn_button.size = Vector2(208, 78)
-
+	_place(status_label, Rect2(_board_rect.position.x + 70, 458, _board_rect.size.x - 140, 28))
 	result_overlay = _build_result_overlay()
 	result_overlay.visible = false
 	add_child(result_overlay)
 
+func _build_nexus_rail(left_w: float) -> void:
+	var enemy_name := _plaque("GUARDIÁN DEL BOSQUE", 12)
+	_place(enemy_name, Rect2(20, 74, left_w - 24, 39))
+	enemy_nexus = NexusScript.new()
+	enemy_nexus.caption = "NEXO RIVAL"
+	enemy_nexus.hostile = true
+	_place(enemy_nexus, Rect2(16, 108, left_w - 16, 174))
+	player_nexus = NexusScript.new()
+	player_nexus.caption = "TU NEXO"
+	_place(player_nexus, Rect2(16, 286, left_w - 16, 178))
+	var resources := _panel(Color(0.055, 0.05, 0.028, 0.78), Color(0.35, 0.42, 0.18, 0.76), 2, 12)
+	_place(resources, Rect2(22, 470, left_w - 28, 214))
+	var cap := _label("RUNAS DEL VIAJERO", 10, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	resources.add_child(cap)
+	cap.position = Vector2(8, 8)
+	cap.size = Vector2(resources.size.x - 16, 22)
+	energy_label = _label("", 13, INK, HORIZONTAL_ALIGNMENT_LEFT)
+	resources.add_child(energy_label)
+	energy_label.position = Vector2(14, 41)
+	energy_label.size = Vector2(resources.size.x - 28, 34)
+	essence_label = _label("", 13, INK, HORIZONTAL_ALIGNMENT_LEFT)
+	resources.add_child(essence_label)
+	essence_label.position = Vector2(14, 79)
+	essence_label.size = Vector2(resources.size.x - 28, 34)
+	var seal_caption := _label("SELLOS", 9, MUTED, HORIZONTAL_ALIGNMENT_LEFT)
+	resources.add_child(seal_caption)
+	seal_caption.position = Vector2(14, 123)
+	seal_caption.size = Vector2(55, 20)
+	var relic_caption := _label("RELIQUIAS", 9, MUTED, HORIZONTAL_ALIGNMENT_LEFT)
+	resources.add_child(relic_caption)
+	relic_caption.position = Vector2(14, 171)
+	relic_caption.size = Vector2(70, 20)
+	seal_sockets.clear()
+	relic_sockets.clear()
+	for i in range(3):
+		var socket := _rune_socket()
+		resources.add_child(socket)
+		socket.position = Vector2(70 + i * 28, 120)
+		socket.size = Vector2(24, 28)
+		seal_sockets.append(socket)
+	for i in range(2):
+		var socket := _rune_socket()
+		resources.add_child(socket)
+		socket.position = Vector2(84 + i * 32, 168)
+		socket.size = Vector2(28, 28)
+		relic_sockets.append(socket)
+
+func _build_board() -> void:
+	var board_frame := _panel(Color(0.045, 0.047, 0.025, 0.44), Color(0.34, 0.40, 0.17, 0.72), 2, 18)
+	_place(board_frame, _board_rect)
+	var inner := _panel(Color(0.10, 0.075, 0.035, 0.28), Color(0.46, 0.34, 0.14, 0.33), 1, 14)
+	board_frame.add_child(inner)
+	inner.position = Vector2(9, 9)
+	inner.size = Vector2(_board_rect.size.x - 18, _board_rect.size.y - 18)
+	var label_top := _label("SENDA DEL GUARDIÁN", 9, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	board_frame.add_child(label_top)
+	label_top.position = Vector2(20, 8)
+	label_top.size = Vector2(_board_rect.size.x - 40, 18)
+	var label_bottom := _label("TU SENDA", 9, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	board_frame.add_child(label_bottom)
+	label_bottom.position = Vector2(20, 352)
+	label_bottom.size = Vector2(_board_rect.size.x - 40, 18)
+	player_lanes.clear()
+	enemy_lanes.clear()
+	var gap := clampf(_board_rect.size.x * 0.018, 12.0, 19.0)
+	var lane_w := (_board_rect.size.x - gap * 5.0) / 4.0
+	var lane_h := 150.0
+	for lane in range(4):
+		var x := _board_rect.position.x + gap + float(lane) * (lane_w + gap)
+		var enemy_slot := LaneScript.new()
+		enemy_slot.set_lane(lane, false)
+		enemy_slot.disabled = true
+		enemy_lanes.append(enemy_slot)
+		_place(enemy_slot, Rect2(x, 103, lane_w, lane_h))
+		var player_slot := LaneScript.new()
+		player_slot.set_lane(lane, true)
+		var lane_index := lane
+		player_slot.pressed.connect(func(): _on_player_lane_pressed(lane_index))
+		player_lanes.append(player_slot)
+		_place(player_slot, Rect2(x, 285, lane_w, lane_h + 7))
+	for lane in range(4):
+		var rx := _board_rect.position.x + gap + lane_w * 0.5 + float(lane) * (lane_w + gap)
+		var rune := _label("◆", 15, Color(0.54, 0.64, 0.25, 0.58), HORIZONTAL_ALIGNMENT_CENTER)
+		_place(rune, Rect2(rx - 20, 258, 40, 25))
+
+func _build_hand() -> void:
+	var shelf := _panel(Color(0.055, 0.045, 0.025, 0.58), Color(0.37, 0.29, 0.12, 0.48), 1, 12)
+	_place(shelf, Rect2(_board_rect.position.x + 10, 490, _board_rect.size.x - 20, 218))
+	var cap := _label("MANO", 9, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	shelf.add_child(cap)
+	cap.position = Vector2(8, 3)
+	cap.size = Vector2(shelf.size.x - 16, 18)
+	hand_area = Control.new()
+	hand_area.clip_contents = false
+	shelf.add_child(hand_area)
+	hand_area.position = Vector2(8, 17)
+	hand_area.size = Vector2(shelf.size.x - 16, 198)
+
+func _build_support_rail(right_w: float) -> void:
+	var x := _vw - right_w - 15
+	var title := _plaque("VÍNCULOS DEL NEXO", 10)
+	_place(title, Rect2(x, 82, right_w - 6, 36))
+	deck_button = _stack_button("MAZO", 0)
+	deck_button.pressed.connect(_show_deck_info)
+	_place(deck_button, Rect2(x + 8, 132, (right_w - 30) * 0.5, 104))
+	discard_button = _stack_button("DESCARTE", 0)
+	discard_button.pressed.connect(_show_discard_info)
+	_place(discard_button, Rect2(x + 18 + (right_w - 30) * 0.5, 132, (right_w - 30) * 0.5, 104))
+	var seal_title := _label("SELLOS ACTIVOS", 10, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	_place(seal_title, Rect2(x + 8, 257, right_w - 20, 20))
+	for i in range(3):
+		var p := _rune_socket()
+		_place(p, Rect2(x + 20 + i * ((right_w - 52) / 3.0), 282, 46, 46))
+	var relic_title := _label("RELIQUIAS", 10, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	_place(relic_title, Rect2(x + 8, 346, right_w - 20, 20))
+	for i in range(2):
+		var p := _relic_socket()
+		_place(p, Rect2(x + 28 + i * ((right_w - 70) / 2.0), 374, 62, 52))
+	var turn_mark := _plaque("TU TURNO", 11)
+	_place(turn_mark, Rect2(x + 22, 458, right_w - 44, 37))
+	end_turn_button = _wood_button("FINALIZAR\nTURNO", 16)
+	end_turn_button.add_theme_color_override("font_color", Color("ffe3a0"))
+	end_turn_button.add_theme_stylebox_override("normal", _style(Color("38210e"), Color("b77e2b"), 3, 10))
+	end_turn_button.add_theme_stylebox_override("pressed", _style(Color("4b180e"), DANGER, 3, 10))
+	end_turn_button.pressed.connect(_on_end_turn)
+	_place(end_turn_button, Rect2(x + 10, 512, right_w - 20, 118))
+	var hint := _label("Toca una carta y luego\nun espacio de tu senda", 9, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_place(hint, Rect2(x + 10, 643, right_w - 20, 44))
+
 func _refresh() -> void:
 	if battle == null:
 		return
-	player_nexus.text = str(battle.player_integrity)
-	enemy_nexus.text = "NEXO %d" % battle.enemy_integrity
+	player_nexus.set_integrity(battle.player_integrity)
+	enemy_nexus.set_integrity(battle.enemy_integrity)
 	var energy_denominator := 12 if battle.energy_current > 6 else 6
-	energy_label.text = "ENERGÍA RÚNICA   %d/%d" % [battle.energy_current, energy_denominator]
-	essence_label.text = "%s   %d/%d" % [battle.essence_name().to_upper(), battle.essence_current, battle.essence_max()]
-	seals_label.text = "SELLOS   %d/3" % battle.active_seals.size()
-	relics_label.text = "RELIQUIAS   %d/2" % battle.active_relics.size()
+	energy_label.text = "ENERGÍA   %d/%d" % [battle.energy_current, energy_denominator]
+	essence_label.text = "INSTINTO   %d/%d" % [battle.essence_current, battle.essence_max()]
 	deck_button.text = "MAZO\n%d" % battle.draw_pile.size()
 	discard_button.text = "DESCARTE\n%d" % battle.discard_pile.size()
-	status_label.text = battle.last_message if not battle.last_message.is_empty() else "Selecciona una carta y luego un carril."
-
+	status_label.text = battle.last_message if not battle.last_message.is_empty() else "Elige una carta. Los espacios válidos responderán con luz."
 	for lane in range(4):
-		_refresh_lane(player_lane_buttons[lane], battle.player_lanes[lane], lane, true)
-		_refresh_lane(enemy_lane_buttons[lane], battle.enemy_lanes[lane], lane, false)
+		var player_target := _is_valid_target_lane(lane)
+		player_lanes[lane].set_unit(battle.player_lanes[lane], player_target)
+		enemy_lanes[lane].set_unit(battle.enemy_lanes[lane], false)
 	_rebuild_hand()
+	_refresh_sockets()
 	if battle.result != "ongoing":
 		_show_result()
 
-func _refresh_lane(button: Button, unit, lane: int, player_side: bool) -> void:
-	if unit == null:
-		button.text = "CARRIL %d\nVACÍO" % (lane + 1)
-		button.add_theme_color_override("font_color", MUTED)
-		button.add_theme_stylebox_override("normal", _style(Color(0.06, 0.08, 0.035, 0.74), Color(0.27, 0.34, 0.13, 0.76), 2, 10))
-		button.add_theme_stylebox_override("disabled", _style(Color(0.06, 0.08, 0.035, 0.74), Color(0.27, 0.34, 0.13, 0.76), 2, 10))
-		return
-	var ready_text := "" if bool(unit.get("ready", false)) else " · EN ESPERA"
-	button.text = "%s\nATQ %d   SAL %d%s" % [str(unit.get("name", "UNIDAD")), int(unit.get("attack", 0)), int(unit.get("hp", 0)), ready_text]
-	button.add_theme_color_override("font_color", INK)
-	var border := SELECT if player_side else Color(0.52, 0.28, 0.16, 0.95)
-	var st := _style(Color(0.12, 0.12, 0.055, 0.93), border, 2, 10)
-	button.add_theme_stylebox_override("normal", st)
-	button.add_theme_stylebox_override("disabled", st)
+func _is_valid_target_lane(lane: int) -> bool:
+	if selected_hand_index < 0 or selected_hand_index >= battle.hand.size():
+		return false
+	var card := Catalog.find_by_id(battle.hand[selected_hand_index])
+	var card_type := str(card.get("type", ""))
+	if card_type == Catalog.TYPE_CREATURE:
+		return battle.player_lanes[lane] == null
+	if card_type == Catalog.TYPE_RITE:
+		var card_id := str(card.get("id", ""))
+		if card_id == "crecimiento_violento":
+			return battle.player_lanes[lane] != null
+	return false
 
 func _rebuild_hand() -> void:
-	for child in hand_box.get_children():
+	for child in hand_area.get_children():
 		child.queue_free()
-	for i in range(battle.hand.size()):
+	var count := battle.hand.size()
+	if count <= 0:
+		return
+	var card_w := 142.0
+	var card_h := 190.0
+	var available := hand_area.size.x
+	var step := card_w + 8.0
+	if count > 1:
+		step = minf(step, (available - card_w) / float(count - 1))
+		step = maxf(82.0, step)
+	var total := card_w + step * float(count - 1)
+	var start_x := maxf(0.0, (available - total) * 0.5)
+	for i in range(count):
 		var card := Catalog.find_by_id(battle.hand[i])
-		var card_button := _card_button(card, i == selected_hand_index)
+		var view := CardScript.new()
+		view.configure(card, -1, -1, i == selected_hand_index, false, true)
 		var index := i
-		card_button.pressed.connect(func(): _on_hand_card_pressed(index))
-		hand_box.add_child(card_button)
+		view.pressed.connect(func(): _on_hand_card_pressed(index))
+		hand_area.add_child(view)
+		view.position = Vector2(start_x + float(i) * step, -12.0 if i == selected_hand_index else 4.0)
+		view.size = Vector2(card_w, card_h)
+		view.z_index = 20 if i == selected_hand_index else i
 
-func _card_button(card: Dictionary, selected: bool) -> Button:
-	var button := Button.new()
-	button.custom_minimum_size = Vector2(138, 188)
-	button.focus_mode = Control.FOCUS_NONE
-	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	button.add_theme_font_size_override("font_size", 12)
-	var type_name := str(card.get("type", "")).to_upper()
-	var stats := ""
-	if str(card.get("type", "")) == Catalog.TYPE_CREATURE:
-		stats = "\nATQ %d   SAL %d" % [int(card.get("attack", 0)), int(card.get("health", 0))]
-	var keyword_text := ""
-	var keywords: Array = card.get("keywords", [])
-	if not keywords.is_empty():
-		keyword_text = "\n" + str(keywords[0]).replace("_", " ")
-	button.text = "%s\nCOSTE %d · %s%s%s" % [str(card.get("name", "CARTA")), int(card.get("cost", 0)), type_name, stats, keyword_text]
-	var border := GOLD if selected else Color(0.34, 0.41, 0.17, 0.95)
-	var bg := Color(0.15, 0.13, 0.065, 0.98) if selected else Color(0.105, 0.10, 0.052, 0.98)
-	button.add_theme_color_override("font_color", INK)
-	button.add_theme_stylebox_override("normal", _style(bg, border, 3 if selected else 2, 9))
-	button.add_theme_stylebox_override("hover", _style(Color(0.18, 0.16, 0.07, 1.0), GOLD, 3, 9))
-	button.add_theme_stylebox_override("pressed", _style(Color(0.20, 0.12, 0.055, 1.0), SELECT, 3, 9))
-	return button
+func _refresh_sockets() -> void:
+	for i in range(seal_sockets.size()):
+		var active := i < battle.active_seals.size()
+		seal_sockets[i].modulate = Color.WHITE if active else Color(0.68, 0.68, 0.68, 0.72)
+	for i in range(relic_sockets.size()):
+		var active := i < battle.active_relics.size()
+		relic_sockets[i].modulate = Color.WHITE if active else Color(0.68, 0.68, 0.68, 0.72)
 
 func _on_hand_card_pressed(index: int) -> void:
 	if index < 0 or index >= battle.hand.size():
@@ -255,22 +292,24 @@ func _on_hand_card_pressed(index: int) -> void:
 	if card_type == Catalog.TYPE_RELIC or card_type == Catalog.TYPE_SEAL:
 		if battle.play_card(index):
 			selected_hand_index = -1
+			battle.last_message = "%s quedó vinculado al Nexo." % str(card.get("name", "La carta"))
 		else:
 			selected_hand_index = index
 		_refresh()
 		return
 	if card_type == Catalog.TYPE_RITE and ["llamado_de_la_manada", "vision_prohibida"].has(str(card.get("id", ""))):
-		battle.play_card(index)
+		if battle.play_card(index):
+			battle.last_message = "%s responde al llamado." % str(card.get("name", "El rito"))
 		selected_hand_index = -1
 		_refresh()
 		return
 	selected_hand_index = -1 if selected_hand_index == index else index
-	battle.last_message = "Carta seleccionada: %s" % str(card.get("name", ""))
+	battle.last_message = "Seleccionada: %s" % str(card.get("name", "")) if selected_hand_index >= 0 else "Selección cancelada."
 	_refresh()
 
 func _on_player_lane_pressed(lane: int) -> void:
 	if selected_hand_index < 0 or selected_hand_index >= battle.hand.size():
-		battle.last_message = "Primero selecciona una carta de tu mano."
+		battle.last_message = "Primero elige una carta de tu mano."
 		_refresh()
 		return
 	var card := Catalog.find_by_id(battle.hand[selected_hand_index])
@@ -282,29 +321,31 @@ func _on_player_lane_pressed(lane: int) -> void:
 		success = battle.play_card(selected_hand_index, -1, lane)
 	if success:
 		selected_hand_index = -1
-		battle.last_message = "La runa acepta tu jugada."
+		battle.last_message = "La senda acepta tu jugada."
 	_refresh()
 
 func _on_end_turn() -> void:
 	if battle.result != "ongoing":
 		return
 	selected_hand_index = -1
+	end_turn_button.disabled = true
 	var before_player := battle.player_integrity
 	var before_enemy := battle.enemy_integrity
 	battle.advance_round()
+	end_turn_button.disabled = false
 	if battle.result == "ongoing":
 		var delta_player := before_player - battle.player_integrity
 		var delta_enemy := before_enemy - battle.enemy_integrity
 		if delta_player > 0:
 			battle.last_message = "El Nexo recibió %d de daño. Turno %d." % [delta_player, battle.turn]
 		elif delta_enemy > 0:
-			battle.last_message = "El rival perdió %d de Integridad. Turno %d." % [delta_enemy, battle.turn]
+			battle.last_message = "El Guardián perdió %d de Integridad. Turno %d." % [delta_enemy, battle.turn]
 		else:
-			battle.last_message = "Turno %d · Energía restaurada." % battle.turn
+			battle.last_message = "Turno %d · la Energía Rúnica vuelve a fluir." % battle.turn
 	_refresh()
 
 func _show_deck_info() -> void:
-	battle.last_message = "Mazo: %d cartas restantes. El orden permanece oculto." % battle.draw_pile.size()
+	battle.last_message = "Mazo: %d cartas. Su orden permanece oculto." % battle.draw_pile.size()
 	_refresh()
 
 func _show_discard_info() -> void:
@@ -320,72 +361,89 @@ func _show_discard_info() -> void:
 
 func _show_result() -> void:
 	result_overlay.visible = true
-	var title: Label = result_overlay.get_node("Card/Title")
-	var detail: Label = result_overlay.get_node("Card/Detail")
+	var title: Label = result_overlay.get_node("Tablet/Title")
+	var detail: Label = result_overlay.get_node("Tablet/Detail")
 	if battle.result == "victory":
 		title.text = "VICTORIA"
-		detail.text = "El Nexo rival ha cedido ante el Bosque Salvaje."
+		detail.text = "Las raíces del Bosque reclamaron el Nexo rival."
 	else:
 		title.text = "DERROTA"
-		detail.text = "Tu Nexo se ha quebrado. La senda vuelve a comenzar."
+		detail.text = "Tu Nexo se quebró. El bosque guarda memoria de la caída."
 
 func _build_result_overlay() -> Control:
 	var overlay := Control.new()
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var shade := ColorRect.new()
-	shade.color = Color(0.0, 0.0, 0.0, 0.78)
+	shade.color = Color(0.01, 0.015, 0.008, 0.80)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.add_child(shade)
-	var card := _panel(Color(0.08, 0.075, 0.035, 0.98), GOLD, 3, 16)
-	card.name = "Card"
-	overlay.add_child(card)
-	card.position = Vector2(360, 210)
-	card.size = Vector2(560, 300)
-	var title := _label("VICTORIA", 38, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	var tablet := _panel(Color("171209"), Color("9d7d39"), 4, 8)
+	tablet.name = "Tablet"
+	overlay.add_child(tablet)
+	tablet.position = Vector2(_vw * 0.5 - 305, _vh * 0.5 - 155)
+	tablet.size = Vector2(610, 310)
+	var inner := _panel(Color(0.16, 0.12, 0.055, 0.70), Color(0.35, 0.42, 0.18, 0.80), 2, 6)
+	tablet.add_child(inner)
+	inner.position = Vector2(12, 12)
+	inner.size = Vector2(586, 286)
+	var title := _label("VICTORIA", 39, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	title.name = "Title"
-	card.add_child(title)
-	title.position = Vector2(20, 34)
-	title.size = Vector2(520, 60)
+	tablet.add_child(title)
+	title.position = Vector2(30, 30)
+	title.size = Vector2(550, 60)
 	var detail := _label("", 15, INK, HORIZONTAL_ALIGNMENT_CENTER)
 	detail.name = "Detail"
 	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	card.add_child(detail)
-	detail.position = Vector2(50, 104)
-	detail.size = Vector2(460, 70)
-	var retry := _button("REINICIAR", 16)
+	tablet.add_child(detail)
+	detail.position = Vector2(65, 104)
+	detail.size = Vector2(480, 70)
+	var retry := _wood_button("REINICIAR", 15)
 	retry.pressed.connect(start_battle)
-	card.add_child(retry)
-	retry.position = Vector2(70, 208)
+	tablet.add_child(retry)
+	retry.position = Vector2(80, 214)
 	retry.size = Vector2(190, 58)
-	var leave := _button("VOLVER AL MENÚ", 16)
+	var leave := _wood_button("VOLVER AL MENÚ", 15)
 	leave.pressed.connect(func(): emit_signal("exit_requested"))
-	card.add_child(leave)
-	leave.position = Vector2(300, 208)
+	tablet.add_child(leave)
+	leave.position = Vector2(340, 214)
 	leave.size = Vector2(190, 58)
 	return overlay
 
-func _lane_button() -> Button:
-	var button := Button.new()
-	button.focus_mode = Control.FOCUS_NONE
-	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	button.add_theme_font_size_override("font_size", 13)
-	button.add_theme_color_override("font_color", INK)
-	button.add_theme_color_override("font_disabled_color", INK)
-	button.add_theme_stylebox_override("normal", _style(Color(0.06, 0.08, 0.035, 0.74), Color(0.27, 0.34, 0.13, 0.76), 2, 10))
-	button.add_theme_stylebox_override("hover", _style(Color(0.11, 0.13, 0.05, 0.90), SELECT, 3, 10))
-	button.add_theme_stylebox_override("pressed", _style(Color(0.15, 0.12, 0.05, 0.98), GOLD, 3, 10))
-	button.add_theme_stylebox_override("disabled", _style(Color(0.06, 0.08, 0.035, 0.74), Color(0.27, 0.34, 0.13, 0.76), 2, 10))
-	return button
+func _stack_button(label_text: String, count: int) -> Button:
+	var b := Button.new()
+	b.text = "%s\n%d" % [label_text, count]
+	b.focus_mode = Control.FOCUS_NONE
+	b.add_theme_font_size_override("font_size", 13)
+	b.add_theme_color_override("font_color", INK)
+	b.add_theme_stylebox_override("normal", _style(Color("19150d"), Color("79652f"), 2, 5))
+	b.add_theme_stylebox_override("hover", _style(Color("221b0e"), GOLD, 3, 5))
+	b.add_theme_stylebox_override("pressed", _style(Color("2b190d"), SELECT, 3, 5))
+	return b
 
-func _button(text_value: String, font_size: int) -> Button:
+func _plaque(text_value: String, font_size: int) -> Panel:
+	var p := _panel(Color(0.06, 0.052, 0.028, 0.88), Color(0.39, 0.43, 0.19, 0.78), 2, 6)
+	var l := _label(text_value, font_size, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	p.add_child(l)
+	l.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	return p
+
+func _rune_socket() -> Panel:
+	return _panel(Color(0.08, 0.09, 0.04, 0.86), Color(0.42, 0.51, 0.20, 0.80), 2, 18)
+
+func _relic_socket() -> Panel:
+	return _panel(Color(0.10, 0.075, 0.035, 0.92), Color(0.55, 0.42, 0.16, 0.85), 2, 6)
+
+func _wood_button(text_value: String, font_size: int) -> Button:
 	var button := Button.new()
 	button.text = text_value
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_font_size_override("font_size", font_size)
 	button.add_theme_color_override("font_color", INK)
-	button.add_theme_stylebox_override("normal", _style(BG_PANEL, EDGE, 2, 8))
-	button.add_theme_stylebox_override("hover", _style(Color(0.11, 0.13, 0.05, 0.98), GOLD, 2, 8))
-	button.add_theme_stylebox_override("pressed", _style(Color(0.19, 0.11, 0.05, 1.0), SELECT, 3, 8))
+	button.add_theme_color_override("font_disabled_color", Color(0.45, 0.42, 0.30, 0.75))
+	button.add_theme_stylebox_override("normal", _style(Color("17120b"), Color("66712f"), 2, 7))
+	button.add_theme_stylebox_override("hover", _style(Color("21190d"), GOLD, 3, 7))
+	button.add_theme_stylebox_override("pressed", _style(Color("2c180d"), SELECT, 3, 7))
+	button.add_theme_stylebox_override("disabled", _style(Color("100e09"), Color("3a3d20"), 2, 7))
 	return button
 
 func _panel(color: Color, border: Color, width: int, radius: int) -> Panel:
