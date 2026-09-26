@@ -42,9 +42,11 @@ func set_unit(value, is_target: bool = false) -> void:
 		var card := Catalog.find_by_id(str(unit.get("id", "")))
 		_card_view.configure(card, int(unit.get("attack", 0)), int(unit.get("hp", 0)), false, true, bool(unit.get("ready", false)))
 		add_child(_card_view)
-		var card_h := size.y * 0.91
-		var card_w := minf(size.x * 0.68, card_h * 0.70)
-		_card_view.position = Vector2((size.x - card_w) * 0.5, size.y * 0.045)
+		# La carta ocupa el hueco, no el hueco a la carta. Mantener aire visible
+		# alrededor ayuda a leer los cuatro carriles como posiciones físicas.
+		var card_h := minf(size.y * 0.84, 128.0)
+		var card_w := minf(size.x * 0.58, card_h * 0.72)
+		_card_view.position = Vector2((size.x - card_w) * 0.5, (size.y - card_h) * 0.48)
 		_card_view.size = Vector2(card_w, card_h)
 	queue_redraw()
 
@@ -70,6 +72,6 @@ func _draw() -> void:
 		draw_line(c + Vector2(-13, 0), c + Vector2(13, 0), Color(RUNE.r, RUNE.g, RUNE.b, pulse), 2.0)
 		draw_line(c + Vector2(0, -13), c + Vector2(0, 13), Color(RUNE.r, RUNE.g, RUNE.b, pulse), 2.0)
 		var font := ThemeDB.fallback_font
-		draw_string(font, Vector2(0, h - 13), "CARRIL %d" % (lane_index + 1), HORIZONTAL_ALIGNMENT_CENTER, w - 5, 9, Color(0.63, 0.65, 0.45, 0.62))
+		draw_string(font, Vector2(0, h - 12), "CARRIL %d" % (lane_index + 1), HORIZONTAL_ALIGNMENT_CENTER, w - 5, 8, Color(0.63, 0.65, 0.45, 0.54))
 	if selected_target:
 		draw_rect(Rect2(3, 3, w - 10, h - 10), GOLD, false, 3.0)
