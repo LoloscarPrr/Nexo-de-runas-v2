@@ -4,7 +4,7 @@ extends Control
 ## La campaña legado sigue cargada para conservar saves, pero deja de dominar la UI.
 
 const CampaignViewScript = preload("res://scripts/ui/mockup_campaign_view.gd")
-const CanonicalBattleViewScript = preload("res://scripts/ui/canonical_battle_view.gd")
+const CanonicalBattleViewScript = preload("res://scripts/ui/canonical_battle_view_polished.gd")
 const MenuBackdropScript = preload("res://scripts/ui/canonical_main_menu_backdrop.gd")
 
 const INK := Color("eadca8")
@@ -65,13 +65,10 @@ func _build_menu() -> void:
 	var subtitle := _label("CARTAS · DOMINIOS · DESTINOS", 10, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 	_place_in(menu_screen, subtitle, Rect2(vw * 0.36, 70, vw * 0.28, 22))
 
-	# Acción principal sobre el libro central.
 	var play := _menu_button("JUGAR", "ENTRAR AL NEXO", true)
 	play.pressed.connect(_start_canonical_battle)
 	_place_in(menu_screen, play, Rect2(vw * 0.39, vh * 0.50, vw * 0.22, 92))
 
-	# Herramientas físicas alrededor de la mesa. Ya ocupan su posición canónica
-	# aunque algunas todavía estén en construcción durante esta vertical slice.
 	var deckbuilder := _menu_button("CONSTRUCTOR DE MAZOS", "PREPARAR TU SENDERO")
 	deckbuilder.pressed.connect(func(): _notice("El Constructor de Mazos será la siguiente sala en conectarse al nuevo core."))
 	_place_in(menu_screen, deckbuilder, Rect2(vw * 0.075, vh * 0.47, vw * 0.23, 76))
