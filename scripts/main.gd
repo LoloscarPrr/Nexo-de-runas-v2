@@ -1,23 +1,24 @@
 extends Control
 
-## Entrada de migración hacia el Nexo de Runas canónico.
-## La batalla nueva convive temporalmente con la campaña legado para conservar saves.
+## Entrada principal durante la migración al Nexo de Runas canónico.
+## La campaña legado sigue cargada para conservar saves, pero deja de dominar la UI.
 
 const CampaignViewScript = preload("res://scripts/ui/mockup_campaign_view.gd")
-const CampaignBackdropScript = preload("res://scripts/ui/campaign_backdrop.gd")
 const CanonicalBattleViewScript = preload("res://scripts/ui/canonical_battle_view.gd")
+const MenuBackdropScript = preload("res://scripts/ui/canonical_main_menu_backdrop.gd")
 
-const NIGHT := Color8(5, 8, 4)
-const INK := Color8(225, 225, 180)
-const MUTED := Color8(133, 145, 91)
-const AMBER := Color8(210, 184, 85)
-const BLOOD := Color8(121, 43, 34)
-const EDGE := Color8(76, 89, 40)
+const INK := Color("eadca8")
+const MUTED := Color("9b986c")
+const GOLD := Color("d2aa54")
+const MOSS := Color("6b7b3a")
+const WOOD := Color("1b130b")
+const WOOD_LIGHT := Color("2b1d0f")
+const BLOOD := Color("78362c")
 
 var menu_screen: Control
 var campaign_screen
 var battle_screen: CanonicalBattleView
-var continue_button: Button
+var menu_status: Label
 
 func _ready() -> void:
 	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_LANDSCAPE)
@@ -29,7 +30,7 @@ func _ready() -> void:
 
 func _build_background() -> void:
 	var background := ColorRect.new()
-	background.color = NIGHT
+	background.color = Color("050704")
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
@@ -51,8 +52,7 @@ func _build_menu() -> void:
 	menu_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(menu_screen)
 
-	var backdrop := CampaignBackdropScript.new()
-	backdrop.mode = "menu"
+	var backdrop := MenuBackdropScript.new()
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	menu_screen.add_child(backdrop)
 
@@ -60,52 +60,72 @@ func _build_menu() -> void:
 	var vw := maxf(viewport_size.x, 1280.0)
 	var vh := maxf(viewport_size.y, 720.0)
 
-	_place_in(menu_screen, _label("NEXO DE RUNAS", 52, INK, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.27, vh * 0.22, vw * 0.46, 68))
-	_place_in(menu_screen, _label("CUATRO DOMINIOS · UN SOLO NEXO", 13, MUTED, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.29, vh * 0.31, vw * 0.42, 28))
+	var title := _label("NEXO DE RUNAS", 38, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	_place_in(menu_screen, title, Rect2(vw * 0.33, 24, vw * 0.34, 54))
+	var subtitle := _label("CARTAS · DOMINIOS · DESTINOS", 10, MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	_place_in(menu_screen, subtitle, Rect2(vw * 0.36, 70, vw * 0.28, 22))
 
-	var button_w := minf(500.0, vw * 0.41)
-	var button_x := vw * 0.5 - button_w * 0.5
-	var play := _menu_button("JUGAR", "BOSQUE SALVAJE · BATALLA CANÓNICA")
+	# Acción principal sobre el libro central.
+	var play := _menu_button("JUGAR", "ENTRAR AL NEXO", true)
 	play.pressed.connect(_start_canonical_battle)
-	_place_in(menu_screen, play, Rect2(button_x, vh * 0.56, button_w, 78))
+	_place_in(menu_screen, play, Rect2(vw * 0.39, vh * 0.50, vw * 0.22, 92))
 
-	continue_button = _menu_button("CONTINUAR", "COMPATIBILIDAD CON EXPEDICIÓN ANTERIOR")
-	continue_button.pressed.connect(_continue_game)
-	_place_in(menu_screen, continue_button, Rect2(button_x, vh * 0.70, button_w, 70))
+	# Herramientas físicas alrededor de la mesa. Ya ocupan su posición canónica
+	# aunque algunas todavía estén en construcción durante esta vertical slice.
+	var deckbuilder := _menu_button("CONSTRUCTOR DE MAZOS", "PREPARAR TU SENDERO")
+	deckbuilder.pressed.connect(func(): _notice("El Constructor de Mazos será la siguiente sala en conectarse al nuevo core."))
+	_place_in(menu_screen, deckbuilder, Rect2(vw * 0.075, vh * 0.47, vw * 0.23, 76))
 
-	_place_in(menu_screen, _label("BOSQUE   ·   CRIPTA   ·   TORRE   ·   FUNDICIÓN", 11, AMBER, HORIZONTAL_ALIGNMENT_CENTER), Rect2(vw * 0.29, vh - 43, vw * 0.42, 24))
+	var collection := _menu_button("COLECCIÓN", "CARTAS DESCUBIERTAS")
+	collection.pressed.connect(func(): _notice("La Colección conservará este mismo lenguaje físico de cartas."))
+	_place_in(menu_screen, collection, Rect2(vw * 0.10, vh * 0.66, vw * 0.20, 72))
+
+	var profile := _menu_button("PERFIL", "VIAJERO DEL NEXO")
+	profile.pressed.connect(func(): _notice("Perfil está reservado en el canon y se conectará después del core de batalla."))
+	_place_in(menu_screen, profile, Rect2(vw * 0.72, vh * 0.43, vw * 0.20, 70))
+
+	var achievements := _menu_button("LOGROS", "MARCAS DEL VIAJE")
+	achievements.pressed.connect(func(): _notice("Logros está reservado; todavía no modifica tu progreso."))
+	_place_in(menu_screen, achievements, Rect2(vw * 0.73, vh * 0.60, vw * 0.19, 70))
+
+	var settings := _menu_button("AJUSTES", "AUDIO · GRÁFICOS · CONTROLES")
+	settings.pressed.connect(func(): _notice("Ajustes se conectará cuando terminemos la plantilla visual de batalla."))
+	_place_in(menu_screen, settings, Rect2(vw * 0.70, vh * 0.77, vw * 0.22, 68))
+
+	menu_status = _label("El Nexo aguarda.", 11, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	menu_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_place_in(menu_screen, menu_status, Rect2(vw * 0.32, vh - 58, vw * 0.36, 34))
 
 func _start_canonical_battle() -> void:
 	battle_screen.start_battle()
 	_show(battle_screen)
 
-func _continue_game() -> void:
-	campaign_screen.continue_game()
-	_show(campaign_screen)
-
 func _return_to_menu() -> void:
 	_show(menu_screen)
+	_notice("El Nexo aguarda.")
+
+func _notice(text_value: String) -> void:
+	if menu_status != null:
+		menu_status.text = text_value
 
 func _show(target: Control) -> void:
 	menu_screen.visible = target == menu_screen
 	campaign_screen.visible = target == campaign_screen
 	battle_screen.visible = target == battle_screen
-	if target == menu_screen and continue_button != null and campaign_screen != null:
-		continue_button.disabled = not campaign_screen.has_save()
 
-func _menu_button(title_text: String, subtitle_text: String) -> Button:
+func _menu_button(title_text: String, subtitle_text: String, primary: bool = false) -> Button:
 	var button := Button.new()
 	button.text = "%s\n%s" % [title_text, subtitle_text]
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_font_size_override("font_size", 18)
-	button.add_theme_color_override("font_color", INK)
-	button.add_theme_color_override("font_hover_color", Color8(238, 230, 166))
-	button.add_theme_color_override("font_pressed_color", Color8(248, 228, 179))
-	button.add_theme_color_override("font_disabled_color", Color8(74, 82, 46))
-	button.add_theme_stylebox_override("normal", _panel_style(Color(0.045, 0.065, 0.032, 0.94), EDGE, 2, 5))
-	button.add_theme_stylebox_override("hover", _panel_style(Color(0.08, 0.11, 0.045, 0.97), AMBER, 3, 5))
-	button.add_theme_stylebox_override("pressed", _panel_style(Color(0.16, 0.07, 0.045, 0.98), BLOOD, 3, 5))
-	button.add_theme_stylebox_override("disabled", _panel_style(Color(0.035, 0.05, 0.026, 0.86), Color8(46, 55, 31), 2, 5))
+	button.add_theme_font_size_override("font_size", 15 if primary else 13)
+	button.add_theme_color_override("font_color", Color("f1e2ad"))
+	button.add_theme_color_override("font_hover_color", Color("fff0ba"))
+	button.add_theme_color_override("font_pressed_color", Color("fff2c2"))
+	var normal := Color("302012") if primary else Color("19130c")
+	var edge := Color("b08639") if primary else Color("6f7138")
+	button.add_theme_stylebox_override("normal", _panel_style(normal, edge, 3 if primary else 2, 7))
+	button.add_theme_stylebox_override("hover", _panel_style(WOOD_LIGHT, GOLD, 3, 7))
+	button.add_theme_stylebox_override("pressed", _panel_style(Color("34160e"), BLOOD, 3, 7))
 	return button
 
 func _label(text_value: String, size_value: int, color: Color, align: HorizontalAlignment) -> Label:
