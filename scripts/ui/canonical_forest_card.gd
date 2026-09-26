@@ -32,7 +32,7 @@ var current_attack := -1
 var current_health := -1
 var selected := false
 var compact := false
-var ready := true
+var card_ready := true
 var _cached_art_id := ""
 var _cached_texture: Texture2D
 
@@ -55,7 +55,7 @@ func configure(data: Dictionary, atk: int = -1, hp: int = -1, is_selected: bool 
 	current_health = hp
 	selected = is_selected
 	compact = is_compact
-	ready = is_ready
+	card_ready = is_ready
 	_cached_art_id = ""
 	_cached_texture = null
 	custom_minimum_size = Vector2(128, 182) if compact else Vector2(148, 205)
@@ -132,7 +132,7 @@ func _draw() -> void:
 		elif card_type == Catalog.TYPE_SEAL:
 			kind = "SELLO"
 		draw_string(font, Vector2(18, stat_y + stat_h * 0.68), kind, HORIZONTAL_ALIGNMENT_CENTER, w - 39, 11, INK)
-	if not ready and card_type == Catalog.TYPE_CREATURE:
+	if not card_ready and card_type == Catalog.TYPE_CREATURE:
 		draw_rect(art_rect, Color(0.03, 0.04, 0.02, 0.28))
 		draw_string(font, Vector2(art_rect.position.x, art_rect.end.y - 8), "EN ESPERA", HORIZONTAL_ALIGNMENT_CENTER, art_rect.size.x, 9, Color(0.84, 0.80, 0.58, 0.88))
 	if selected:
