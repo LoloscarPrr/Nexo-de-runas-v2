@@ -41,10 +41,13 @@ func set_unit(value, is_target: bool = false) -> void:
 		var card := Catalog.find_by_id(str(unit.get("id", "")))
 		_card_view.configure(card, int(unit.get("attack", 0)), int(unit.get("hp", 0)), false, true, bool(unit.get("ready", false)))
 		add_child(_card_view)
-		# V4: más presencia visual que v3, manteniendo aire visible del carril.
-		var card_h := minf(size.y * 0.92, 142.0)
-		var card_w := minf(size.x * 0.72, card_h * 0.72)
-		_card_view.position = Vector2((size.x - card_w) * 0.5, (size.y - card_h) * 0.48)
+
+		# V4.1: la carta debe poder leerse desde la mesa sin depender siempre del
+		# detalle ampliado. Crece en superficie, conserva margen visible del carril
+		# y permanece completamente contenida dentro del slot.
+		var card_h := minf(size.y * 0.965, 148.0)
+		var card_w := minf(size.x * 0.82, card_h * 0.78)
+		_card_view.position = Vector2((size.x - card_w) * 0.5, (size.y - card_h) * 0.5)
 		_card_view.size = Vector2(card_w, card_h)
 	queue_redraw()
 
