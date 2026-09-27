@@ -1,11 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="306" height="382" viewBox="0 0 306 382">
   <defs>
-    <linearGradient id="wood" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#130d08"/>
-      <stop offset="0.42" stop-color="#3b2817"/>
-      <stop offset="0.72" stop-color="#21150d"/>
-      <stop offset="1" stop-color="#090806"/>
-    </linearGradient>
     <linearGradient id="brass" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#f0c66b"/>
       <stop offset="0.45" stop-color="#9a6b2d"/>
@@ -18,84 +12,66 @@
       <stop offset="1" stop-color="#09270f"/>
     </radialGradient>
     <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="b"/>
-      <feOffset dy="4" result="o"/>
-      <feColorMatrix in="o" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .75 0" result="s"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2.4" result="b"/>
+      <feOffset dy="2" result="o"/>
+      <feColorMatrix in="o" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .65 0" result="s"/>
       <feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
     <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
-      <feGaussianBlur stdDeviation="3" result="g"/>
+      <feGaussianBlur stdDeviation="2" result="g"/>
       <feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
 
-  <!-- Outer physical silhouette -->
-  <g filter="url(#shadow)">
-    <path d="M18 3 H288 L303 20 V360 L286 379 H20 L3 360 V20 Z" fill="url(#wood)" stroke="#080705" stroke-width="6"/>
-    <path d="M22 10 H284 L296 23 V356 L282 371 H24 L10 356 V24 Z" fill="none" stroke="url(#brass)" stroke-width="3"/>
-    <path d="M29 17 H277 L288 29 V350 L277 363 H29 L18 350 V29 Z" fill="none" stroke="#55622a" stroke-width="2" opacity=".88"/>
+  <!-- Border only. The entire playable center stays transparent. -->
+  <g fill="none" filter="url(#shadow)" stroke-linejoin="round">
+    <path d="M18 4 H288 L302 19 V360 L286 378 H20 L4 360 V20 Z" stroke="#090705" stroke-width="10"/>
+    <path d="M21 9 H285 L296 23 V356 L282 371 H24 L10 356 V24 Z" stroke="url(#brass)" stroke-width="3"/>
+    <path d="M28 16 H278 L289 29 V349 L277 363 H29 L17 350 V29 Z" stroke="#58652d" stroke-width="2" opacity=".9"/>
   </g>
 
-  <!-- Transparent playable center: only rails and ornaments are drawn -->
+  <!-- Roots stay on the outer rails only. -->
   <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Left twisted root -->
-    <path d="M25 54 C8 84 34 103 18 133 C5 158 35 183 19 215 C7 241 31 264 18 295 C9 316 23 338 31 354" stroke="#24170e" stroke-width="14"/>
-    <path d="M25 54 C8 84 34 103 18 133 C5 158 35 183 19 215 C7 241 31 264 18 295 C9 316 23 338 31 354" stroke="#6c4925" stroke-width="6"/>
-    <path d="M22 79 L39 67 M18 139 L38 150 M20 219 L39 205 M19 292 L38 305" stroke="#77813d" stroke-width="4"/>
+    <path d="M24 54 C10 82 33 103 19 132 C8 157 33 183 19 214 C8 239 31 265 18 294 C10 316 23 338 31 353" stroke="#21150d" stroke-width="12"/>
+    <path d="M24 54 C10 82 33 103 19 132 C8 157 33 183 19 214 C8 239 31 265 18 294 C10 316 23 338 31 353" stroke="#684625" stroke-width="5"/>
+    <path d="M282 54 C296 82 273 103 287 132 C298 157 273 183 287 214 C298 239 275 265 288 294 C296 316 283 338 275 353" stroke="#21150d" stroke-width="12"/>
+    <path d="M282 54 C296 82 273 103 287 132 C298 157 273 183 287 214 C298 239 275 265 288 294 C296 316 283 338 275 353" stroke="#684625" stroke-width="5"/>
 
-    <!-- Right twisted root -->
-    <path d="M281 54 C298 84 272 103 288 133 C301 158 271 183 287 215 C299 241 275 264 288 295 C297 316 283 338 275 354" stroke="#24170e" stroke-width="14"/>
-    <path d="M281 54 C298 84 272 103 288 133 C301 158 271 183 287 215 C299 241 275 264 288 295 C297 316 283 338 275 354" stroke="#6c4925" stroke-width="6"/>
-    <path d="M284 79 L267 67 M288 139 L268 150 M286 219 L267 205 M287 292 L268 305" stroke="#77813d" stroke-width="4"/>
-
-    <!-- Horizontal physical rails -->
-    <path d="M28 44 C80 36 226 36 278 44" stroke="#25170d" stroke-width="12"/>
-    <path d="M28 44 C80 36 226 36 278 44" stroke="#8d642f" stroke-width="3"/>
-    <path d="M28 308 C82 316 225 316 278 308" stroke="#25170d" stroke-width="12"/>
-    <path d="M28 308 C82 316 225 316 278 308" stroke="#8d642f" stroke-width="3"/>
+    <path d="M28 43 C83 36 224 36 278 43" stroke="#21150d" stroke-width="10"/>
+    <path d="M28 43 C83 36 224 36 278 43" stroke="#9a6b2d" stroke-width="2.5"/>
+    <path d="M28 313 C83 319 224 319 278 313" stroke="#21150d" stroke-width="10"/>
+    <path d="M28 313 C83 319 224 319 278 313" stroke="#9a6b2d" stroke-width="2.5"/>
   </g>
 
-  <!-- Forest leaves -->
-  <g fill="#4f692d" stroke="#17210f" stroke-width="1.2" opacity=".95">
-    <path d="M31 94 C45 84 48 94 39 105 C32 109 27 104 31 94Z"/>
-    <path d="M21 174 C7 164 7 177 16 188 C24 191 29 184 21 174Z"/>
-    <path d="M31 259 C48 252 47 266 36 275 C29 276 25 268 31 259Z"/>
-    <path d="M275 94 C261 84 258 94 267 105 C274 109 279 104 275 94Z"/>
-    <path d="M285 174 C299 164 299 177 290 188 C282 191 277 184 285 174Z"/>
-    <path d="M275 259 C258 252 259 266 270 275 C277 276 281 268 275 259Z"/>
+  <!-- Leaves are confined to the side rails, never the art/text area. -->
+  <g fill="#50682e" stroke="#17210f" stroke-width="1" opacity=".95">
+    <path d="M30 91 C42 83 46 91 38 101 C32 105 27 101 30 91Z"/>
+    <path d="M20 170 C9 163 8 174 16 183 C22 186 26 180 20 170Z"/>
+    <path d="M30 257 C44 251 44 262 35 270 C29 272 25 265 30 257Z"/>
+    <path d="M276 91 C264 83 260 91 268 101 C274 105 279 101 276 91Z"/>
+    <path d="M286 170 C297 163 298 174 290 183 C284 186 280 180 286 170Z"/>
+    <path d="M276 257 C262 251 262 262 271 270 C277 272 281 265 276 257Z"/>
   </g>
 
-  <!-- Top forest domain crest -->
-  <g transform="translate(153 23)" filter="url(#glow)">
-    <path d="M0 -17 L15 -5 L11 14 L0 21 L-11 14 L-15 -5 Z" fill="#10290f" stroke="url(#brass)" stroke-width="2"/>
-    <path d="M0 -11 V11 M0 -3 L-7 -8 M0 1 L8 -6 M0 5 L-8 11 M0 7 L7 12" fill="none" stroke="#9cdf54" stroke-width="2.4"/>
+  <!-- Small forest accents. No opaque panel behind them. -->
+  <g transform="translate(272 26)" filter="url(#glow)">
+    <path d="M0 -8 L7 -2 L5 7 L0 10 L-5 7 L-7 -2 Z" fill="#10290f" stroke="url(#brass)" stroke-width="1.5"/>
+    <path d="M0 -5 V5 M0 -1 L-3 -4 M0 1 L4 -3 M0 3 L-4 6" fill="none" stroke="#9cdf54" stroke-width="1.5"/>
   </g>
-
-  <!-- Bottom rune -->
   <g transform="translate(153 356)" filter="url(#glow)">
-    <path d="M0 -10 L10 0 L0 10 L-10 0 Z" fill="url(#gem)" stroke="#d4a84b" stroke-width="2"/>
-    <circle cx="0" cy="0" r="2.5" fill="#eaff99"/>
+    <path d="M0 -7 L7 0 L0 7 L-7 0 Z" fill="url(#gem)" stroke="#d4a84b" stroke-width="1.5"/>
   </g>
 
-  <!-- Corner fittings -->
-  <g fill="#1a110b" stroke="url(#brass)" stroke-width="2.5">
-    <path d="M9 9 H71 L58 25 H18 Z"/>
-    <path d="M297 9 H235 L248 25 H288 Z"/>
-    <path d="M9 373 H71 L58 357 H18 Z"/>
-    <path d="M297 373 H235 L248 357 H288 Z"/>
+  <!-- Corner fittings only; no filled central sockets. -->
+  <g fill="#17100a" stroke="url(#brass)" stroke-width="2">
+    <path d="M8 9 H59 L50 22 H17 Z"/>
+    <path d="M298 9 H247 L256 22 H289 Z"/>
+    <path d="M8 373 H59 L50 360 H17 Z"/>
+    <path d="M298 373 H247 L256 360 H289 Z"/>
   </g>
 
-  <!-- Empty cost/stat sockets: dynamic numbers are drawn by Godot -->
-  <g stroke="url(#brass)" stroke-width="3">
-    <circle cx="29" cy="28" r="18" fill="#17210f"/>
-    <path d="M25 10 L33 10 L43 18 L43 34 L33 44 L18 40 L11 30 L14 18 Z" fill="none" opacity=".85"/>
-    <path d="M16 335 L37 324 L53 342 L45 370 L19 372 L8 353 Z" fill="#15100a"/>
-    <path d="M290 335 L269 324 L253 342 L261 370 L287 372 L298 353 Z" fill="#2a0d0a"/>
-  </g>
-
-  <!-- Fine etched runes -->
-  <g stroke="#b79249" stroke-width="1" opacity=".45" fill="none">
-    <path d="M49 17 l8 8 -8 8 -8 -8z M257 17 l8 8 -8 8 -8 -8z"/>
-    <path d="M48 365 l8 -8 8 8 -8 8z M258 365 l-8 -8 -8 8 8 8z"/>
+  <g fill="none" stroke="#b79249" stroke-width="1" opacity=".5">
+    <path d="M44 18 l6 6 -6 6 -6 -6z M262 18 l6 6 -6 6 -6 -6z"/>
+    <path d="M44 364 l6 -6 6 6 -6 6z M262 364 l-6 -6 -6 6 6 6z"/>
   </g>
 </svg>
