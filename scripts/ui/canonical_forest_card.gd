@@ -2,6 +2,7 @@ class_name CanonicalForestCard
 extends Button
 
 const Catalog = preload("res://scripts/domain/canonical_card_catalog.gd")
+const FRAME_TEXTURE_PATH := "res://assets/domains/forest/cards/card_frame_overlay.webp"
 
 const PARCHMENT := Color("b9a86c")
 const PARCHMENT_LIGHT := Color("d0c48b")
@@ -35,6 +36,7 @@ var compact := false
 var card_ready := true
 var _cached_art_id := ""
 var _cached_texture: Texture2D
+var _frame_texture: Texture2D
 
 func _ready() -> void:
 	focus_mode = Control.FOCUS_NONE
@@ -59,8 +61,6 @@ func configure(data: Dictionary, atk: int = -1, hp: int = -1, is_selected: bool 
 	card_ready = is_ready
 	_cached_art_id = ""
 	_cached_texture = null
-	# Las cartas del tablero reciben su tamaño del carril. No deben forzar un
-	# mínimo mayor que el hueco y sobresalir como ocurría en la build anterior.
 	custom_minimum_size = Vector2.ZERO if compact else Vector2(132, 184)
 	scale = Vector2(1.045, 1.045) if selected else Vector2.ONE
 	if is_inside_tree():
@@ -146,9 +146,21 @@ func _draw() -> void:
 	if not card_ready and card_type == Catalog.TYPE_CREATURE:
 		draw_rect(art_rect, Color(0.03, 0.04, 0.02, 0.30))
 		draw_string(font, Vector2(art_rect.position.x, art_rect.end.y - 6), "EN ESPERA", HORIZONTAL_ALIGNMENT_CENTER, art_rect.size.x, 8, Color(0.84, 0.80, 0.58, 0.90))
+
+	# Asset Pack v1: marco físico derivado del mockup canónico. Se superpone a la
+	# carta dinámica para aportar raíces, metal y ornamentación sin hornear stats.
+	_draw_canonical_frame(Rect2(0, 0, w, h))
+
 	if selected:
 		draw_rect(Rect2(-1, -1, w - 3, h - 3), GLOW, false, 4.0)
 		draw_rect(Rect2(3, 3, w - 11, h - 11), Color(GLOW.r, GLOW.g, GLOW.b, 0.24), false, 2.0)
+
+func _draw_canonical_frame(rect: Rect2) -> void:
+	if _frame_texture == null and ResourceLoader.exists(FRAME_TEXTURE_PATH):
+		_frame_texture = load(FRAME_TEXTURE_PATH) as Texture2D
+	if _frame_texture == null:
+		return
+	draw_texture_rect(_frame_texture, rect, false, Color(1, 1, 1, 0.96))
 
 func _draw_art(rect: Rect2) -> void:
 	var texture := _get_art_texture()
