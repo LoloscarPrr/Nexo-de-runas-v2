@@ -2,7 +2,7 @@ class_name CanonicalForestCard
 extends Button
 
 const Catalog = preload("res://scripts/domain/canonical_card_catalog.gd")
-const FRAME_TEXTURE_PATH := "res://assets/domains/forest/cards/card_frame_overlay.webp"
+const FRAME_TEXTURE_PATH := "res://assets/domains/forest/cards/card_frame_overlay.svg"
 
 const PARCHMENT := Color("b9a86c")
 const PARCHMENT_LIGHT := Color("d0c48b")
@@ -147,8 +147,8 @@ func _draw() -> void:
 		draw_rect(art_rect, Color(0.03, 0.04, 0.02, 0.30))
 		draw_string(font, Vector2(art_rect.position.x, art_rect.end.y - 6), "EN ESPERA", HORIZONTAL_ALIGNMENT_CENTER, art_rect.size.x, 8, Color(0.84, 0.80, 0.58, 0.90))
 
-	# Asset Pack v1: marco físico derivado del mockup canónico. Se superpone a la
-	# carta dinámica para aportar raíces, metal y ornamentación sin hornear stats.
+	# Asset Pack v1: marco físico SVG derivado del mockup canónico. Se superpone
+	# a la carta dinámica para aportar raíces, metal y ornamentación sin hornear stats.
 	_draw_canonical_frame(Rect2(0, 0, w, h))
 
 	if selected:
@@ -160,7 +160,7 @@ func _draw_canonical_frame(rect: Rect2) -> void:
 		_frame_texture = load(FRAME_TEXTURE_PATH) as Texture2D
 	if _frame_texture == null:
 		return
-	draw_texture_rect(_frame_texture, rect, false, Color(1, 1, 1, 0.96))
+	draw_texture_rect(_frame_texture, rect, false, Color(1, 1, 1, 0.98))
 
 func _draw_art(rect: Rect2) -> void:
 	var texture := _get_art_texture()
