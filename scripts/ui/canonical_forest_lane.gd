@@ -42,11 +42,11 @@ func set_unit(value, is_target: bool = false) -> void:
 		_card_view.configure(card, int(unit.get("attack", 0)), int(unit.get("hp", 0)), false, true, bool(unit.get("ready", false)))
 		add_child(_card_view)
 
-		# V4.1: la carta debe poder leerse desde la mesa sin depender siempre del
-		# detalle ampliado. Crece en superficie, conserva margen visible del carril
-		# y permanece completamente contenida dentro del slot.
-		var card_h := minf(size.y * 0.965, 148.0)
-		var card_w := minf(size.x * 0.82, card_h * 0.78)
+		# Asset Pack v1.2: la carta jugada recupera peso visual. Puede sobresalir
+		# unos pocos píxeles en vertical dentro del espacio entre filas, pero nunca
+		# invade el carril vecino ni el HUD. El ancho crece ~30% respecto de v4.1.
+		var card_h := minf(size.y * 1.08, 166.0)
+		var card_w := minf(size.x * 0.88, card_h * 0.90)
 		_card_view.position = Vector2((size.x - card_w) * 0.5, (size.y - card_h) * 0.5)
 		_card_view.size = Vector2(card_w, card_h)
 	queue_redraw()
