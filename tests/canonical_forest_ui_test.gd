@@ -34,8 +34,8 @@ func _run_checks() -> void:
 	check(view.battle.energy_capacity == 1, "Canonical Energy starts at capacity one")
 	check(view.battle.essence_name() == "Instinto", "Forest view is connected to Instinto")
 
-	# V4.1 regression: a played card must fill most of its lane while staying
-	# completely inside it. This protects readability without returning to overflow.
+	# Asset Pack v1.2 regression: las cartas jugadas deben tener presencia real.
+	# Se permite un pequeño bleed vertical controlado, pero nunca horizontal.
 	var lane := LaneScript.new()
 	root.add_child(lane)
 	lane.size = Vector2(220, 150)
@@ -45,11 +45,12 @@ func _run_checks() -> void:
 	var played_card = lane.get_child(0) if lane.get_child_count() > 0 else null
 	check(played_card != null, "Played card renderer exists inside a lane")
 	if played_card != null:
-		check(played_card.size.y >= 144.0, "Played card uses at least 96% of a 150px lane height")
-		check(played_card.size.x >= 110.0, "Played card is wide enough to read combat information")
-		check(played_card.position.x >= 0.0 and played_card.position.y >= 0.0, "Played card starts inside its lane")
-		check(played_card.position.x + played_card.size.x <= lane.size.x + 0.1, "Played card remains inside lane width")
-		check(played_card.position.y + played_card.size.y <= lane.size.y + 0.1, "Played card remains inside lane height")
+		check(played_card.size.y >= 160.0, "Played card gains vertical presence beyond the old compact size")
+		check(played_card.size.x >= 145.0, "Played card is substantially wider and readable on table")
+		check(played_card.position.x >= 0.0, "Played card remains horizontally inside its lane")
+		check(played_card.position.x + played_card.size.x <= lane.size.x + 0.1, "Played card never invades neighboring lane width")
+		check(played_card.position.y >= -9.0, "Played card vertical bleed is tightly controlled")
+		check(played_card.position.y + played_card.size.y <= lane.size.y + 9.0, "Played card vertical bleed remains bounded")
 	lane.queue_free()
 
 	print("Canonical Forest UI checks: %d failures" % failures)
