@@ -24,7 +24,7 @@ func _initialize() -> void:
 	var first_card := session.hand_card_definition(0)
 	check(not first_card.is_empty(), "Application layer can resolve card definitions")
 	check(session.can_target_player_lane(0, 4), "Application layer recognizes fifth lane as legal")
-	var play_command := CommandScript.play_card(0, 4)
+	var play_command = CommandScript.play_card(0, 4)
 	check(str(play_command.to_dict().type) == CommandScript.PLAY_CARD, "BattleCommand is serializable")
 	var play_result := session.execute(play_command)
 	check(bool(play_result.get("ok", false)), "Application layer executes play-card command")
