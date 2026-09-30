@@ -17,13 +17,13 @@ var modifiers: Array[Dictionary] = []
 var statuses: Array[Dictionary] = []
 var ability_state: Dictionary = {}
 
-static func from_definition(definition: Object, new_instance_id: String, new_owner_id: String):
-	var instance := CardInstance.new()
+static func from_definition(definition, new_instance_id: String, new_owner_id: String):
+	var instance = CardInstance.new()
 	instance.instance_id = new_instance_id
-	instance.definition_id = str(definition.get("id")) if definition is Dictionary else str(definition.id)
+	instance.definition_id = str(definition.id)
 	instance.owner_id = new_owner_id
 	instance.controller_id = new_owner_id
-	instance.current_health = int(definition.get("health", definition.get("hp", 0))) if definition is Dictionary else int(definition.base_health)
+	instance.current_health = int(definition.base_health)
 	return instance
 
 func is_valid() -> bool:
