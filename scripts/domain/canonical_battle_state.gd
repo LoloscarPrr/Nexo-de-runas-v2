@@ -2,8 +2,13 @@ class_name CanonicalBattleState
 extends RefCounted
 
 const Catalog = preload("res://scripts/domain/canonical_card_catalog.gd")
+const BoardStateScript = preload("res://scripts/domain/entities/board_state.gd")
+const CostDefinitionScript = preload("res://scripts/domain/value_objects/cost_definition.gd")
+const CostResolverScript = preload("res://scripts/domain/services/cost_resolver.gd")
+const EventQueueScript = preload("res://scripts/domain/events/event_queue.gd")
+const GameEventScript = preload("res://scripts/domain/events/game_event.gd")
 
-const LANE_COUNT := 4
+const LANE_COUNT := BoardStateScript.DEFAULT_LANE_COUNT
 const STARTING_INTEGRITY := 20
 const STARTING_HAND := 4
 const MAX_HAND := 8
@@ -26,8 +31,8 @@ var hand: Array[String] = []
 var draw_pile: Array[String] = []
 var discard_pile: Array[String] = []
 var enemy_discard: Array[String] = []
-var player_lanes: Array = [null, null, null, null]
-var enemy_lanes: Array = [null, null, null, null]
+var player_lanes: Array = BoardStateScript.make_empty_slots(LANE_COUNT)
+var enemy_lanes: Array = BoardStateScript.make_empty_slots(LANE_COUNT)
 var active_seals: Array[String] = []
 var active_relics: Array[String] = []
 
@@ -35,6 +40,7 @@ var failed_draws := 0
 var impulse_available := false
 var last_revealed: Array[String] = []
 var last_message := ""
+var event_queue = EventQueueScript.new()
 
 func setup(domain: String, deck_ids: Array[String], second_player: bool = false) -> void:
 	player_domain = domain
@@ -50,19 +56,23 @@ func setup(domain: String, deck_ids: Array[String], second_player: bool = false)
 	draw_pile.clear()
 	discard_pile.clear()
 	enemy_discard.clear()
-	player_lanes = [null, null, null, null]
-	enemy_lanes = [null, null, null, null]
+	player_lanes = BoardStateScript.make_empty_slots(LANE_COUNT)
+	enemy_lanes = BoardStateScript.make_empty_slots(LANE_COUNT)
 	active_seals.clear()
 	active_relics.clear()
 	failed_draws = 0
 	impulse_available = second_player
 	last_revealed.clear()
 	last_message = ""
+	event_queue.clear()
 	for card_id in deck_ids:
 		if not Catalog.find_by_id(card_id).is_empty():
 			draw_pile.append(card_id)
 	for i in range(STARTING_HAND):
 		draw_card()
+	# La mano inicial forma parte del setup; los consumidores reciben eventos sólo
+	# desde la primera acción jugable para mantener resultados deterministas y limpios.
+	event_queue.clear()
 
 func setup_starter(domain: String, second_player: bool = false) -> void:
 	setup(domain, Catalog.starter_deck(domain), second_player)
@@ -79,6 +89,7 @@ func begin_new_turn() -> void:
 	_reset_guard_usage(player_lanes)
 	_reset_guard_usage(enemy_lanes)
 	draw_card()
+	event_queue.push(GameEventScript.create("TURN_STARTED", "", [], {"turn": turn}))
 
 func draw_card() -> bool:
 	if result != "ongoing":
@@ -100,21 +111,49 @@ func use_impulse() -> bool:
 		return false
 	impulse_available = false
 	grant_temporary_energy(1)
+	event_queue.push(GameEventScript.create("IMPULSE_USED"))
 	return true
 
 func grant_temporary_energy(amount: int) -> int:
 	var before := energy_current
 	energy_current = mini(ABSOLUTE_ENERGY_CAP, energy_current + maxi(0, amount))
-	return energy_current - before
+	var gained := energy_current - before
+	if gained > 0:
+		event_queue.push(GameEventScript.create("RESOURCE_GAINED", "", [], {"resource": "energy", "amount": gained}))
+	return gained
+
+func resource_amount(resource_type: String) -> int:
+	match resource_type:
+		"energy":
+			return energy_current
+		"essence":
+			return essence_current
+		_:
+			return 0
+
+func spend_resource(resource_type: String, amount: int) -> bool:
+	if amount < 0 or resource_amount(resource_type) < amount:
+		return false
+	match resource_type:
+		"energy":
+			energy_current -= amount
+		"essence":
+			essence_current -= amount
+		_:
+			return false
+	if amount > 0:
+		event_queue.push(GameEventScript.create("RESOURCE_SPENT", "", [], {"resource": resource_type, "amount": amount}))
+	return true
 
 func can_pay_energy(amount: int) -> bool:
-	return amount >= 0 and energy_current >= amount
+	if amount < 0:
+		return false
+	return CostResolverScript.can_pay(CostDefinitionScript.energy(amount), self)
 
 func spend_energy(amount: int) -> bool:
-	if not can_pay_energy(amount):
+	if amount < 0:
 		return false
-	energy_current -= amount
-	return true
+	return CostResolverScript.pay(CostDefinitionScript.energy(amount), self)
 
 func essence_name() -> String:
 	return Catalog.essence_name(player_domain)
@@ -125,13 +164,18 @@ func essence_max() -> int:
 func gain_essence(amount: int) -> int:
 	var before := essence_current
 	essence_current = mini(essence_max(), essence_current + maxi(0, amount))
-	return essence_current - before
+	var gained := essence_current - before
+	if gained > 0:
+		event_queue.push(GameEventScript.create("RESOURCE_GAINED", "", [], {"resource": "essence", "amount": gained, "name": essence_name()}))
+	return gained
 
 func spend_essence(amount: int) -> bool:
-	if amount < 0 or essence_current < amount:
+	if amount < 0:
 		return false
-	essence_current -= amount
-	return true
+	return CostResolverScript.pay(CostDefinitionScript.essence(amount), self)
+
+func drain_events() -> Array[Dictionary]:
+	return event_queue.drain_serialized()
 
 func create_unit(card_id: String, ready: bool = false) -> Dictionary:
 	var card := Catalog.find_by_id(card_id)
@@ -194,7 +238,8 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 			success = false
 	if not success:
 		return false
-	spend_energy(cost)
+	if not spend_energy(cost):
+		return false
 	hand.remove_at(hand_index)
 	if card_type == Catalog.TYPE_RITE:
 		discard_pile.append(card_id)
@@ -202,6 +247,11 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 			gain_essence(1)
 	elif card_type == Catalog.TYPE_SEAL and player_domain == Catalog.DOMAIN_TOWER:
 		gain_essence(1)
+	event_queue.push(GameEventScript.create("CARD_PLAYED", card_id, [], {
+		"card_type": card_type,
+		"lane": lane,
+		"target_lane": target_lane
+	}))
 	return true
 
 func _play_creature(card: Dictionary, lane: int) -> bool:
@@ -397,6 +447,7 @@ func _kill_unit(player_side: bool, lane: int) -> void:
 	else:
 		enemy_discard.append(card_id)
 	lanes[lane] = null
+	event_queue.push(GameEventScript.create("UNIT_DIED", card_id, [], {"side": "player" if player_side else "enemy", "lane": lane}))
 
 func _trigger_last_breath(unit: Dictionary, player_side: bool, lane: int) -> void:
 	if not player_side:
@@ -482,7 +533,10 @@ func _reset_guard_usage(lanes: Array) -> void:
 			unit["guard_used"] = false
 
 func _check_result() -> void:
+	var previous_result := result
 	if enemy_integrity <= 0:
 		result = "victory"
 	elif player_integrity <= 0:
 		result = "defeat"
+	if previous_result == "ongoing" and result != "ongoing":
+		event_queue.push(GameEventScript.create("BATTLE_ENDED", "", [], {"result": result}))
