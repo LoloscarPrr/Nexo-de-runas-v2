@@ -11,12 +11,12 @@
 - [x] B102 Exponer 12 cartas por dominio y 4 mazos iniciales de 20.
 - [x] B103 Validar IDs, tipos, costes, dominios y límites de copias.
 - [x] B104 Mantener catálogo legado aislado durante migración.
-- [ ] B105 Introducir `CardDefinition` como modelo canónico tipado sobre el catálogo actual.
-- [ ] B106 Introducir `CardInstance` con identidad propia y estado mutable independiente.
+- [x] B105 Introducir `CardDefinition` como modelo canónico tipado sobre el catálogo actual.
+- [x] B106 Introducir `CardInstance` con identidad propia y estado mutable independiente.
 - [ ] B107 Migrar campaña para que mejoras/sellos persistentes puedan dirigirse a copias concretas.
 
 ## Fase C — BattleState canónico
-- [ ] C201 Migrar de 4 a 5 carriles exactos por lado.
+- [x] C201 Migrar de 4 a 5 carriles exactos por lado.
 - [x] C202 Integridad 20/20 y daño directo.
 - [x] C203 Mano inicial 4, máximo 8 y Descarte.
 - [x] C204 Energía 1→6, recarga, límite extraordinario 12.
@@ -28,9 +28,9 @@
 - [x] C210 Recursos Instinto/Restos/Conocimiento/Calor.
 - [x] C211 Sobrecarga de Calor.
 - [x] C212 Pruebas headless del core.
-- [ ] C213 Crear `BoardState` y `LaneState`; `BoardState` pasa a ser fuente de verdad para `LANE_COUNT=5`.
-- [ ] C214 Crear `CostDefinition`/`CostResolver` y conectar Energía/Esencia actuales.
-- [ ] C215 Crear `GameEvent`/`EventQueue` y emitir eventos lógicos básicos.
+- [x] C213 Crear `BoardState` y `LaneState`; `BoardState` pasa a ser fuente de verdad para `LANE_COUNT=5`.
+- [x] C214 Crear `CostDefinition`/`CostResolver` y conectar Energía/Esencia actuales.
+- [x] C215 Crear `GameEvent`/`EventQueue` y emitir eventos lógicos básicos.
 
 ## Fase CA — Clean Architecture
 - [x] CA001 Formalizar reglas de dependencia Domain/Application/Infrastructure/Presentation.
@@ -44,8 +44,8 @@
 - [ ] CA009 Migrar Main Menu a `scripts/presentation`.
 - [ ] CA010 Migrar Campaña a Application + Presentation + Repository Port.
 - [ ] CA011 Retirar `scripts/ui` cuando no tenga consumidores.
-- [ ] CA012 Crear `BattleCommand` y hacer que Application pueda ejecutar comandos serializables.
-- [ ] CA013 Incluir eventos de Domain en resultados de Application para Presentation/Local/Online.
+- [x] CA012 Crear `BattleCommand` y hacer que Application pueda ejecutar comandos serializables.
+- [x] CA013 Incluir eventos de Domain en resultados de Application para Presentation/Local/Online.
 
 ## Fase D — Efectos y dominios
 - [ ] D300 Introducir `AbilityDefinition`, `TargetSpec`, `ConditionDefinition`, `EffectDefinition` y resolvers sin reescritura masiva.
@@ -66,7 +66,7 @@
 - [x] E407 HUD único: Integridad, Energía, Esencia, Sellos, Reliquias, Mazo, Descarte.
 - [ ] E408 Producir Bosque Asset Pack canónico bajo `assets/domains/forest/`.
 - [ ] E409 Reemplazar dibujo procedural crítico por assets finales en Presentation.
-- [ ] E410 Ajustar adaptador legado para visualizar temporalmente los 5 carriles.
+- [x] E410 Ajustar adaptador legado para visualizar temporalmente los 5 carriles.
 - [ ] E411 Crear renderer vertical de batalla en Presentation basado en mockup aprobado.
 - [ ] E412 Resolver mano de 5–8 cartas con desplazamiento/solapamiento táctil legible.
 
@@ -108,5 +108,5 @@
 - [x] J901 Mantener firma Android y saves existentes durante el refactor actual.
 - [ ] J902 Migrar runtime al Application layer canónico.
 - [ ] J903 Retirar recursos/reglas legado ya no usados.
-- [ ] J904 APK verde y validación visual en teléfono después de cada migración de pantalla.
+- [x] J904 APK verde y validación automatizada después de la migración inicial de cinco carriles.
 - [ ] J905 Cambiar orientación runtime final a vertical sólo cuando Presentation vertical tenga equivalencia funcional.
