@@ -4,7 +4,7 @@
 Nexo de Runas es un juego original de cartas tácticas por carriles. La etapa anterior centrada en replicar el Acto 1 de Inscryption queda archivada. Sus implementaciones pueden conservarse durante la migración, pero no definen nuevas reglas, contenido ni UI.
 
 ## II. Canon visual
-La referencia visual son los mockups canónicos aprobados y el Documento Maestro Canónico v1.0: fantasía oscura premium, materiales físicos, runas, ornamentación, profundidad e iluminación cinematográfica. Los cuatro dominios comparten una arquitectura visual común y cambian únicamente ambientación, materiales, paleta, iconografía y efectos temáticos.
+La referencia visual son los mockups verticales canónicos aprobados el 30-09-2026 y el Documento Maestro Canónico v1.0: fantasía oscura premium, materiales físicos, runas, ornamentación, profundidad e iluminación cinematográfica. Los cuatro dominios comparten una arquitectura visual común y cambian únicamente ambientación, materiales, paleta, iconografía y efectos temáticos.
 
 ## III. Cuatro dominios
 Los dominios activos son:
@@ -15,24 +15,33 @@ Los dominios activos son:
 Cada dominio debe tener identidad mecánica propia sin alterar el layout fundamental del juego.
 
 ## IV. Núcleo de batalla
-- Exactamente 4 carriles por jugador.
+- Exactamente 5 carriles por jugador.
+- Los carriles enfrentados comparten el mismo índice lógico: 1↔1, 2↔2, 3↔3, 4↔4 y 5↔5.
 - 20 de Integridad del Nexo.
 - Mazo de 20 cartas + 1 Guardián externo.
 - Mano inicial de 4 y máximo de 8.
 - Energía Rúnica progresiva 1→6, recargada al inicio del turno.
 - 6 es máximo estándar; 12 es límite absoluto mediante efectos extraordinarios.
 - Máximo 3 Sellos y 2 Reliquias activas.
-- Cartas: Criatura, Rito, Reliquia y Sello.
+- Cartas: Criatura, Rito, Reliquia y Sello mientras se resuelve la nomenclatura final de permanentes/habilidades.
 
-## V. Modos y metajuego
+## V. Identidad de cartas y entidades
+- Una `CardDefinition` describe una carta canónica y se considera inmutable durante una partida.
+- Cada copia jugable es una `CardInstance` con `instance_id` propio, incluso cuando varias copias comparten `definition_id`.
+- Las mejoras de campaña, daño, estados, sellos añadidos y modificaciones pertenecen a la instancia correspondiente y no deben confundirse con la definición base.
+- El tablero se modela mediante `BoardState` y cinco `LaneState` por lado.
+- Las acciones de Application se expresan como comandos serializables y Domain produce eventos lógicos serializables.
+- Presentation anima eventos; nunca decide la legalidad de una jugada.
+
+## VI. Modos y metajuego
 El flujo objetivo contempla Campaña, Vs CPU, Jugar Local y Jugar Online. El menú principal también contiene Constructor de Mazos, Colección, Perfil, Logros y Ajustes. El multiplayer se implementa después de estabilizar el core de batalla y la campaña, pero forma parte del diseño canónico.
 
-## VI. Clean Architecture y separación de responsabilidades
-Estado, cartas, mazos, recursos, turnos, efectos, campaña y progreso viven separados de la UI. El mismo core debe poder alimentar CPU, guardado, local y online.
+## VII. Clean Architecture y separación de responsabilidades
+Estado, cartas, mazos, recursos, turnos, costes, habilidades, efectos, campaña y progreso viven separados de la UI. El mismo core debe poder alimentar CPU, guardado, local y online.
 
 La arquitectura canónica se divide en cuatro capas:
-- **Domain**: reglas y estado puro del juego.
-- **Application**: casos de uso que orquestan el Domain y devuelven snapshots/DTOs.
+- **Domain**: reglas, entidades y estado puro del juego.
+- **Application**: casos de uso/comandos que orquestan el Domain y devuelven snapshots/DTOs/eventos.
 - **Infrastructure**: persistencia, red, Android y adaptadores externos mediante puertos de Application.
 - **Presentation**: pantallas, HUD, themes, assets, animaciones y shaders.
 
@@ -40,16 +49,18 @@ La dirección de dependencias es `Presentation → Application → Domain` e `In
 
 `scripts/ui` se considera adaptador legado durante la migración y se retira de manera incremental, nunca mediante una reescritura que rompa el APK o saves.
 
-## VII. Interacción móvil
-Objetivo primario: Android horizontal 1280×720 de referencia, escalado responsivo y touch-first. Ninguna acción esencial puede depender de hover. La UI debe ser legible con el pulgar y conservar el tablero como foco.
+## VIII. Interacción móvil vertical
+El objetivo primario pasa a ser Android vertical, touch-first y responsivo. Los mockups aprobados de 941×1672 son la referencia visual de composición, no una resolución rígida. Ninguna acción esencial puede depender de hover. Los cinco carriles deben seguir siendo tocables, legibles y distinguibles en teléfonos reales.
 
-## VIII. Persistencia y compatibilidad
-La firma Android persistente y los saves existentes no deben romperse durante la migración. Los nuevos datos deben ser versionables y migrables. La persistencia concreta vive en Infrastructure y no en Domain o Presentation.
+El runtime legado horizontal puede permanecer temporalmente mientras se migra pantalla por pantalla a Presentation, pero no define nuevas decisiones visuales.
 
-## IX. Build verde como contrato
+## IX. Persistencia y compatibilidad
+La firma Android persistente y los saves existentes no deben romperse durante la migración. Los nuevos datos deben ser versionables y migrables. La persistencia concreta vive en Infrastructure y no en Domain o Presentation. Los identificadores de instancia deben ser persistibles y deterministas cuando formen parte de una campaña o partida sincronizada.
+
+## X. Build verde como contrato
 Todo cambio en main debe mantener proyecto importable y APK Android exportable. La migración desde el core legado se hace por unidades coherentes y probadas. Las reglas de dependencia de Clean Architecture forman parte del CI.
 
-## X. Spec antes de implementación grande
+## XI. Spec antes de implementación grande
 Todo cambio relevante se refleja en Constitución → Spec → Plan → Tasks → Implementación → Verificación.
 
 ## Criterio de convergencia

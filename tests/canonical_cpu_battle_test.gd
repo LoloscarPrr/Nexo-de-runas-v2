@@ -19,6 +19,7 @@ func _initialize() -> void:
 func _test_cpu_round() -> void:
 	var battle := Battle.new()
 	battle.setup_cpu_starter(Catalog.DOMAIN_FOREST)
+	check(battle.player_lanes.size() == 5 and battle.enemy_lanes.size() == 5, "CPU battle uses five lanes per side")
 	check(battle.cpu_hand.size() == 4, "CPU opens with four cards")
 	check(battle.cpu_energy_capacity == 1, "CPU starts with one Energy capacity")
 	battle.advance_round()
@@ -33,7 +34,7 @@ func _test_cpu_round() -> void:
 func _test_cpu_direct_damage() -> void:
 	var battle := Battle.new()
 	battle.setup_cpu_starter(Catalog.DOMAIN_FOREST)
-	battle.enemy_lanes = [battle.create_unit("zorro_acechante", true), null, null, null]
-	battle.player_lanes = [null, null, null, null]
+	battle.enemy_lanes = [battle.create_unit("zorro_acechante", true), null, null, null, null]
+	battle.player_lanes = [null, null, null, null, null]
 	battle.resolve_cpu_attacks()
 	check(battle.player_integrity == 18, "CPU open lane deals direct Nexus damage")

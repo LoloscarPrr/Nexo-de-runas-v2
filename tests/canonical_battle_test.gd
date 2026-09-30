@@ -31,7 +31,7 @@ func _test_catalog_and_decks() -> void:
 func _test_setup_and_energy() -> void:
 	var battle := Battle.new()
 	battle.setup_starter(Catalog.DOMAIN_FOREST)
-	check(battle.player_lanes.size() == 4 and battle.enemy_lanes.size() == 4, "Battle has exactly four lanes per side")
+	check(battle.player_lanes.size() == 5 and battle.enemy_lanes.size() == 5, "Battle has exactly five lanes per side")
 	check(battle.player_integrity == 20 and battle.enemy_integrity == 20, "Both Nexuses start at 20 Integrity")
 	check(battle.hand.size() == 4, "Opening hand contains four cards")
 	check(battle.energy_capacity == 1 and battle.energy_current == 1, "Energy starts at 1/1")
@@ -52,40 +52,40 @@ func _test_setup_and_energy() -> void:
 func _test_combat_rules() -> void:
 	var battle := Battle.new()
 	battle.setup_starter(Catalog.DOMAIN_FOREST)
-	battle.player_lanes = [battle.create_unit("lobo_joven", true), null, null, null]
-	battle.enemy_lanes = [battle.create_unit("perro_funebre", true), null, null, null]
+	battle.player_lanes = [battle.create_unit("lobo_joven", true), null, null, null, null]
+	battle.enemy_lanes = [battle.create_unit("perro_funebre", true), null, null, null, null]
 	battle.resolve_player_attacks()
 	check(battle.enemy_lanes[0] == null, "Simultaneous combat can kill defender")
 	check(battle.player_lanes[0] != null and int(battle.player_lanes[0].hp) == 1, "Defender retaliates simultaneously")
 
 	var direct := Battle.new()
 	direct.setup_starter(Catalog.DOMAIN_FOREST)
-	direct.player_lanes = [direct.create_unit("lobo_joven", true), null, null, null]
-	direct.enemy_lanes = [null, null, null, null]
+	direct.player_lanes = [direct.create_unit("lobo_joven", true), null, null, null, null]
+	direct.enemy_lanes = [null, null, null, null, null]
 	direct.resolve_player_attacks()
 	check(direct.enemy_integrity == 18, "Open lane deals direct Nexus damage")
 	check(direct.essence_current == 1, "Forest gains Instinct from direct damage")
 
 	var ambush := Battle.new()
 	ambush.setup_starter(Catalog.DOMAIN_FOREST)
-	ambush.player_lanes = [ambush.create_unit("zorro_acechante", true), null, null, null]
-	ambush.enemy_lanes = [ambush.create_unit("esqueleto_roto", true), null, null, null]
+	ambush.player_lanes = [ambush.create_unit("zorro_acechante", true), null, null, null, null]
+	ambush.enemy_lanes = [ambush.create_unit("esqueleto_roto", true), null, null, null, null]
 	ambush.resolve_player_attacks()
 	check(ambush.enemy_lanes[0] == null, "Ambush kills before retaliation")
 	check(ambush.player_lanes[0] != null and int(ambush.player_lanes[0].hp) == 2, "Ambusher takes no retaliation from destroyed target")
 
 	var shield := Battle.new()
 	shield.setup_starter(Catalog.DOMAIN_FOREST)
-	shield.player_lanes = [shield.create_unit("lobo_joven", true), null, null, null]
-	shield.enemy_lanes = [shield.create_unit("centinela_de_cobre", true), null, null, null]
+	shield.player_lanes = [shield.create_unit("lobo_joven", true), null, null, null, null]
+	shield.enemy_lanes = [shield.create_unit("centinela_de_cobre", true), null, null, null, null]
 	shield.resolve_player_attacks()
 	check(shield.enemy_lanes[0] != null and int(shield.enemy_lanes[0].hp) == 2, "Blindage reduces the next incoming damage")
 	check(int(shield.enemy_lanes[0].shield) == 0, "Blindage is consumed")
 
 	var guard := Battle.new()
 	guard.setup_starter(Catalog.DOMAIN_FOREST)
-	guard.player_lanes = [guard.create_unit("lobo_joven", true), null, null, null]
-	guard.enemy_lanes = [null, guard.create_unit("guardian_oseo", true), null, null]
+	guard.player_lanes = [guard.create_unit("lobo_joven", true), null, null, null, null]
+	guard.enemy_lanes = [null, guard.create_unit("guardian_oseo", true), null, null, null]
 	guard.resolve_player_attacks()
 	check(guard.enemy_integrity == 20, "Guard intercepts direct damage from an adjacent lane")
 	check(bool(guard.enemy_lanes[1].guard_used), "Guard can intercept only once per turn")

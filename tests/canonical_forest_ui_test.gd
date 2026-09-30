@@ -21,8 +21,8 @@ func _run_checks() -> void:
 	await process_frame
 	await process_frame
 	check(view != null, "Canonical Forest view instantiates")
-	check(view.player_lanes.size() == 4, "Forest view has exactly four player lanes")
-	check(view.enemy_lanes.size() == 4, "Forest view has exactly four enemy lanes")
+	check(view.player_lanes.size() == 5, "Forest adapter exposes exactly five player lanes")
+	check(view.enemy_lanes.size() == 5, "Forest adapter exposes exactly five enemy lanes")
 	check(view.hand_area != null, "Forest view exposes a physical hand area")
 	check(view.hand_area.get_child_count() == 4, "Opening hand renders four physical cards")
 	if view.hand_area.get_child_count() > 0:
@@ -33,6 +33,7 @@ func _run_checks() -> void:
 	check(view.battle != null and view.battle.player_integrity == 20 and view.battle.enemy_integrity == 20, "Battle state is connected to 20/20 Nexus Integrity")
 	check(view.battle.energy_capacity == 1, "Canonical Energy starts at capacity one")
 	check(view.battle.essence_name() == "Instinto", "Forest view is connected to Instinto")
+	check(view.battle.player_lanes.size() == 5, "Visual adapter and battle core agree on five lanes")
 
 	# Asset Pack v1.2 regression: las cartas jugadas deben tener presencia real.
 	# Se permite un pequeño bleed vertical controlado, pero nunca horizontal.

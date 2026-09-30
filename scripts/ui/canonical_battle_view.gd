@@ -152,11 +152,12 @@ func _build_board() -> void:
 
 	player_lanes.clear()
 	enemy_lanes.clear()
-	var gap := clampf(_board_rect.size.x * 0.018, 12.0, 19.0)
-	var lane_w := (_board_rect.size.x - gap * 5.0) / 4.0
+	var lane_count := BattleScript.LANE_COUNT
+	var gap := clampf(_board_rect.size.x * 0.012, 9.0, 14.0)
+	var lane_w := (_board_rect.size.x - gap * float(lane_count + 1)) / float(lane_count)
 	var lane_h := 150.0
 
-	for lane in range(4):
+	for lane in range(lane_count):
 		var x := _board_rect.position.x + gap + float(lane) * (lane_w + gap)
 		var lane_index := lane
 
@@ -172,7 +173,7 @@ func _build_board() -> void:
 		player_lanes.append(player_slot)
 		_place(player_slot, Rect2(x, 285, lane_w, lane_h + 7))
 
-	for lane in range(4):
+	for lane in range(lane_count):
 		var rx := _board_rect.position.x + gap + lane_w * 0.5 + float(lane) * (lane_w + gap)
 		var rune := _label("◆", 15, Color(0.54, 0.64, 0.25, 0.58), HORIZONTAL_ALIGNMENT_CENTER)
 		_place(rune, Rect2(rx - 20, 258, 40, 25))
@@ -247,7 +248,7 @@ func _refresh() -> void:
 	discard_button.text = "DESCARTE\n%d" % battle.discard_pile.size()
 	status_label.text = battle.last_message if not battle.last_message.is_empty() else "Elige una carta. Los espacios válidos responderán con luz."
 
-	for lane in range(4):
+	for lane in range(BattleScript.LANE_COUNT):
 		var player_target := _is_valid_target_lane(lane)
 		player_lanes[lane].set_unit(battle.player_lanes[lane], player_target)
 		enemy_lanes[lane].set_unit(battle.enemy_lanes[lane], false)

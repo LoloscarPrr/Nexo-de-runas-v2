@@ -6,6 +6,7 @@ extends RefCounted
 
 const EngineScript = preload("res://scripts/domain/canonical_cpu_battle.gd")
 const Catalog = preload("res://scripts/domain/canonical_card_catalog.gd")
+const CommandScript = preload("res://scripts/application/battle/battle_command.gd")
 
 const DOMAIN_FOREST := "forest"
 const DOMAIN_CRYPT := "crypt"
@@ -35,6 +36,7 @@ func snapshot() -> Dictionary:
 	if _engine == null:
 		return {}
 	return {
+		"lane_count": _engine.LANE_COUNT,
 		"player_domain": _engine.player_domain,
 		"enemy_domain": _engine.enemy_domain,
 		"player_integrity": _engine.player_integrity,
@@ -57,6 +59,19 @@ func snapshot() -> Dictionary:
 		"cpu_hand_count": _engine.cpu_hand.size(),
 		"cpu_draw_count": _engine.cpu_draw_pile.size()
 	}
+
+func execute(command: Object) -> Dictionary:
+	if command == null:
+		return _result(false, "Comando inválido.")
+	match str(command.type):
+		CommandScript.PLAY_CARD:
+			return _execute_play_card(command)
+		CommandScript.END_ROUND:
+			return _execute_end_round()
+		CommandScript.USE_IMPULSE:
+			return _execute_use_impulse()
+		_:
+			return _result(false, "Comando de batalla desconocido.")
 
 func card_definition(card_id: String) -> Dictionary:
 	return Catalog.find_by_id(card_id)
@@ -92,8 +107,21 @@ func can_target_player_lane(hand_index: int, lane: int) -> bool:
 	return false
 
 func play_hand_card(hand_index: int, lane: int = -1) -> Dictionary:
+	return execute(CommandScript.play_card(hand_index, lane))
+
+func end_round() -> Dictionary:
+	return execute(CommandScript.end_round())
+
+func use_impulse() -> Dictionary:
+	return execute(CommandScript.use_impulse())
+
+func _execute_play_card(command: Object) -> Dictionary:
 	if _engine == null:
 		return _result(false, "No hay una batalla activa.")
+	var hand_index := int(command.hand_index)
+	var lane := int(command.lane)
+	var target_lane := int(command.target_lane)
+	var replace_index := int(command.replace_index)
 	var card := hand_card_definition(hand_index)
 	if card.is_empty():
 		return _result(false, "La carta seleccionada no existe.")
@@ -106,14 +134,15 @@ func play_hand_card(hand_index: int, lane: int = -1) -> Dictionary:
 		if ["llamado_de_la_manada", "vision_prohibida", "exhumacion"].has(card_id):
 			ok = _engine.play_card(hand_index)
 		else:
-			ok = _engine.play_card(hand_index, -1, lane)
+			var resolved_target := target_lane if target_lane >= 0 else lane
+			ok = _engine.play_card(hand_index, -1, resolved_target)
 	elif card_type == TYPE_RELIC or card_type == TYPE_SEAL:
-		ok = _engine.play_card(hand_index)
+		ok = _engine.play_card(hand_index, -1, -1, replace_index)
 	if ok:
 		_engine.last_message = "%s responde al Nexo." % str(card.get("name", "La carta"))
 	return _result(ok, _engine.last_message)
 
-func end_round() -> Dictionary:
+func _execute_end_round() -> Dictionary:
 	if _engine == null:
 		return _result(false, "No hay una batalla activa.")
 	if _engine.result != "ongoing":
@@ -131,6 +160,14 @@ func end_round() -> Dictionary:
 		else:
 			_engine.last_message = "Turno %d · la Energía Rúnica vuelve a fluir." % _engine.turn
 	return _result(true, _engine.last_message)
+
+func _execute_use_impulse() -> Dictionary:
+	if _engine == null:
+		return _result(false, "No hay una batalla activa.")
+	var ok := _engine.use_impulse()
+	if ok:
+		_engine.last_message = "La Runa de Impulso libera Energía temporal."
+	return _result(ok, _engine.last_message)
 
 func set_message(message: String) -> void:
 	if _engine != null:
@@ -154,5 +191,6 @@ func _result(ok: bool, message: String) -> Dictionary:
 	return {
 		"ok": ok,
 		"message": message,
-		"snapshot": snapshot()
+		"snapshot": snapshot(),
+		"events": _engine.drain_events() if _engine != null else []
 	}
