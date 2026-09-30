@@ -4,15 +4,19 @@
 - [x] A001 Constitución actualizada al juego original.
 - [x] A002 Spec y plan actualizados al Documento Maestro Canónico v1.0.
 - [x] A003 AGENTS actualizado para cuatro dominios y nuevo reglamento.
+- [x] A004 Canon actualizado a Android vertical y exactamente 5 carriles por lado.
 
 ## Fase B — Core de datos
 - [x] B101 Crear catálogo canónico de 48 cartas.
 - [x] B102 Exponer 12 cartas por dominio y 4 mazos iniciales de 20.
 - [x] B103 Validar IDs, tipos, costes, dominios y límites de copias.
 - [x] B104 Mantener catálogo legado aislado durante migración.
+- [ ] B105 Introducir `CardDefinition` como modelo canónico tipado sobre el catálogo actual.
+- [ ] B106 Introducir `CardInstance` con identidad propia y estado mutable independiente.
+- [ ] B107 Migrar campaña para que mejoras/sellos persistentes puedan dirigirse a copias concretas.
 
 ## Fase C — BattleState canónico
-- [x] C201 4 carriles exactos por lado.
+- [ ] C201 Migrar de 4 a 5 carriles exactos por lado.
 - [x] C202 Integridad 20/20 y daño directo.
 - [x] C203 Mano inicial 4, máximo 8 y Descarte.
 - [x] C204 Energía 1→6, recarga, límite extraordinario 12.
@@ -24,6 +28,9 @@
 - [x] C210 Recursos Instinto/Restos/Conocimiento/Calor.
 - [x] C211 Sobrecarga de Calor.
 - [x] C212 Pruebas headless del core.
+- [ ] C213 Crear `BoardState` y `LaneState`; `BoardState` pasa a ser fuente de verdad para `LANE_COUNT=5`.
+- [ ] C214 Crear `CostDefinition`/`CostResolver` y conectar Energía/Esencia actuales.
+- [ ] C215 Crear `GameEvent`/`EventQueue` y emitir eventos lógicos básicos.
 
 ## Fase CA — Clean Architecture
 - [x] CA001 Formalizar reglas de dependencia Domain/Application/Infrastructure/Presentation.
@@ -37,31 +44,39 @@
 - [ ] CA009 Migrar Main Menu a `scripts/presentation`.
 - [ ] CA010 Migrar Campaña a Application + Presentation + Repository Port.
 - [ ] CA011 Retirar `scripts/ui` cuando no tenga consumidores.
+- [ ] CA012 Crear `BattleCommand` y hacer que Application pueda ejecutar comandos serializables.
+- [ ] CA013 Incluir eventos de Domain en resultados de Application para Presentation/Local/Online.
 
 ## Fase D — Efectos y dominios
+- [ ] D300 Introducir `AbilityDefinition`, `TargetSpec`, `ConditionDefinition`, `EffectDefinition` y resolvers sin reescritura masiva.
 - [ ] D301 Bosque: completar Manada e Instinto.
 - [ ] D302 Cripta: Restos, Último Aliento y Exhumar.
 - [ ] D303 Torre: Revelar, Eco y Canalizar.
 - [ ] D304 Fundición: Constructos, Ensamblar, Sobrecalentar.
 - [ ] D305 Guardianes iniciales.
+- [ ] D306 Extraer `match card_id` de `CanonicalBattleState` de forma incremental hacia servicios de Domain.
 
 ## Fase E — UI canónica
-- [x] E401 Adaptar Battle UI a la plantilla 4×2 canónica como prototipo legado.
+- [x] E401 Adaptar Battle UI a una plantilla canónica como prototipo legado.
 - [x] E402 Skin Bosque prototipo v4.1.
 - [ ] E403 Skin Cripta.
 - [ ] E404 Skin Torre.
 - [ ] E405 Skin Fundición.
-- [x] E406 Finalizar turno abajo derecha.
+- [x] E406 Finalizar turno en zona inferior de acción.
 - [x] E407 HUD único: Integridad, Energía, Esencia, Sellos, Reliquias, Mazo, Descarte.
 - [ ] E408 Producir Bosque Asset Pack canónico bajo `assets/domains/forest/`.
 - [ ] E409 Reemplazar dibujo procedural crítico por assets finales en Presentation.
+- [ ] E410 Ajustar adaptador legado para visualizar temporalmente los 5 carriles.
+- [ ] E411 Crear renderer vertical de batalla en Presentation basado en mockup aprobado.
+- [ ] E412 Resolver mano de 5–8 cartas con desplazamiento/solapamiento táctil legible.
 
 ## Fase F — Flujo principal
 - [ ] F501 Splash cuatro dominios.
 - [x] F502 Menú principal canónico prototipo.
 - [ ] F503 Menú Jugar.
 - [ ] F504 Elegir dominio.
-- [x] F505 Vs CPU funcional como vertical slice.
+- [x] F505 Vs CPU funcional como vertical slice legado.
+- [ ] F506 Vs CPU vertical de cinco carriles conectado únicamente a Application.
 
 ## Fase G — Metajuego
 - [ ] G601 Constructor de Mazos.
@@ -80,16 +95,18 @@
 - [ ] H707 Fogata/Mejora.
 - [ ] H708 Tesoro/Élite/Jefe.
 - [ ] H709 Guardado/continuar mediante Repository Port.
+- [ ] H710 Migrar modificaciones de campaña de `card_id` global a identidad de copia cuando corresponda.
 
 ## Fase I — Multiplayer
 - [ ] I801 Local crear/unirse.
 - [ ] I802 Lobby local.
 - [ ] I803 Online rápida/clasificatoria/privada/amigos/historial.
 - [ ] I804 Matchmaking.
-- [ ] I805 Sincronización/validación mediante comandos/snapshots de Application.
+- [ ] I805 Sincronización/validación mediante comandos/snapshots/eventos de Application.
 
 ## Fase J — Migración y Android
 - [x] J901 Mantener firma Android y saves existentes durante el refactor actual.
 - [ ] J902 Migrar runtime al Application layer canónico.
 - [ ] J903 Retirar recursos/reglas legado ya no usados.
 - [ ] J904 APK verde y validación visual en teléfono después de cada migración de pantalla.
+- [ ] J905 Cambiar orientación runtime final a vertical sólo cuando Presentation vertical tenga equivalencia funcional.
