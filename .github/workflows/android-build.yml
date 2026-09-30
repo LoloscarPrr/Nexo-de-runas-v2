@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feat/act1-table
+      - 'feature/**'
   pull_request:
     branches:
       - main
