@@ -46,15 +46,20 @@
 - [ ] CA011 Retirar `scripts/ui` cuando no tenga consumidores.
 - [x] CA012 Crear `BattleCommand` y hacer que Application pueda ejecutar comandos serializables.
 - [x] CA013 Incluir eventos de Domain en resultados de Application para Presentation/Local/Online.
+- [x] CA014 Hacer que Application consulte `TargetSpec`/resolvers para objetivos de Rito, sin listas de IDs.
 
 ## Fase D — Efectos y dominios
-- [ ] D300 Introducir `AbilityDefinition`, `TargetSpec`, `ConditionDefinition`, `EffectDefinition` y resolvers sin reescritura masiva.
+- [x] D300 Introducir `AbilityDefinition`, `TargetSpec`, `ConditionDefinition`, `EffectDefinition` y resolvers.
 - [ ] D301 Bosque: completar Manada e Instinto.
-- [ ] D302 Cripta: Restos, Último Aliento y Exhumar.
-- [ ] D303 Torre: Revelar, Eco y Canalizar.
-- [ ] D304 Fundición: Constructos, Ensamblar, Sobrecalentar.
+- [ ] D302 Cripta: completar Restos, Último Aliento y Exhumar.
+- [ ] D303 Torre: completar Revelar, Eco y Canalizar.
+- [ ] D304 Fundición: completar Constructos, Ensamblar y Sobrecalentar.
 - [ ] D305 Guardianes iniciales.
-- [ ] D306 Extraer `match card_id` de `CanonicalBattleState` de forma incremental hacia servicios de Domain.
+- [x] D306 Extraer `match card_id` de Ritos, invocaciones y Último Aliento desde `CanonicalBattleState` hacia servicios declarativos.
+- [x] D307 Migrar los Ritos y efectos ya implementados al catálogo declarativo de habilidades.
+- [ ] D308 Migrar keywords estructurales de combate cuando corresponda: Emboscada, Guardia, Blindaje, Carga, etc.
+- [ ] D309 Dar paridad de habilidades a CPU con recursos/controlador separados.
+- [ ] D310 Introducir `AbilityInstance` para cargas/usos/cooldowns sólo cuando una mecánica real lo necesite.
 
 ## Fase E — UI canónica
 - [x] E401 Adaptar Battle UI a una plantilla canónica como prototipo legado.
@@ -69,6 +74,7 @@
 - [x] E410 Ajustar adaptador legado para visualizar temporalmente los 5 carriles.
 - [ ] E411 Crear renderer vertical de batalla en Presentation basado en mockup aprobado.
 - [ ] E412 Resolver mano de 5–8 cartas con desplazamiento/solapamiento táctil legible.
+- [ ] E413 Consumir `ABILITY_TRIGGERED`/`EFFECT_APPLIED` para animaciones sin lógica de reglas en Presentation.
 
 ## Fase F — Flujo principal
 - [ ] F501 Splash cuatro dominios.
