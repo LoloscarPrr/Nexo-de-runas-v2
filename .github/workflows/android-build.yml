@@ -69,6 +69,7 @@ jobs:
           if grep -E 'SCRIPT ERROR|Parse Error|Compile Error' "$RUNNER_TEMP/godot-import.log"; then exit 1; fi
           "$GODOT_CHECK" --headless --path . --script tests/clean_architecture_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/domain_entity_model_test.gd
+          "$GODOT_CHECK" --headless --path . --script tests/ability_effect_engine_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/application_battle_session_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/infrastructure_save_repository_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/battle_test.gd
