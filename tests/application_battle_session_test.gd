@@ -57,5 +57,24 @@ func _initialize() -> void:
 	check(session.deck_summary().begins_with("Mazo:"), "Application layer provides deck summary")
 	check(not session.discard_summary().is_empty(), "Application layer provides discard summary")
 
+	_test_declarative_targeting()
 	print("Application battle session checks: %d failures" % failures)
 	quit(1 if failures else 0)
+
+func _test_declarative_targeting() -> void:
+	var session := SessionScript.new()
+	var deck: Array[String] = ["proyectil_runico", "familiar_arcano", "buho_oculum", "aprendiz_runico"]
+	session.start_vs_cpu(SessionScript.DOMAIN_TOWER, deck)
+	session._engine.energy_current = 12
+	session._engine.enemy_lanes[4] = session._engine.create_unit("esqueleto_roto", true)
+	check(session.can_target_enemy_lane(0, 4), "Application learns enemy target from TargetSpec")
+	check(not session.can_target_player_lane(0, 4), "Enemy-targeted rite is not offered on player lanes")
+	var result := session.play_hand_card(0, 4)
+	check(bool(result.get("ok", false)), "Data-driven enemy-targeted rite executes through Application")
+	var state: Dictionary = result.get("snapshot", {})
+	check(Array(state.enemy_lanes)[4] == null, "Application command resolves generic damage on lane five")
+	var event_types: Array[String] = []
+	for event in Array(result.get("events", [])):
+		event_types.append(str(Dictionary(event).get("type", "")))
+	check(event_types.has("ABILITY_TRIGGERED"), "Application exposes ability-triggered event")
+	check(event_types.has("EFFECT_APPLIED"), "Application exposes effect-applied event")
