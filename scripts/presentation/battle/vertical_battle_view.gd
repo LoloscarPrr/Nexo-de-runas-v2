@@ -19,7 +19,6 @@ const FOREST_DARK := Color("172a17")
 const ENEMY := Color("5a2721")
 const TARGET := Color("6fa83e")
 const EMPTY := Color("15160f")
-const DANGER := Color("8d3428")
 
 var session
 var _snapshot: Dictionary = {}
@@ -49,7 +48,8 @@ func start_battle(domain: String = "forest") -> void:
 	if session == null:
 		session = SessionScript.new()
 	selected_hand_index = -1
-	_snapshot = session.start_vs_cpu(domain)
+	var opening: Dictionary = session.start_vs_cpu(domain)
+	_snapshot = opening.duplicate(true)
 	_render()
 	visible = true
 
@@ -288,8 +288,8 @@ func _refresh_lanes() -> void:
 	for lane in range(5):
 		var enemy_unit = enemy_units[lane] if lane < enemy_units.size() else null
 		var player_unit = player_units[lane] if lane < player_units.size() else null
-		var enemy_valid := selected_hand_index >= 0 and session.can_target_enemy_lane(selected_hand_index, lane)
-		var player_valid := selected_hand_index >= 0 and session.can_target_player_lane(selected_hand_index, lane)
+		var enemy_valid: bool = selected_hand_index >= 0 and bool(session.can_target_enemy_lane(selected_hand_index, lane))
+		var player_valid: bool = selected_hand_index >= 0 and bool(session.can_target_player_lane(selected_hand_index, lane))
 		_set_lane_state(enemy_lane_buttons[lane], lane, "enemy", enemy_unit, enemy_valid)
 		_set_lane_state(player_lane_buttons[lane], lane, "player", player_unit, player_valid)
 
@@ -298,7 +298,7 @@ func _rebuild_hand() -> void:
 		child.queue_free()
 	var hand: Array = _snapshot.get("hand", [])
 	for index in range(hand.size()):
-		var card := session.hand_card_definition(index)
+		var card: Dictionary = session.hand_card_definition(index)
 		var button := Button.new()
 		button.name = "HandCard%d" % index
 		button.custom_minimum_size = Vector2(178, 252)
@@ -322,14 +322,14 @@ func _on_hand_card_pressed(index: int) -> void:
 		_render()
 		return
 	selected_hand_index = index
-	var card := session.hand_card_definition(index)
+	var card: Dictionary = session.hand_card_definition(index)
 	status_label.text = "%s seleccionada." % str(card.get("name", "Carta"))
 	var has_legal_target := false
 	for lane in range(int(_snapshot.get("lane_count", 5))):
-		has_legal_target = has_legal_target or session.can_target_player_lane(index, lane) or session.can_target_enemy_lane(index, lane)
+		has_legal_target = has_legal_target or bool(session.can_target_player_lane(index, lane)) or bool(session.can_target_enemy_lane(index, lane))
 	var card_type := str(card.get("type", ""))
 	if (card_type == "rite" or card_type == "seal" or card_type == "relic") and not has_legal_target:
-		var result := session.play_hand_card(index, -1)
+		var result: Dictionary = session.play_hand_card(index, -1)
 		if bool(result.get("ok", false)):
 			selected_hand_index = -1
 		_apply_result(result)
@@ -338,18 +338,18 @@ func _on_hand_card_pressed(index: int) -> void:
 
 func _on_lane_pressed(side: String, lane: int) -> void:
 	if selected_hand_index < 0:
-		var info := session.inspect_unit(side, lane)
+		var info: Dictionary = session.inspect_unit(side, lane)
 		if info.is_empty():
 			status_label.text = "Carril %d vacío." % (lane + 1)
 		else:
 			var unit: Dictionary = info.get("unit", {})
 			status_label.text = "%s · %d ATQ · %d SAL" % [str(unit.get("name", "Unidad")), int(unit.get("attack", 0)), int(unit.get("hp", 0))]
 		return
-	var valid := session.can_target_player_lane(selected_hand_index, lane) if side == "player" else session.can_target_enemy_lane(selected_hand_index, lane)
+	var valid: bool = bool(session.can_target_player_lane(selected_hand_index, lane)) if side == "player" else bool(session.can_target_enemy_lane(selected_hand_index, lane))
 	if not valid:
 		status_label.text = "Ese carril no es un objetivo legal."
 		return
-	var result := session.play_hand_card(selected_hand_index, lane)
+	var result: Dictionary = session.play_hand_card(selected_hand_index, lane)
 	if bool(result.get("ok", false)):
 		selected_hand_index = -1
 	_apply_result(result)
@@ -358,16 +358,19 @@ func _on_end_turn_pressed() -> void:
 	if session == null:
 		return
 	selected_hand_index = -1
-	_apply_result(session.end_round())
+	var result: Dictionary = session.end_round()
+	_apply_result(result)
 
 func _on_impulse_pressed() -> void:
 	if session == null:
 		return
-	_apply_result(session.use_impulse())
+	var result: Dictionary = session.use_impulse()
+	_apply_result(result)
 
 func _apply_result(result: Dictionary) -> void:
 	if result.has("snapshot"):
-		_snapshot = Dictionary(result.get("snapshot", {})).duplicate(true)
+		var next_snapshot: Dictionary = result.get("snapshot", {})
+		_snapshot = next_snapshot.duplicate(true)
 	status_label.text = str(result.get("message", ""))
 	_consume_events(Array(result.get("events", [])))
 	_render()
@@ -378,7 +381,8 @@ func _consume_events(events: Array) -> void:
 		return
 	var readable: Array[String] = []
 	for event in events.slice(maxi(0, events.size() - 3), events.size()):
-		readable.append(_event_name(str((event as Dictionary).get("type", ""))))
+		var event_dict: Dictionary = event
+		readable.append(_event_name(str(event_dict.get("type", ""))))
 	event_label.text = " · ".join(readable)
 	var last: Dictionary = events[events.size() - 1]
 	var payload: Dictionary = last.get("payload", {})
@@ -388,7 +392,7 @@ func _consume_events(events: Array) -> void:
 		_pulse_lane(side, lane)
 
 func _pulse_lane(side: String, lane: int) -> void:
-	var buttons := player_lane_buttons if side == "player" else enemy_lane_buttons
+	var buttons: Array[Button] = player_lane_buttons if side == "player" else enemy_lane_buttons
 	if lane < 0 or lane >= buttons.size():
 		return
 	var button: Button = buttons[lane]
@@ -458,7 +462,7 @@ func _hud_cell(text_value: String, accent: Color) -> Label:
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	label.custom_minimum_size = Vector2(0, 112)
-	label.add_theme_stylebox_override("normal", _style(Color("17140e"), Color(accent, 0.55), 1, 8))
+	label.add_theme_stylebox_override("normal", _style(Color("17140e"), Color(accent.r, accent.g, accent.b, 0.55), 1, 8))
 	return label
 
 func _badge(text_value: String, color: Color, font_size: int) -> Label:
