@@ -7,6 +7,9 @@ const CostDefinitionScript = preload("res://scripts/domain/value_objects/cost_de
 const CostResolverScript = preload("res://scripts/domain/services/cost_resolver.gd")
 const EventQueueScript = preload("res://scripts/domain/events/event_queue.gd")
 const GameEventScript = preload("res://scripts/domain/events/game_event.gd")
+const AbilityDefinitionScript = preload("res://scripts/domain/definitions/ability_definition.gd")
+const AbilityCatalogScript = preload("res://scripts/domain/definitions/ability_catalog.gd")
+const AbilityResolverScript = preload("res://scripts/domain/services/ability_resolver.gd")
 
 const LANE_COUNT := BoardStateScript.DEFAULT_LANE_COUNT
 const STARTING_INTEGRITY := 20
@@ -70,8 +73,6 @@ func setup(domain: String, deck_ids: Array[String], second_player: bool = false)
 			draw_pile.append(card_id)
 	for i in range(STARTING_HAND):
 		draw_card()
-	# La mano inicial forma parte del setup; los consumidores reciben eventos sólo
-	# desde la primera acción jugable para mantener resultados deterministas y limpios.
 	event_queue.clear()
 
 func setup_starter(domain: String, second_player: bool = false) -> void:
@@ -212,6 +213,12 @@ func place_enemy_unit(card_id: String, lane: int, ready: bool = true) -> bool:
 	enemy_lanes[lane] = unit
 	return true
 
+func ability_target_spec(card_id: String, trigger: String = AbilityDefinitionScript.ON_PLAY) -> Dictionary:
+	var card := Catalog.find_by_id(card_id)
+	if card.is_empty():
+		return {}
+	return AbilityCatalogScript.target_spec_for(str(card.get("effect_id", "")), trigger)
+
 func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_index: int = -1) -> bool:
 	if result != "ongoing" or hand_index < 0 or hand_index >= hand.size():
 		return false
@@ -277,89 +284,26 @@ func _play_persistent(card_id: String, slots: Array[String], limit: int, replace
 	return true
 
 func _play_rite(card: Dictionary, target_lane: int) -> bool:
-	var card_id := str(card.get("id", ""))
-	match card_id:
-		"llamado_de_la_manada":
-			var free_lane := _first_free_lane(player_lanes)
-			if free_lane < 0:
-				return false
-			player_lanes[free_lane] = _make_token("cria_del_bosque", "CRÍA DEL BOSQUE", 1, 1, ["BESTIA"])
-			if player_domain == Catalog.DOMAIN_FOREST:
-				gain_essence(1)
-			return true
-		"crecimiento_violento":
-			return _temporary_buff(target_lane, 2, 2)
-		"ofrenda_de_ceniza":
-			if not _valid_occupied_lane(player_lanes, target_lane):
-				return false
-			_kill_unit(true, target_lane)
-			draw_card()
-			draw_card()
-			return true
-		"exhumacion":
-			for i in range(discard_pile.size() - 1, -1, -1):
-				var candidate := Catalog.find_by_id(discard_pile[i])
-				if str(candidate.get("type", "")) == Catalog.TYPE_CREATURE and int(candidate.get("cost", 99)) <= 3:
-					hand.append(discard_pile[i])
-					discard_pile.remove_at(i)
-					return true
-			return false
-		"proyectil_runico":
-			if not _valid_occupied_lane(enemy_lanes, target_lane):
-				return false
-			_deal_damage_to_unit(false, target_lane, 1)
-			return true
-		"vision_prohibida":
-			last_revealed.clear()
-			var count := mini(3, draw_pile.size())
-			for i in range(count):
-				last_revealed.append(draw_pile[i])
-			if count > 0 and hand.size() < MAX_HAND:
-				hand.append(draw_pile.pop_front())
-			return true
-		"chispa_mecanica":
-			if not _valid_occupied_lane(enemy_lanes, target_lane):
-				return false
-			_deal_damage_to_unit(false, target_lane, 1)
-			gain_essence(1)
-			return true
-		"sobrecarga":
-			if not _valid_occupied_lane(player_lanes, target_lane):
-				return false
-			var unit: Dictionary = player_lanes[target_lane]
-			if not Array(unit.get("tags", [])).has("CONSTRUCTO"):
-				return false
-			unit["attack"] = int(unit.get("attack", 0)) + 3
-			unit["temp_attack"] = int(unit.get("temp_attack", 0)) + 3
-			gain_essence(2)
-			return true
-	return false
-
-func _temporary_buff(lane: int, attack_bonus: int, health_bonus: int) -> bool:
-	if not _valid_occupied_lane(player_lanes, lane):
+	var effect_id := str(card.get("effect_id", ""))
+	if effect_id.is_empty():
 		return false
-	var unit: Dictionary = player_lanes[lane]
-	unit["attack"] = int(unit.get("attack", 0)) + attack_bonus
-	unit["hp"] = int(unit.get("hp", 0)) + health_bonus
-	unit["max_hp"] = int(unit.get("max_hp", 0)) + health_bonus
-	unit["temp_attack"] = int(unit.get("temp_attack", 0)) + attack_bonus
-	unit["temp_health"] = int(unit.get("temp_health", 0)) + health_bonus
-	return true
+	return AbilityResolverScript.resolve(effect_id, AbilityDefinitionScript.ON_PLAY, {
+		"source_card_id": str(card.get("id", "")),
+		"source_side": "player",
+		"source_lane": -1,
+		"target_lane": target_lane
+	}, self)
 
 func _on_creature_entered(card: Dictionary, lane: int) -> void:
-	var card_id := str(card.get("id", ""))
-	match card_id:
-		"ardilla_vigilante":
-			if _has_other_tag(lane, "BESTIA"):
-				gain_essence(1)
-		"sepulturero":
-			gain_essence(1)
-		"familiar_arcano":
-			last_revealed.clear()
-			if not draw_pile.is_empty():
-				last_revealed.append(draw_pile[0])
-		"automata_obrero":
-			gain_essence(1)
+	var effect_id := str(card.get("effect_id", ""))
+	if effect_id.is_empty():
+		return
+	AbilityResolverScript.resolve(effect_id, AbilityDefinitionScript.ON_SUMMON, {
+		"source_card_id": str(card.get("id", "")),
+		"source_side": "player",
+		"source_lane": lane,
+		"target_lane": lane
+	}, self)
 
 func resolve_player_attacks() -> void:
 	if result != "ongoing":
@@ -453,14 +397,18 @@ func _trigger_last_breath(unit: Dictionary, player_side: bool, lane: int) -> voi
 	if not player_side:
 		return
 	var card_id := str(unit.get("id", ""))
-	match card_id:
-		"esqueleto_roto":
-			gain_essence(1)
-		"perro_funebre":
-			if _valid_occupied_lane(enemy_lanes, lane):
-				_deal_damage_to_unit(false, lane, 1)
-		"lamentadora":
-			draw_card()
+	var card := Catalog.find_by_id(card_id)
+	if card.is_empty():
+		return
+	var effect_id := str(card.get("effect_id", ""))
+	if effect_id.is_empty():
+		return
+	AbilityResolverScript.resolve(effect_id, AbilityDefinitionScript.ON_DEATH, {
+		"source_card_id": card_id,
+		"source_side": "player",
+		"source_lane": lane,
+		"target_lane": lane
+	}, self)
 
 func _expire_temporary_bonuses() -> void:
 	for lane in range(LANE_COUNT):
@@ -500,14 +448,6 @@ func _first_free_lane(lanes: Array) -> int:
 
 func _valid_occupied_lane(lanes: Array, lane: int) -> bool:
 	return lane >= 0 and lane < LANE_COUNT and lanes[lane] != null
-
-func _has_other_tag(excluded_lane: int, tag: String) -> bool:
-	for lane in range(LANE_COUNT):
-		if lane == excluded_lane or player_lanes[lane] == null:
-			continue
-		if Array(player_lanes[lane].get("tags", [])).has(tag):
-			return true
-	return false
 
 func _make_token(id: String, name: String, attack: int, health: int, tags: Array) -> Dictionary:
 	return {

@@ -57,11 +57,37 @@ Copia concreta de una `CardDefinition`. Tiene `instance_id` propio, propietario,
 ### CostDefinition / CostResolver
 Los costes son datos compuestos y el motor decide si son pagables. La primera integración canónica cubre Energía y Esencia, dejando el modelo preparado para componentes adicionales sin reescribir `play_card`.
 
+### AbilityDefinition
+Describe una habilidad sin codificar una carta concreta: `id`, `trigger`, `target`, `conditions` y `effects`.
+
+### TargetSpec
+Declara qué objetivo usa una habilidad: sin objetivo, carril aliado, carril enemigo, carril opuesto o primer carril aliado libre. Presentation no inventa qué cartas requieren objetivo; Application consulta esta definición.
+
+### ConditionDefinition
+Declara requisitos previos reutilizables. La primera versión cubre condición siempre válida, existencia del objetivo, tag del objetivo y presencia de otro aliado con un tag.
+
+### EffectDefinition
+Describe operaciones atómicas reutilizables. La primera versión cubre ganar recurso, daño, robar, modificación temporal de estadísticas, invocar token, revelar cartas, destruir unidad y recuperar criatura del Descarte.
+
 ### BattleCommand
 Application expresa acciones del jugador/CPU/red mediante comandos serializables (`play_card`, `end_round`, etc.). Los métodos de conveniencia existentes pueden delegar en comandos durante la migración.
 
 ### GameEvent
-Domain produce eventos lógicos (`CARD_PLAYED`, `RESOURCE_SPENT`, `UNIT_DIED`, `TURN_STARTED`, etc.). Presentation los usa para animar; los eventos no contienen nodos, sprites ni referencias visuales.
+Domain produce eventos lógicos (`CARD_PLAYED`, `RESOURCE_SPENT`, `ABILITY_TRIGGERED`, `EFFECT_APPLIED`, `UNIT_DIED`, `TURN_STARTED`, etc.). Presentation los usa para animar; los eventos no contienen nodos, sprites ni referencias visuales.
+
+## Motor declarativo de habilidades
+El flujo canónico es:
+
+`Trigger → AbilityResolver → TargetResolver → ConditionResolver → EffectResolver → BattleState → GameEvent`
+
+Las primeras familias migradas al motor declarativo son:
+- Ritos canónicos actualmente implementados.
+- Efectos de criatura al ser invocada que ya tenían comportamiento en `CanonicalBattleState`.
+- Último Aliento del jugador actualmente implementado.
+
+`CanonicalBattleState` no debe volver a incorporar `match card_id` para estas familias. Cartas nuevas con comportamientos equivalentes se describen mediante datos del catálogo de habilidades.
+
+Las keywords estructurales de combate (por ejemplo Emboscada, Guardia y Blindaje) continúan temporalmente en la resolución de combate y se migrarán de forma incremental cuando exista un consumidor real para su generalización.
 
 ## Palabras clave universales iniciales
 Carga, Emboscada, Blindaje X, Guardia, Último Aliento, Exhumar y Canalizar X.
@@ -73,13 +99,6 @@ Carga, Emboscada, Blindaje X, Guardia, Último Aliento, Exhumar y Canalizar X.
 Elegir dominio → mazo/Guardián/dificultad → mapa → nodos. Nodos canónicos: Combate, Élite, Evento, Fogata/Mejora, Mercader, Altar de Sellos, Tesoro y Jefe.
 
 Las mejoras de campaña deben dirigirse a instancias concretas o a modificaciones persistibles explícitas; no se deben aplicar accidentalmente a todas las copias que compartan `card_id`.
-
-## Arquitectura de efectos — objetivo incremental
-La migración no debe reescribir todas las habilidades en un único cambio. La secuencia es:
-1. formalizar entidades, costes, comandos y eventos;
-2. introducir `AbilityDefinition`, `TargetSpec`, `ConditionDefinition` y `EffectDefinition`;
-3. extraer los `match card_id` actuales hacia resolvers/registries de Domain;
-4. hacer que cartas nuevas se definan por datos en vez de lógica específica en `BattleState`.
 
 ## Requisitos técnicos
 - Godot 4.3 + GDScript.
@@ -95,4 +114,4 @@ La migración no debe reescribir todas las habilidades en un único cambio. La s
 El motor antiguo permanece temporalmente para no romper el APK. Se introduce y refina un core canónico paralelo con catálogo, entidades y pruebas propias. La UI vertical nueva se conecta al nuevo core mediante Application sólo cuando esa capa esté verde.
 
 ## Primera vertical slice del nuevo rumbo
-Core canónico + entidades + 48 cartas → batalla Vs CPU funcional de un dominio con 5 carriles → renderer vertical basado en mockup → misma batalla con skin de los cuatro dominios → constructor/colección → campaña básica → migración de UI principal.
+Core canónico + entidades + motor declarativo de habilidades + 48 cartas → batalla Vs CPU funcional de un dominio con 5 carriles → renderer vertical basado en mockup → misma batalla con skin de los cuatro dominios → constructor/colección → campaña básica → migración de UI principal.

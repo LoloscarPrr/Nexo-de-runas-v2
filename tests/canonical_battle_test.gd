@@ -16,6 +16,7 @@ func _initialize() -> void:
 	_test_combat_rules()
 	_test_fatigue_and_slots()
 	_test_domain_resources()
+	_test_ability_system()
 	print("Canonical battle checks: %d failures" % failures)
 	quit(1 if failures else 0)
 
@@ -123,3 +124,50 @@ func _test_domain_resources() -> void:
 	forge.essence_current = 6
 	forge.end_player_turn()
 	check(forge.player_integrity == 19 and forge.essence_current == 3, "Forge overload damages Nexus and drops Heat to three")
+
+func _test_ability_system() -> void:
+	var forest := Battle.new()
+	forest.setup_starter(Catalog.DOMAIN_FOREST)
+	forest.energy_current = 12
+	forest.player_lanes[0] = forest.create_unit("lobo_joven", true)
+	forest.hand = ["ardilla_vigilante"]
+	check(forest.play_card(0, 4), "Summon ability resolves through generic system")
+	check(forest.essence_current == 1, "Conditional summon ability sees another Beast and grants Instinct")
+
+	forest.energy_current = 12
+	forest.hand = ["crecimiento_violento"]
+	check(forest.play_card(0, -1, 0), "Targeted rite resolves declaratively")
+	check(int(forest.player_lanes[0].attack) == 4 and int(forest.player_lanes[0].hp) == 5, "EffectResolver applies temporary attack and health")
+	var forest_events := forest.drain_events()
+	check(_has_event(forest_events, "ABILITY_TRIGGERED"), "Ability resolution emits ABILITY_TRIGGERED")
+	check(_has_event(forest_events, "EFFECT_APPLIED"), "Ability effects emit EFFECT_APPLIED")
+
+	var tower := Battle.new()
+	tower.setup_starter(Catalog.DOMAIN_TOWER)
+	tower.energy_current = 12
+	tower.hand = ["proyectil_runico"]
+	tower.enemy_lanes[4] = tower.create_unit("esqueleto_roto", true)
+	check(tower.play_card(0, -1, 4), "Enemy-targeted rite can target lane five")
+	check(tower.enemy_lanes[4] == null, "Generic damage effect kills its target")
+
+	var forge := Battle.new()
+	forge.setup_starter(Catalog.DOMAIN_FORGE)
+	forge.energy_current = 12
+	forge.player_lanes[4] = forge.create_unit("centinela_de_cobre", true)
+	forge.hand = ["sobrecarga"]
+	check(forge.play_card(0, -1, 4), "Tag-conditioned overload resolves on Construct")
+	check(int(forge.player_lanes[4].attack) == 5 and forge.essence_current == 2, "Overload combines stat and resource effects")
+
+	var invalid := Battle.new()
+	invalid.setup_starter(Catalog.DOMAIN_FORGE)
+	invalid.energy_current = 12
+	invalid.player_lanes[4] = invalid.create_unit("lobo_joven", true)
+	invalid.hand = ["sobrecarga"]
+	check(not invalid.play_card(0, -1, 4), "Ability condition rejects invalid target")
+	check(invalid.energy_current == 12, "Rejected ability does not spend Energy")
+
+func _has_event(events: Array, event_type: String) -> bool:
+	for event in events:
+		if str(event.get("type", "")) == event_type:
+			return true
+	return false
