@@ -40,7 +40,7 @@
 - [x] CA005 Crear `DomainThemeRegistry` en Presentation.
 - [x] CA006 Añadir guard automático de dependencias en CI.
 - [x] CA007 Añadir tests de Application e Infrastructure.
-- [ ] CA008 Migrar Battle UI desde `scripts/ui` a `scripts/presentation` usando únicamente Application.
+- [x] CA008 Migrar Battle UI desde `scripts/ui` a `scripts/presentation` usando únicamente Application.
 - [ ] CA009 Migrar Main Menu a `scripts/presentation`.
 - [ ] CA010 Migrar Campaña a Application + Presentation + Repository Port.
 - [ ] CA011 Retirar `scripts/ui` cuando no tenga consumidores.
@@ -73,9 +73,9 @@
 - [ ] E408 Producir Bosque Asset Pack canónico bajo `assets/domains/forest/`.
 - [ ] E409 Reemplazar dibujo procedural crítico por assets finales en Presentation.
 - [x] E410 Ajustar adaptador legado para visualizar temporalmente los 5 carriles.
-- [ ] E411 Crear renderer vertical de batalla en Presentation basado en mockup aprobado.
-- [ ] E412 Resolver mano de 5–8 cartas con desplazamiento/solapamiento táctil legible.
-- [ ] E413 Consumir `ABILITY_TRIGGERED`/`EFFECT_APPLIED` para animaciones sin lógica de reglas en Presentation.
+- [x] E411 Crear renderer vertical de batalla en Presentation basado en mockup aprobado.
+- [x] E412 Resolver mano de 5–8 cartas con desplazamiento/solapamiento táctil legible.
+- [x] E413 Consumir `ABILITY_TRIGGERED`/`EFFECT_APPLIED` para animaciones sin lógica de reglas en Presentation.
 
 ## Fase F — Flujo principal
 - [ ] F501 Splash cuatro dominios.
@@ -83,7 +83,7 @@
 - [ ] F503 Menú Jugar.
 - [ ] F504 Elegir dominio.
 - [x] F505 Vs CPU funcional como vertical slice legado.
-- [ ] F506 Vs CPU vertical de cinco carriles conectado únicamente a Application.
+- [x] F506 Vs CPU vertical de cinco carriles conectado únicamente a Application.
 
 ## Fase G — Metajuego
 - [ ] G601 Constructor de Mazos.
