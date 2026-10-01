@@ -4,12 +4,13 @@
 
 ### 1. Domain — reglas y estado
 - `canonical_card_catalog.gd`: 48 cartas, metadatos de dominio/tipo/coste/estadísticas/efectos.
-- `definitions/`: definiciones canónicas como `CardDefinition` y, progresivamente, habilidades/efectos.
+- `definitions/`: `CardDefinition`, `AbilityDefinition`, `ConditionDefinition`, `EffectDefinition` y catálogo declarativo de habilidades.
 - `entities/`: `CardInstance`, `BoardState`, `LaneState` y entidades runtime persistibles.
-- `value_objects/`: costes, targets, modificadores y objetos pequeños sin identidad propia.
+- `value_objects/`: costes, `TargetSpec`, modificadores y objetos pequeños sin identidad propia.
 - `events/`: eventos lógicos serializables producidos por el motor.
-- `services/`: validadores/resolvers puros como `CostResolver` y, en siguientes etapas, Ability/Effect/Target/Combat resolvers.
+- `services/`: `CostResolver`, `AbilityResolver`, `TargetResolver`, `ConditionResolver` y `EffectResolver`.
 - `canonical_battle_state.gd`: Integridad, Energía, Esencia, mano, mazo, descarte, 5×2 carriles, Sellos, Reliquias y resolución durante la transición.
+- Ritos, efectos al invocar y Último Aliento ya implementados se resuelven por datos y servicios; no vuelven a `match card_id`.
 - Estado serializable y determinista.
 - No depende de UI, Application, Infrastructure ni Presentation.
 
@@ -17,6 +18,7 @@
 - `application/battle/canonical_battle_session.gd` encapsula iniciar batalla, jugar carta, finalizar ronda, inspeccionar unidades y obtener snapshots.
 - `BattleCommand` representa acciones serializables; los métodos públicos de conveniencia delegan en comandos.
 - Los resultados de acciones incluyen snapshot y eventos lógicos drenados del Domain.
+- La legalidad de objetivos de Ritos se consulta al motor declarativo mediante `TargetSpec`/resolvers; Application no mantiene listas de IDs de cartas.
 - `application/ports/` declara contratos hacia persistencia/red.
 - Presentation y futuros adaptadores de red consumen estos casos de uso; no llaman al Domain directamente.
 
@@ -31,6 +33,7 @@
 - Themes/skins por dominio sin duplicar lógica.
 - Cartas reutilizables entre batalla, recompensa, colección y constructor.
 - UI sin hover obligatorio.
+- Presentation consume snapshots y `GameEvent`; `ABILITY_TRIGGERED` y `EFFECT_APPLIED` serán la base para animaciones de habilidad.
 - `presentation/themes/domain_theme_registry.gd` desacopla identidad visual de reglas.
 - Nuevos assets canónicos se integran aquí, no en Domain.
 
@@ -41,10 +44,11 @@
 - Se reemplaza pantalla por pantalla con Presentation cuando exista equivalencia funcional y visual.
 
 ### 6. CPU
-- Usa el mismo core, costes, comandos y acciones legales.
+- Usa el mismo core, costes y reglas de combate.
 - Dificultades: Aprendiz, Adepto y Maestro.
 - No introducir trampas de reglas exclusivas de CPU salvo encuentros/jefes explícitos.
 - La CPU debe evolucionar hacia un policy/controller que emita los mismos `BattleCommand` que Presentation o networking.
+- La siguiente migración del motor declarativo debe separar correctamente recursos/controlador para que efectos al invocar y morir funcionen de forma simétrica para CPU.
 
 ### 7. Campaña
 - Estado separado: dominio, mazo, Guardián, dificultad, mapa, nodos, recompensas y economía.
@@ -62,24 +66,25 @@
 3. Cambiar el core canónico de 4 a 5 carriles usando `BoardState` como fuente de la cantidad.
 4. Actualizar Application snapshots/comandos/eventos y pruebas.
 5. Ajustar el renderer legado sólo lo necesario para no ocultar el quinto carril.
-6. Introducir motor de habilidades/targets/efectos desacoplado y migrar efectos actuales incrementalmente.
-7. Construir el renderer vertical en `scripts/presentation/` consumiendo Application.
-8. Adaptar los cuatro themes sin cambiar geometría.
-9. Migrar Splash, menú principal y menú Jugar a Presentation vertical.
-10. Constructor + Colección.
-11. Campaña y nodos con identidad de instancia persistente.
-12. Perfil/Logros/Ajustes.
-13. Local.
-14. Online.
-15. Cambiar runtime/orientación final cuando Presentation vertical alcance equivalencia.
-16. Retirar `scripts/ui` y core legado sólo después de equivalencia funcional, visual y migración de saves.
+6. Introducir motor declarativo de habilidades/targets/condiciones/efectos y migrar Ritos, invocaciones y Último Aliento existentes.
+7. Completar keywords/efectos de dominio restantes y paridad de habilidades para CPU sin volver a lógica por ID.
+8. Construir el renderer vertical en `scripts/presentation/` consumiendo Application.
+9. Adaptar los cuatro themes sin cambiar geometría.
+10. Migrar Splash, menú principal y menú Jugar a Presentation vertical.
+11. Constructor + Colección.
+12. Campaña y nodos con identidad de instancia persistente.
+13. Perfil/Logros/Ajustes.
+14. Local.
+15. Online.
+16. Cambiar runtime/orientación final cuando Presentation vertical alcance equivalencia.
+17. Retirar `scripts/ui` y core legado sólo después de equivalencia funcional, visual y migración de saves.
 
 ## Verificación
 - `python tools/validate_project.py`.
 - `tests/clean_architecture_test.gd`.
 - `tests/domain_entity_model_test.gd`.
 - Tests de Application e Infrastructure.
+- `tests/canonical_battle_test.gd` cubre resolución declarativa y regresiones de reglas.
 - Tests legado mientras siga conectado al runtime.
-- Tests del core canónico en cada commit.
 - Import headless Godot 4.3.
 - Export Android firmado por GitHub Actions.
