@@ -2,12 +2,14 @@ class_name EffectDefinition
 extends RefCounted
 
 const GAIN_ESSENCE := "gain_essence"
+const GAIN_RESOURCE := "gain_resource"
 const DRAW_CARD := "draw_card"
 const DAMAGE_UNIT := "damage_unit"
 const MODIFY_STATS := "modify_stats"
 const KILL_UNIT := "kill_unit"
 const SUMMON_TOKEN := "summon_token"
 const REVEAL_TOP := "reveal_top"
+const RETURN_CREATURE_FROM_DISCARD := "return_creature_from_discard"
 
 var effect_type := ""
 var params: Dictionary = {}
