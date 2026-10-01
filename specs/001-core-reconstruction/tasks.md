@@ -58,8 +58,9 @@
 - [x] D306 Extraer `match card_id` de Ritos, invocaciones y Último Aliento desde `CanonicalBattleState` hacia servicios declarativos.
 - [x] D307 Migrar los Ritos y efectos ya implementados al catálogo declarativo de habilidades.
 - [ ] D308 Migrar keywords estructurales de combate cuando corresponda: Emboscada, Guardia, Blindaje, Carga, etc.
-- [ ] D309 Dar paridad de habilidades a CPU con recursos/controlador separados.
+- [x] D309 Dar paridad de habilidades a CPU con recursos/controlador separados.
 - [ ] D310 Introducir `AbilityInstance` para cargas/usos/cooldowns sólo cuando una mecánica real lo necesite.
+- [x] D311 Añadir regresiones de CPU para objetivos relativos, recursos separados, Ritos, invocaciones, Exhumación, Revelar y Último Aliento.
 
 ## Fase E — UI canónica
 - [x] E401 Adaptar Battle UI a una plantilla canónica como prototipo legado.
