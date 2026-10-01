@@ -21,7 +21,7 @@ func _run_checks() -> void:
 	view.start_battle("forest")
 	await process_frame
 
-	var opening := view.current_snapshot()
+	var opening: Dictionary = view.current_snapshot()
 	check(opening.get("lane_count", 0) == 5, "Vertical Presentation consumes five canonical lanes")
 	check(view.player_lane_buttons.size() == 5, "Vertical Presentation renders five player lane controls")
 	check(view.enemy_lane_buttons.size() == 5, "Vertical Presentation renders five enemy lane controls")
@@ -38,16 +38,17 @@ func _run_checks() -> void:
 	check(view.session.can_target_player_lane(0, 4), "Application marks the fifth player lane as a legal target")
 	view._on_lane_pressed("player", 4)
 	await process_frame
-	var after_play := view.current_snapshot()
-	check(after_play.get("player_lanes", [])[4] != null, "Vertical Presentation can play a real card into lane five")
-	check(after_play.get("hand", []).size() == 3, "Successful vertical play removes the card from hand")
+	var after_play: Dictionary = view.current_snapshot()
+	var player_lanes: Array = after_play.get("player_lanes", [])
+	check(player_lanes.size() == 5 and player_lanes[4] != null, "Vertical Presentation can play a real card into lane five")
+	check(Array(after_play.get("hand", [])).size() == 3, "Successful vertical play removes the card from hand")
 	check(after_play.get("energy_current", -1) == 0, "Successful vertical play pays canonical Energy")
 
 	view._on_end_turn_pressed()
 	await process_frame
-	var after_round := view.current_snapshot()
+	var after_round: Dictionary = view.current_snapshot()
 	check(after_round.get("turn", 0) == 2, "Vertical end-turn action advances a complete player/CPU round")
-	check(view.hand_strip.get_child_count() == after_round.get("hand", []).size(), "Scrollable hand stays synchronized after the round")
+	check(view.hand_strip.get_child_count() == Array(after_round.get("hand", [])).size(), "Scrollable hand stays synchronized after the round")
 
 	print("Vertical battle Presentation checks: %d failures" % failures)
 	quit(1 if failures else 0)
