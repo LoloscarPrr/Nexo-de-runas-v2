@@ -4,7 +4,7 @@ extends Control
 ## La campaña legado sigue cargada para conservar saves, pero deja de dominar la UI.
 
 const CampaignViewScript = preload("res://scripts/ui/mockup_campaign_view.gd")
-const CanonicalBattleViewScript = preload("res://scripts/ui/canonical_battle_view_polished.gd")
+const CanonicalBattleViewScript = preload("res://scripts/presentation/battle/vertical_battle_view.gd")
 const MenuBackdropScript = preload("res://scripts/ui/canonical_main_menu_backdrop.gd")
 
 const INK := Color("eadca8")
@@ -17,7 +17,7 @@ const BLOOD := Color("78362c")
 
 var menu_screen: Control
 var campaign_screen
-var battle_screen: CanonicalBattleView
+var battle_screen: Control
 var menu_status: Label
 
 func _ready() -> void:
@@ -94,10 +94,12 @@ func _build_menu() -> void:
 	_place_in(menu_screen, menu_status, Rect2(vw * 0.32, vh - 58, vw * 0.36, 34))
 
 func _start_canonical_battle() -> void:
+	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_PORTRAIT)
 	battle_screen.start_battle()
 	_show(battle_screen)
 
 func _return_to_menu() -> void:
+	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_LANDSCAPE)
 	_show(menu_screen)
 	_notice("El Nexo aguarda.")
 
