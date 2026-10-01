@@ -7,6 +7,9 @@ extends RefCounted
 const EngineScript = preload("res://scripts/domain/canonical_cpu_battle.gd")
 const Catalog = preload("res://scripts/domain/canonical_card_catalog.gd")
 const CommandScript = preload("res://scripts/application/battle/battle_command.gd")
+const AbilityDefinitionScript = preload("res://scripts/domain/definitions/ability_definition.gd")
+const AbilityResolverScript = preload("res://scripts/domain/services/ability_resolver.gd")
+const TargetSpecScript = preload("res://scripts/domain/value_objects/target_spec.gd")
 
 const DOMAIN_FOREST := "forest"
 const DOMAIN_CRYPT := "crypt"
@@ -102,9 +105,23 @@ func can_target_player_lane(hand_index: int, lane: int) -> bool:
 	var card_type := str(card.get("type", ""))
 	if card_type == TYPE_CREATURE:
 		return _engine.player_lanes[lane] == null
-	if card_type == TYPE_RITE:
-		return ["crecimiento_violento", "ofrenda_de_ceniza", "sobrecarga"].has(str(card.get("id", ""))) and _engine.player_lanes[lane] != null
-	return false
+	if card_type != TYPE_RITE:
+		return false
+	var spec := _engine.ability_target_spec(str(card.get("id", "")), AbilityDefinitionScript.ON_PLAY)
+	if str(spec.get("type", TargetSpecScript.NONE)) != TargetSpecScript.PLAYER_LANE:
+		return false
+	return _can_resolve_rite(card, lane)
+
+func can_target_enemy_lane(hand_index: int, lane: int) -> bool:
+	if _engine == null or lane < 0 or lane >= _engine.LANE_COUNT:
+		return false
+	var card := hand_card_definition(hand_index)
+	if card.is_empty() or str(card.get("type", "")) != TYPE_RITE:
+		return false
+	var spec := _engine.ability_target_spec(str(card.get("id", "")), AbilityDefinitionScript.ON_PLAY)
+	if str(spec.get("type", TargetSpecScript.NONE)) != TargetSpecScript.ENEMY_LANE:
+		return false
+	return _can_resolve_rite(card, lane)
 
 func play_hand_card(hand_index: int, lane: int = -1) -> Dictionary:
 	return execute(CommandScript.play_card(hand_index, lane))
@@ -114,6 +131,17 @@ func end_round() -> Dictionary:
 
 func use_impulse() -> Dictionary:
 	return execute(CommandScript.use_impulse())
+
+func _can_resolve_rite(card: Dictionary, target_lane: int) -> bool:
+	var effect_id := str(card.get("effect_id", ""))
+	if effect_id.is_empty():
+		return false
+	return AbilityResolverScript.can_resolve(effect_id, AbilityDefinitionScript.ON_PLAY, {
+		"source_card_id": str(card.get("id", "")),
+		"source_side": "player",
+		"source_lane": -1,
+		"target_lane": target_lane
+	}, _engine)
 
 func _execute_play_card(command: Object) -> Dictionary:
 	if _engine == null:
@@ -126,16 +154,12 @@ func _execute_play_card(command: Object) -> Dictionary:
 	if card.is_empty():
 		return _result(false, "La carta seleccionada no existe.")
 	var card_type := str(card.get("type", ""))
-	var card_id := str(card.get("id", ""))
 	var ok := false
 	if card_type == TYPE_CREATURE:
 		ok = _engine.play_card(hand_index, lane)
 	elif card_type == TYPE_RITE:
-		if ["llamado_de_la_manada", "vision_prohibida", "exhumacion"].has(card_id):
-			ok = _engine.play_card(hand_index)
-		else:
-			var resolved_target := target_lane if target_lane >= 0 else lane
-			ok = _engine.play_card(hand_index, -1, resolved_target)
+		var resolved_target := target_lane if target_lane >= 0 else lane
+		ok = _engine.play_card(hand_index, -1, resolved_target)
 	elif card_type == TYPE_RELIC or card_type == TYPE_SEAL:
 		ok = _engine.play_card(hand_index, -1, -1, replace_index)
 	if ok:
