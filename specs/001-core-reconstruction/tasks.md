@@ -48,13 +48,15 @@
 - [x] CA013 Incluir eventos de Domain en resultados de Application para Presentation/Local/Online.
 
 ## Fase D — Efectos y dominios
-- [ ] D300 Introducir `AbilityDefinition`, `TargetSpec`, `ConditionDefinition`, `EffectDefinition` y resolvers sin reescritura masiva.
+- [x] D300 Introducir `AbilityDefinition`, `TargetSpec`, `ConditionDefinition`, `EffectDefinition` y resolvers sin reescritura masiva.
 - [ ] D301 Bosque: completar Manada e Instinto.
 - [ ] D302 Cripta: Restos, Último Aliento y Exhumar.
 - [ ] D303 Torre: Revelar, Eco y Canalizar.
 - [ ] D304 Fundición: Constructos, Ensamblar, Sobrecalentar.
 - [ ] D305 Guardianes iniciales.
-- [ ] D306 Extraer `match card_id` de `CanonicalBattleState` de forma incremental hacia servicios de Domain.
+- [x] D306 Extraer los `match card_id` activos de Ritos, entrada al tablero y Último Aliento hacia servicios de Domain.
+- [x] D307 Crear catálogo declarativo inicial de 15 habilidades y emitir `ABILITY_TRIGGERED` / `EFFECT_RESOLVED`.
+- [ ] D308 Hacer relativo al controlador el contexto de habilidades/recursos y conectar CPU al mismo pipeline de comandos/resolvers.
 
 ## Fase E — UI canónica
 - [x] E401 Adaptar Battle UI a una plantilla canónica como prototipo legado.
