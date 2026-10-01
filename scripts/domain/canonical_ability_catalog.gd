@@ -67,6 +67,13 @@ const ABILITIES = [
 		]
 	},
 	{
+		"id":"crypt_exhumation",
+		"trigger":"on_play",
+		"conditions":[{"type":"discard_has_creature_max_cost","params":{"max_cost":3}}],
+		"target":{"kind":"none","required":false},
+		"effects":[{"type":"return_creature_from_discard","params":{"max_cost":3}}]
+	},
+	{
 		"id":"tower_familiar",
 		"trigger":"on_play",
 		"conditions":[],
