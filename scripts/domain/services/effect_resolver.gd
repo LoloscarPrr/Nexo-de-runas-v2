@@ -2,6 +2,7 @@ class_name EffectResolver
 extends RefCounted
 
 const EffectDefinitionScript = preload("res://scripts/domain/definitions/effect_definition.gd")
+const Catalog = preload("res://scripts/domain/canonical_card_catalog.gd")
 
 static func apply(effect, state, context: Dictionary) -> bool:
 	if effect == null or state == null:
@@ -10,7 +11,7 @@ static func apply(effect, state, context: Dictionary) -> bool:
 		EffectDefinitionScript.GAIN_ESSENCE:
 			state.call("gain_essence", maxi(0, int(effect.params.get("amount", 0))))
 			return true
-		"gain_resource":
+		EffectDefinitionScript.GAIN_RESOURCE:
 			return _gain_resource(effect, state)
 		EffectDefinitionScript.DRAW_CARD:
 			return _draw_cards(effect, state)
@@ -24,6 +25,8 @@ static func apply(effect, state, context: Dictionary) -> bool:
 			return _summon_token(effect, state, context)
 		EffectDefinitionScript.REVEAL_TOP:
 			return _reveal_top(effect, state)
+		EffectDefinitionScript.RETURN_CREATURE_FROM_DISCARD:
+			return _return_creature_from_discard(effect, state)
 		_:
 			return false
 
@@ -112,6 +115,20 @@ static func _reveal_top(effect, state) -> bool:
 	for i in range(draw_amount):
 		state.call("draw_card")
 	return true
+
+static func _return_creature_from_discard(effect, state) -> bool:
+	var discard = state.get("discard_pile")
+	var hand = state.get("hand")
+	if not (discard is Array) or not (hand is Array):
+		return false
+	var max_cost := int(effect.params.get("max_cost", 999))
+	for i in range(discard.size() - 1, -1, -1):
+		var card := Catalog.find_by_id(str(discard[i]))
+		if str(card.get("type", "")) == Catalog.TYPE_CREATURE and int(card.get("cost", 999)) <= max_cost:
+			hand.append(discard[i])
+			discard.remove_at(i)
+			return true
+	return false
 
 static func _effect_side(effect, context: Dictionary) -> String:
 	return str(effect.params.get("side", context.get("resolved_target_side", "player")))
