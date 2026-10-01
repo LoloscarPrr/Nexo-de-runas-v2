@@ -57,5 +57,26 @@ func _initialize() -> void:
 	check(session.deck_summary().begins_with("Mazo:"), "Application layer provides deck summary")
 	check(not session.discard_summary().is_empty(), "Application layer provides discard summary")
 
+	_test_metadata_driven_targeting()
+
 	print("Application battle session checks: %d failures" % failures)
 	quit(1 if failures else 0)
+
+func _test_metadata_driven_targeting() -> void:
+	var session := SessionScript.new()
+	var deck: Array[String] = ["proyectil_runico", "familiar_arcano", "buho_oculum", "aprendiz_runico"]
+	session.start_vs_cpu(SessionScript.DOMAIN_TOWER, deck)
+	check(session.target_kind_for_hand_card(0) == "enemy_unit", "Application reads enemy targeting from TargetSpec")
+	check(not session.can_target_enemy_lane(0, 4), "Enemy target is illegal while fifth lane is empty")
+	session._engine.enemy_lanes[4] = session._engine.create_unit("esqueleto_roto", true)
+	check(session.can_target_enemy_lane(0, 4), "Application validates fifth enemy lane from AbilityResolver")
+	var result := session.execute(CommandScript.play_card(0, -1, 4))
+	check(bool(result.get("ok", false)), "Targeted Rite executes through BattleCommand")
+	var snapshot: Dictionary = result.get("snapshot", {})
+	check(Array(snapshot.get("enemy_lanes", []))[4] == null, "Targeted Rite effect reaches the selected enemy lane")
+	var events: Array = result.get("events", [])
+	var types: Array[String] = []
+	for event in events:
+		types.append(str(Dictionary(event).get("type", "")))
+	check(types.has("ABILITY_TRIGGERED"), "Application exposes ability-trigger event")
+	check(types.has("EFFECT_RESOLVED"), "Application exposes effect-resolved event")
