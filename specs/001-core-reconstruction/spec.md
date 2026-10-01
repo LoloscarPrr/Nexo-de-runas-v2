@@ -57,11 +57,26 @@ Copia concreta de una `CardDefinition`. Tiene `instance_id` propio, propietario,
 ### CostDefinition / CostResolver
 Los costes son datos compuestos y el motor decide si son pagables. La primera integración canónica cubre Energía y Esencia, dejando el modelo preparado para componentes adicionales sin reescribir `play_card`.
 
+### AbilityDefinition
+Describe una habilidad sin escribir lógica específica para el nombre de una carta. Contiene `trigger`, condiciones, un `TargetSpec` y una lista ordenada de `EffectDefinition`.
+
+### TargetSpec
+Declara si una habilidad no necesita selección, necesita una unidad aliada, una unidad enemiga o un espacio libre automático. Application consulta este dato para decidir qué carriles son objetivos legales; Presentation no mantiene listas manuales de cartas.
+
+### ConditionDefinition / ConditionResolver
+Una condición responde si una habilidad puede activarse o resolver su objetivo. La primera versión cubre condiciones como “existe otra Bestia aliada”, “el objetivo tiene tag CONSTRUCTO” y “el Descarte contiene una criatura de coste permitido”.
+
+### EffectDefinition / EffectResolver
+Un efecto es una operación atómica reutilizable. La primera versión implementa ganar Esencia/recurso, robar, hacer daño, modificar estadísticas, matar, invocar token, revelar cartas y devolver criatura desde Descarte.
+
+### AbilityResolver
+Orquesta `Trigger → TargetResolver → ConditionResolver → EffectResolver`. Emite `ABILITY_TRIGGERED` y `EFFECT_RESOLVED` para que Presentation pueda animar lo sucedido sin decidir reglas.
+
 ### BattleCommand
 Application expresa acciones del jugador/CPU/red mediante comandos serializables (`play_card`, `end_round`, etc.). Los métodos de conveniencia existentes pueden delegar en comandos durante la migración.
 
 ### GameEvent
-Domain produce eventos lógicos (`CARD_PLAYED`, `RESOURCE_SPENT`, `UNIT_DIED`, `TURN_STARTED`, etc.). Presentation los usa para animar; los eventos no contienen nodos, sprites ni referencias visuales.
+Domain produce eventos lógicos (`CARD_PLAYED`, `RESOURCE_SPENT`, `UNIT_DIED`, `ABILITY_TRIGGERED`, `EFFECT_RESOLVED`, `TURN_STARTED`, etc.). Presentation los usa para animar; los eventos no contienen nodos, sprites ni referencias visuales.
 
 ## Palabras clave universales iniciales
 Carga, Emboscada, Blindaje X, Guardia, Último Aliento, Exhumar y Canalizar X.
@@ -69,17 +84,22 @@ Carga, Emboscada, Blindaje X, Guardia, Último Aliento, Exhumar y Canalizar X.
 ## Catálogo inicial
 48 cartas canónicas: 12 por dominio. Cuatro mazos predeterminados de 20 cartas: Manada Verde, Osario Eterno, Círculo Astral y Máquina Roja.
 
+El `canonical_ability_catalog.gd` inicial contiene 15 habilidades declarativas correspondientes a los efectos que ya estaban implementados en el prototipo canónico: entradas al tablero, Ritos y Últimos Alientos de los cuatro dominios. Nuevas cartas no deben añadir `match card_id` a `CanonicalBattleState`.
+
 ## Campaña
 Elegir dominio → mazo/Guardián/dificultad → mapa → nodos. Nodos canónicos: Combate, Élite, Evento, Fogata/Mejora, Mercader, Altar de Sellos, Tesoro y Jefe.
 
 Las mejoras de campaña deben dirigirse a instancias concretas o a modificaciones persistibles explícitas; no se deben aplicar accidentalmente a todas las copias que compartan `card_id`.
 
-## Arquitectura de efectos — objetivo incremental
-La migración no debe reescribir todas las habilidades en un único cambio. La secuencia es:
-1. formalizar entidades, costes, comandos y eventos;
-2. introducir `AbilityDefinition`, `TargetSpec`, `ConditionDefinition` y `EffectDefinition`;
-3. extraer los `match card_id` actuales hacia resolvers/registries de Domain;
-4. hacer que cartas nuevas se definan por datos en vez de lógica específica en `BattleState`.
+## Arquitectura de efectos — estado actual
+La migración es incremental, pero la base ya está operativa:
+1. entidades, costes, comandos y eventos formalizados;
+2. `AbilityDefinition`, `TargetSpec`, `ConditionDefinition` y `EffectDefinition` implementados;
+3. `TargetResolver`, `ConditionResolver`, `AbilityResolver` y `EffectResolver` implementados;
+4. los `match card_id` activos de Ritos, entrada al tablero y Último Aliento fueron extraídos de `CanonicalBattleState`;
+5. Application consulta metadata de objetivo en lugar de mantener listas de IDs.
+
+Pendiente: hacer relativo al controlador el contexto completo de recursos/targets para que CPU, Local y Online ejecuten exactamente las mismas habilidades desde ambos lados, y completar las mecánicas de dominio todavía no implementadas (Manada avanzada, Eco, Ensamblar, etc.).
 
 ## Requisitos técnicos
 - Godot 4.3 + GDScript.
@@ -95,4 +115,4 @@ La migración no debe reescribir todas las habilidades en un único cambio. La s
 El motor antiguo permanece temporalmente para no romper el APK. Se introduce y refina un core canónico paralelo con catálogo, entidades y pruebas propias. La UI vertical nueva se conecta al nuevo core mediante Application sólo cuando esa capa esté verde.
 
 ## Primera vertical slice del nuevo rumbo
-Core canónico + entidades + 48 cartas → batalla Vs CPU funcional de un dominio con 5 carriles → renderer vertical basado en mockup → misma batalla con skin de los cuatro dominios → constructor/colección → campaña básica → migración de UI principal.
+Core canónico + entidades + 48 cartas + motor declarativo de habilidades → batalla Vs CPU funcional de un dominio con 5 carriles → renderer vertical basado en mockup → misma batalla con skin de los cuatro dominios → constructor/colección → campaña básica → migración de UI principal.
