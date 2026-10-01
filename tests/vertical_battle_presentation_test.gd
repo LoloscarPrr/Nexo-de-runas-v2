@@ -43,6 +43,7 @@ func _run_checks() -> void:
 	check(player_lanes.size() == 5 and player_lanes[4] != null, "Vertical Presentation can play a real card into lane five")
 	check(Array(after_play.get("hand", [])).size() == 3, "Successful vertical play removes the card from hand")
 	check(after_play.get("energy_current", -1) == 0, "Successful vertical play pays canonical Energy")
+	check(not view.event_label.text.is_empty(), "Vertical Presentation consumes battle events for visual feedback")
 
 	view._on_end_turn_pressed()
 	await process_frame
