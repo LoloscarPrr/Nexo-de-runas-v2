@@ -4,12 +4,14 @@
 
 ### 1. Domain — reglas y estado
 - `canonical_card_catalog.gd`: 48 cartas, metadatos de dominio/tipo/coste/estadísticas/efectos.
-- `definitions/`: definiciones canónicas como `CardDefinition` y, progresivamente, habilidades/efectos.
+- `canonical_ability_catalog.gd`: habilidades declarativas que enlazan los `effect_id` de carta con trigger, condiciones, target y efectos atómicos.
+- `definitions/`: definiciones canónicas como `CardDefinition`, `AbilityDefinition` y `EffectDefinition`.
 - `entities/`: `CardInstance`, `BoardState`, `LaneState` y entidades runtime persistibles.
-- `value_objects/`: costes, targets, modificadores y objetos pequeños sin identidad propia.
+- `value_objects/`: costes, `TargetSpec`, `ConditionDefinition`, modificadores y objetos pequeños sin identidad propia.
 - `events/`: eventos lógicos serializables producidos por el motor.
-- `services/`: validadores/resolvers puros como `CostResolver` y, en siguientes etapas, Ability/Effect/Target/Combat resolvers.
+- `services/`: `CostResolver`, `TargetResolver`, `ConditionResolver`, `AbilityResolver` y `EffectResolver`; combate/turnos se extraen progresivamente.
 - `canonical_battle_state.gd`: Integridad, Energía, Esencia, mano, mazo, descarte, 5×2 carriles, Sellos, Reliquias y resolución durante la transición.
+- Las habilidades migradas se ejecutan por datos; `CanonicalBattleState` no contiene listas de IDs para Ritos, entradas al tablero o Último Aliento ya migrados.
 - Estado serializable y determinista.
 - No depende de UI, Application, Infrastructure ni Presentation.
 
@@ -17,6 +19,7 @@
 - `application/battle/canonical_battle_session.gd` encapsula iniciar batalla, jugar carta, finalizar ronda, inspeccionar unidades y obtener snapshots.
 - `BattleCommand` representa acciones serializables; los métodos públicos de conveniencia delegan en comandos.
 - Los resultados de acciones incluyen snapshot y eventos lógicos drenados del Domain.
+- La selección de objetivos consulta `TargetSpec`/`AbilityResolver` y no mantiene listas de nombres de carta.
 - `application/ports/` declara contratos hacia persistencia/red.
 - Presentation y futuros adaptadores de red consumen estos casos de uso; no llaman al Domain directamente.
 
@@ -41,10 +44,11 @@
 - Se reemplaza pantalla por pantalla con Presentation cuando exista equivalencia funcional y visual.
 
 ### 6. CPU
-- Usa el mismo core, costes, comandos y acciones legales.
+- Usa el mismo core, costes y acciones legales.
 - Dificultades: Aprendiz, Adepto y Maestro.
 - No introducir trampas de reglas exclusivas de CPU salvo encuentros/jefes explícitos.
 - La CPU debe evolucionar hacia un policy/controller que emita los mismos `BattleCommand` que Presentation o networking.
+- La primera integración de `AbilityResolver` resuelve el lado del jugador; la siguiente extensión debe hacer relativos al controlador los recursos/targets para que CPU, Local y Online recorran exactamente la misma ruta.
 
 ### 7. Campaña
 - Estado separado: dominio, mazo, Guardián, dificultad, mapa, nodos, recompensas y economía.
@@ -62,22 +66,24 @@
 3. Cambiar el core canónico de 4 a 5 carriles usando `BoardState` como fuente de la cantidad.
 4. Actualizar Application snapshots/comandos/eventos y pruebas.
 5. Ajustar el renderer legado sólo lo necesario para no ocultar el quinto carril.
-6. Introducir motor de habilidades/targets/efectos desacoplado y migrar efectos actuales incrementalmente.
-7. Construir el renderer vertical en `scripts/presentation/` consumiendo Application.
-8. Adaptar los cuatro themes sin cambiar geometría.
-9. Migrar Splash, menú principal y menú Jugar a Presentation vertical.
-10. Constructor + Colección.
-11. Campaña y nodos con identidad de instancia persistente.
-12. Perfil/Logros/Ajustes.
-13. Local.
-14. Online.
-15. Cambiar runtime/orientación final cuando Presentation vertical alcance equivalencia.
-16. Retirar `scripts/ui` y core legado sólo después de equivalencia funcional, visual y migración de saves.
+6. Introducir `AbilityDefinition`, `TargetSpec`, `ConditionDefinition`, `EffectDefinition`, sus resolvers y migrar los efectos actualmente implementados de Ritos/entrada/Último Aliento a datos declarativos.
+7. Generalizar el contexto de habilidad para controlador/lado y conectar la CPU a los mismos comandos/resolvers.
+8. Construir el renderer vertical en `scripts/presentation/` consumiendo Application.
+9. Adaptar los cuatro themes sin cambiar geometría.
+10. Migrar Splash, menú principal y menú Jugar a Presentation vertical.
+11. Constructor + Colección.
+12. Campaña y nodos con identidad de instancia persistente.
+13. Perfil/Logros/Ajustes.
+14. Local.
+15. Online.
+16. Cambiar runtime/orientación final cuando Presentation vertical alcance equivalencia.
+17. Retirar `scripts/ui` y core legado sólo después de equivalencia funcional, visual y migración de saves.
 
 ## Verificación
 - `python tools/validate_project.py`.
 - `tests/clean_architecture_test.gd`.
 - `tests/domain_entity_model_test.gd`.
+- `tests/ability_effect_engine_test.gd`.
 - Tests de Application e Infrastructure.
 - Tests legado mientras siga conectado al runtime.
 - Tests del core canónico en cada commit.
