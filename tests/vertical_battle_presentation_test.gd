@@ -56,8 +56,8 @@ func _run_checks() -> void:
 	check(lane_card != null, "Played units use the same physical card renderer on the board")
 	if lane_card != null:
 		check(lane_card.size == CardScript.COMPACT_CARD_SIZE, "Board cards keep the canonical compact card size")
-		var ratio := lane_card.size.x / lane_card.size.y
-		var expected_ratio := CardScript.COMPACT_CARD_SIZE.x / CardScript.COMPACT_CARD_SIZE.y
+		var ratio: float = float(lane_card.size.x) / float(lane_card.size.y)
+		var expected_ratio: float = float(CardScript.COMPACT_CARD_SIZE.x) / float(CardScript.COMPACT_CARD_SIZE.y)
 		check(absf(ratio - expected_ratio) < 0.01, "Board cards keep a physical card aspect ratio")
 		check(lane_card.size.y < view.player_lane_buttons[4].size.y, "Board card stays centered inside the larger touch lane")
 
