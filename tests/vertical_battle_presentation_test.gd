@@ -1,6 +1,7 @@
 extends SceneTree
 
-const ViewScript = preload("res://scripts/presentation/battle/vertical_battle_view.gd")
+const ViewScript = preload("res://scripts/presentation/battle/vertical_battle_view_polished.gd")
+const CardScript = preload("res://scripts/presentation/battle/vertical_battle_card.gd")
 
 var failures := 0
 var view
@@ -29,6 +30,9 @@ func _run_checks() -> void:
 	check(opening.get("player_integrity", 0) == 20 and opening.get("enemy_integrity", 0) == 20, "Vertical Presentation starts at 20/20 Integrity")
 	check(str(opening.get("essence_name", "")) == "Instinto", "Forest vertical HUD consumes the canonical essence name")
 	check(view.end_turn_button != null, "Vertical Presentation exposes the canonical end-turn action")
+	check(view.rival_integrity_bar != null, "Polished Presentation exposes the rival integrity bar")
+	check(view.hand_strip.get_child(0).get_script() == CardScript, "Opening hand uses the physical Presentation card renderer")
+	check(opening.has("impulse_available"), "Application snapshot exposes Impulse availability to Presentation")
 
 	# The first Forest starter card costs one Energy and is a creature. Playing it
 	# through the view proves Presentation -> Application -> Domain wiring.
@@ -44,6 +48,11 @@ func _run_checks() -> void:
 	check(Array(after_play.get("hand", [])).size() == 3, "Successful vertical play removes the card from hand")
 	check(after_play.get("energy_current", -1) == 0, "Successful vertical play pays canonical Energy")
 	check(not view.event_label.text.is_empty(), "Vertical Presentation consumes battle events for visual feedback")
+	var lane_card_found := false
+	for child in view.player_lane_buttons[4].get_children():
+		if child.get_script() == CardScript:
+			lane_card_found = true
+	check(lane_card_found, "Played units use the same physical card renderer on the board")
 
 	view._on_end_turn_pressed()
 	await process_frame
