@@ -46,6 +46,7 @@ func snapshot() -> Dictionary:
 		"enemy_integrity": _engine.enemy_integrity,
 		"energy_capacity": _engine.energy_capacity,
 		"energy_current": _engine.energy_current,
+		"impulse_available": _engine.impulse_available,
 		"essence_current": _engine.essence_current,
 		"essence_name": _engine.essence_name(),
 		"essence_max": _engine.essence_max(),
