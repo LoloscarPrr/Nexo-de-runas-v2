@@ -14,11 +14,17 @@ func run() -> void:
 		_fail("Missing canonical animated mockup sketch atlas")
 		return
 
-	root.size = Vector2i(1280, 720)
+	# Este test cubre exclusivamente la Presentation legacy horizontal durante la
+	# migración. La app canónica ahora es vertical, por lo que aislamos el legado
+	# en su propio SubViewport 1280x720 en vez de cambiar el viewport raíz global.
+	var legacy_viewport := SubViewport.new()
+	legacy_viewport.size = Vector2i(1280, 720)
+	legacy_viewport.disable_3d = true
+	root.add_child(legacy_viewport)
 	await process_frame
 
 	var view = load("res://scripts/ui/mockup_campaign_view.gd").new()
-	root.add_child(view)
+	legacy_viewport.add_child(view)
 	view.position = Vector2.ZERO
 	view.size = Vector2(1280, 720)
 	view.state = load("res://scripts/domain/campaign_state.gd").new()
@@ -29,10 +35,10 @@ func run() -> void:
 	for child in view.get_children():
 		if child is Control:
 			if child.position.x < -1 or child.position.y < -1:
-				_fail("Control starts outside viewport: %s pos=%s" % [child.name, child.position])
+				_fail("Control starts outside legacy viewport: %s pos=%s" % [child.name, child.position])
 				return
 			if child.position.x + child.size.x > 1282 or child.position.y + child.size.y > 722:
-				_fail("Control exceeds viewport: %s pos=%s size=%s" % [child.name, child.position, child.size])
+				_fail("Control exceeds legacy viewport: %s pos=%s size=%s" % [child.name, child.position, child.size])
 				return
 
 	if view.battle_state.hand.size() < 4:
@@ -44,7 +50,7 @@ func run() -> void:
 	view._select_hand(0)
 	view._on_player_lane_pressed(0)
 	await process_frame
-	print("Mockup battle UI instantiated; canonical sketch atlas loaded; controls fit 1280x720")
+	print("Legacy mockup battle UI instantiated inside isolated 1280x720 viewport")
 	quit(0)
 
 func _fail(message: String) -> void:
