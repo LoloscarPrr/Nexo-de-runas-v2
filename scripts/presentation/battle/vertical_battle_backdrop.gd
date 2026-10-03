@@ -28,15 +28,15 @@ func _notification(what: int) -> void:
 		queue_redraw()
 
 func _draw() -> void:
-	var w := size.x
-	var h := size.y
+	var w: float = size.x
+	var h: float = size.y
 	if w <= 1.0 or h <= 1.0:
 		return
 
 	draw_rect(Rect2(0, 0, w, h), NIGHT)
 	for band in range(10):
-		var y := h * float(band) / 10.0
-		var alpha := 0.02 + float(band) * 0.006
+		var y: float = h * float(band) / 10.0
+		var alpha: float = 0.02 + float(band) * 0.006
 		draw_rect(Rect2(0, y, w, h / 10.0 + 1.0), Color(NIGHT_2.r, NIGHT_2.g, NIGHT_2.b, alpha + 0.12))
 
 	_draw_tree_column(Rect2(0, 0, w * 0.075, h), false)
@@ -49,13 +49,13 @@ func _draw() -> void:
 	_draw_candle_cluster(Vector2(w * 0.82, minf(h * 0.12, 235.0)), 0.95)
 
 	var center := Vector2(w * 0.5, h * 0.43)
-	var rune_radius := minf(w, h) * 0.105
+	var rune_radius: float = minf(w, h) * 0.105
 	draw_circle(center, rune_radius * 1.6, Color(RUNE.r, RUNE.g, RUNE.b, 0.035))
 	draw_arc(center, rune_radius, 0, TAU, 64, RUNE, 2.0)
 	draw_arc(center, rune_radius * 0.64, 0, TAU, 48, Color(RUNE.r, RUNE.g, RUNE.b, 0.12), 1.4)
 	for angle in [0.0, PI / 2.0, PI, PI * 1.5]:
-		var a := center + Vector2(cos(angle), sin(angle)) * rune_radius * 0.68
-		var b := center + Vector2(cos(angle), sin(angle)) * rune_radius * 0.94
+		var a: Vector2 = center + Vector2(cos(angle), sin(angle)) * rune_radius * 0.68
+		var b: Vector2 = center + Vector2(cos(angle), sin(angle)) * rune_radius * 0.94
 		draw_line(a, b, RUNE, 2.0)
 
 	_draw_lantern(Vector2(w * 0.07, h * 0.18), minf(w, h) * 0.017)
@@ -75,27 +75,26 @@ func _draw() -> void:
 	draw_rect(Rect2(0, h * 0.82, w, h * 0.18), Color(0, 0, 0, 0.22))
 
 func _draw_guardian(center: Vector2, scale: float) -> void:
-	var s := scale / 150.0
-	# Masa vegetal alrededor del cráneo.
+	var s: float = scale / 150.0
 	for offset in [Vector2(-62, -4), Vector2(62, -4), Vector2(-48, 34), Vector2(48, 34), Vector2(0, 48)]:
-		draw_circle(center + offset * s, 38.0 * s, Color(0.08, 0.20, 0.08, 0.78))
-		draw_circle(center + offset * s, 26.0 * s, Color(0.13, 0.29, 0.12, 0.72))
+		var leaf_offset: Vector2 = offset
+		draw_circle(center + leaf_offset * s, 38.0 * s, Color(0.08, 0.20, 0.08, 0.78))
+		draw_circle(center + leaf_offset * s, 26.0 * s, Color(0.13, 0.29, 0.12, 0.72))
 
-	# Astas ramificadas.
 	var horn := Color("5c3a1a")
 	var horn_hi := Color("9a6d38")
 	for direction in [-1.0, 1.0]:
-		var root := center + Vector2(28.0 * direction, -35.0) * s
-		var p1 := center + Vector2(70.0 * direction, -78.0) * s
-		var p2 := center + Vector2(102.0 * direction, -118.0) * s
-		var p3 := center + Vector2(126.0 * direction, -150.0) * s
+		var dir: float = float(direction)
+		var root: Vector2 = center + Vector2(28.0 * dir, -35.0) * s
+		var p1: Vector2 = center + Vector2(70.0 * dir, -78.0) * s
+		var p2: Vector2 = center + Vector2(102.0 * dir, -118.0) * s
+		var p3: Vector2 = center + Vector2(126.0 * dir, -150.0) * s
 		draw_polyline(PackedVector2Array([root, p1, p2, p3]), horn, 9.0 * s, true)
 		draw_polyline(PackedVector2Array([root, p1, p2]), horn_hi, 2.2 * s, true)
-		draw_line(p1, p1 + Vector2(12.0 * direction, -46.0) * s, horn, 7.0 * s)
-		draw_line(p2, p2 + Vector2(26.0 * direction, -34.0) * s, horn, 6.0 * s)
-		draw_line(p2, p2 + Vector2(-4.0 * direction, -52.0) * s, horn, 5.0 * s)
+		draw_line(p1, p1 + Vector2(12.0 * dir, -46.0) * s, horn, 7.0 * s)
+		draw_line(p2, p2 + Vector2(26.0 * dir, -34.0) * s, horn, 6.0 * s)
+		draw_line(p2, p2 + Vector2(-4.0 * dir, -52.0) * s, horn, 5.0 * s)
 
-	# Cráneo largo de ciervo.
 	var skull := PackedVector2Array([
 		center + Vector2(-42, -56) * s,
 		center + Vector2(-24, -76) * s,
@@ -109,8 +108,11 @@ func _draw_guardian(center: Vector2, scale: float) -> void:
 		center + Vector2(-34, -8) * s
 	])
 	draw_colored_polygon(skull, BONE)
-	draw_polyline(PackedVector2Array(Array(skull) + [skull[0]]), BONE_DARK, 4.0 * s, true)
-	# Cavidades y ojos verdes.
+	var skull_outline := PackedVector2Array()
+	for point in skull:
+		skull_outline.append(point)
+	skull_outline.append(skull[0])
+	draw_polyline(skull_outline, BONE_DARK, 4.0 * s, true)
 	draw_circle(center + Vector2(-19, -35) * s, 12.0 * s, Color("17160e"))
 	draw_circle(center + Vector2(19, -35) * s, 12.0 * s, Color("17160e"))
 	draw_circle(center + Vector2(-19, -35) * s, 5.0 * s, EYE_GLOW)
@@ -119,9 +121,10 @@ func _draw_guardian(center: Vector2, scale: float) -> void:
 	draw_line(center + Vector2(-12, 18) * s, center + Vector2(12, 18) * s, BONE_DARK, 2.0 * s)
 
 func _draw_candle_cluster(center: Vector2, scale: float) -> void:
-	for item in [Vector2(-34, 10), Vector2(-15, -10), Vector2(5, 5), Vector2(25, -18), Vector2(42, 12)]:
-		var p := center + item * scale
-		var candle_h := (32.0 + absf(item.y) * 0.55) * scale
+	var offsets := PackedVector2Array([Vector2(-34, 10), Vector2(-15, -10), Vector2(5, 5), Vector2(25, -18), Vector2(42, 12)])
+	for item in offsets:
+		var p: Vector2 = center + item * scale
+		var candle_h: float = (32.0 + absf(item.y) * 0.55) * scale
 		draw_rect(Rect2(p.x - 5 * scale, p.y - candle_h, 10 * scale, candle_h), Color("c99b66"))
 		draw_circle(Vector2(p.x, p.y - candle_h - 5 * scale), 5.0 * scale, FIRE)
 		draw_circle(Vector2(p.x, p.y - candle_h - 5 * scale), 2.0 * scale, Color("fff0aa"))
@@ -129,13 +132,13 @@ func _draw_candle_cluster(center: Vector2, scale: float) -> void:
 func _draw_tree_column(rect: Rect2, mirror: bool) -> void:
 	draw_rect(rect, BARK)
 	draw_rect(rect.grow(-5), BARK_LIGHT)
-	var x := rect.end.x - 4.0 if mirror else rect.position.x + 4.0
+	var x: float = rect.end.x - 4.0 if mirror else rect.position.x + 4.0
 	for i in range(6):
-		var yy := rect.position.y + rect.size.y * (0.08 + float(i) * 0.16)
-		var branch_end := Vector2(rect.position.x - rect.size.x * 0.45, yy - 32) if mirror else Vector2(rect.end.x + rect.size.x * 0.45, yy - 32)
+		var yy: float = rect.position.y + rect.size.y * (0.08 + float(i) * 0.16)
+		var branch_end: Vector2 = Vector2(rect.position.x - rect.size.x * 0.45, yy - 32) if mirror else Vector2(rect.end.x + rect.size.x * 0.45, yy - 32)
 		draw_line(Vector2(x, yy), branch_end, BARK_LIGHT, 5.0)
 	for i in range(12):
-		var yy2 := rect.position.y + rect.size.y * float(i) / 12.0
+		var yy2: float = rect.position.y + rect.size.y * float(i) / 12.0
 		draw_line(Vector2(rect.position.x + rect.size.x * 0.22, yy2), Vector2(rect.position.x + rect.size.x * 0.64, yy2 + 54), Color(0.05, 0.02, 0.01, 0.28), 2.0)
 
 func _draw_lantern(center: Vector2, radius: float) -> void:
@@ -154,5 +157,5 @@ func _draw_vine(points: PackedVector2Array) -> void:
 		return
 	draw_polyline(points, VINE, 4.0, true)
 	for i in range(points.size()):
-		var p := points[i]
+		var p: Vector2 = points[i]
 		draw_circle(p + Vector2(8 if i % 2 == 0 else -8, -4), 5.0, MOSS)
