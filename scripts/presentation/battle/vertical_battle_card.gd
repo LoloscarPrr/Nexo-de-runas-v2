@@ -5,7 +5,8 @@ extends Button
 ## Sólo consume datos ya resueltos por Application; no conoce reglas del Domain.
 
 const FRAME_TEXTURE_PATH := "res://assets/domains/forest/cards/card_frame_overlay.svg"
-const COMPACT_CARD_SIZE := Vector2(132, 194)
+const COMPACT_CARD_SIZE := Vector2(156, 230)
+const HAND_CARD_SIZE := Vector2(198, 286)
 
 const LEGACY_ART := {
 	"ardilla_vigilante": "ardilla",
@@ -66,8 +67,8 @@ func configure(data: Dictionary, atk: int = -1, hp: int = -1, is_selected: bool 
 	_cached_art_id = ""
 	_cached_texture = null
 	if compact:
-		# A board lane is the large touch target; the card itself must keep a
-		# physical card aspect ratio instead of stretching to fill that lane.
+		# El carril es el gran objetivo táctil; la carta mantiene la proporción
+		# física del mockup y queda centrada dentro del carril.
 		custom_minimum_size = COMPACT_CARD_SIZE
 		anchor_left = 0.5
 		anchor_top = 0.5
@@ -78,7 +79,7 @@ func configure(data: Dictionary, atk: int = -1, hp: int = -1, is_selected: bool 
 		offset_right = COMPACT_CARD_SIZE.x * 0.5
 		offset_bottom = COMPACT_CARD_SIZE.y * 0.5
 	else:
-		custom_minimum_size = Vector2(188, 276)
+		custom_minimum_size = HAND_CARD_SIZE
 	mouse_filter = Control.MOUSE_FILTER_IGNORE if compact else Control.MOUSE_FILTER_STOP
 	if is_inside_tree():
 		_restore_pose()

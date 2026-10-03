@@ -22,6 +22,18 @@ func _run_checks() -> void:
 	view.start_battle("forest")
 	await process_frame
 
+	check(int(ProjectSettings.get_setting("display/window/size/viewport_width", 0)) == 864, "Canonical battle viewport uses the approved 864 width")
+	check(int(ProjectSettings.get_setting("display/window/size/viewport_height", 0)) == 1536, "Canonical battle viewport uses the approved 1536 height")
+	check(int(ProjectSettings.get_setting("display/window/handheld/orientation", -1)) == 1, "Android is locked to portrait orientation")
+	check(view.find_child("MockupLogo", true, false) != null, "Mockup-faithful Presentation exposes the marked Nexo logo")
+	check(view.find_child("SettingsGear", true, false) != null, "Mockup-faithful Presentation exposes the marked settings gear")
+	check(view.find_child("RivalPanel", true, false) != null, "Mockup-faithful Presentation exposes the centered rival panel")
+	check(view.find_child("BoardFrame", true, false) != null, "Mockup-faithful Presentation exposes the framed two-row board")
+	check(view.find_child("HudStrip", true, false) != null, "Mockup-faithful Presentation exposes the four marked HUD modules")
+	check(view.find_child("HandFrame", true, false) != null, "Mockup-faithful Presentation exposes the marked hand area")
+	check(view.find_child("PlayerNexus", true, false) != null, "Mockup-faithful Presentation exposes the marked player Nexus")
+	check(view.find_child("EndTurnButton", true, false) != null, "Mockup-faithful Presentation exposes the marked large end-turn button")
+
 	var opening: Dictionary = view.current_snapshot()
 	check(opening.get("lane_count", 0) == 5, "Vertical Presentation consumes five canonical lanes")
 	check(view.player_lane_buttons.size() == 5, "Vertical Presentation renders five player lane controls")
@@ -32,6 +44,7 @@ func _run_checks() -> void:
 	check(view.end_turn_button != null, "Vertical Presentation exposes the canonical end-turn action")
 	check(view.rival_integrity_bar != null, "Polished Presentation exposes the rival integrity bar")
 	check(view.hand_strip.get_child(0).get_script() == CardScript, "Opening hand uses the physical Presentation card renderer")
+	check(view.hand_strip.get_child(0).size == CardScript.HAND_CARD_SIZE, "Hand cards use the large mockup card size")
 	check(opening.has("impulse_available"), "Application snapshot exposes Impulse availability to Presentation")
 
 	# The first Forest starter card costs one Energy and is a creature. Playing it
@@ -55,11 +68,11 @@ func _run_checks() -> void:
 			lane_card = child
 	check(lane_card != null, "Played units use the same physical card renderer on the board")
 	if lane_card != null:
-		check(lane_card.size == CardScript.COMPACT_CARD_SIZE, "Board cards keep the canonical compact card size")
+		check(lane_card.size == CardScript.COMPACT_CARD_SIZE, "Board cards use the large compact size from the mockup")
 		var ratio: float = float(lane_card.size.x) / float(lane_card.size.y)
 		var expected_ratio: float = float(CardScript.COMPACT_CARD_SIZE.x) / float(CardScript.COMPACT_CARD_SIZE.y)
 		check(absf(ratio - expected_ratio) < 0.01, "Board cards keep a physical card aspect ratio")
-		check(lane_card.size.y < view.player_lane_buttons[4].size.y, "Board card stays centered inside the larger touch lane")
+		check(lane_card.size.y < view.player_lane_buttons[4].size.y, "Board card stays centered inside its touch lane")
 
 	view._on_end_turn_pressed()
 	await process_frame
