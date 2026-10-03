@@ -2,6 +2,7 @@ extends SceneTree
 
 const Battle = preload("res://scripts/domain/canonical_cpu_battle.gd")
 const Catalog = preload("res://scripts/domain/canonical_card_catalog.gd")
+const CpuPolicy = preload("res://scripts/domain/services/cpu_action_policy.gd")
 
 var failures := 0
 
@@ -13,6 +14,8 @@ func check(condition: bool, message: String) -> void:
 func _initialize() -> void:
 	_test_cpu_round()
 	_test_cpu_direct_damage()
+	_test_cpu_does_not_fill_left_to_right()
+	_test_cpu_answers_lane_threats()
 	print("Canonical CPU battle checks: %d failures" % failures)
 	quit(1 if failures else 0)
 
@@ -38,3 +41,27 @@ func _test_cpu_direct_damage() -> void:
 	battle.player_lanes = [null, null, null, null, null]
 	battle.resolve_cpu_attacks()
 	check(battle.player_integrity == 18, "CPU open lane deals direct Nexus damage")
+
+func _test_cpu_does_not_fill_left_to_right() -> void:
+	var battle := Battle.new()
+	battle.setup_cpu_starter(Catalog.DOMAIN_FOREST)
+	battle.cpu_hand = ["zorro_acechante"]
+	battle.cpu_energy_current = 2
+	battle.cpu_energy_capacity = 2
+	battle.enemy_lanes = [null, null, null, null, null]
+	battle.player_lanes = [null, null, null, null, null]
+	battle.turn = 1
+	var action: Dictionary = CpuPolicy.choose_action(battle)
+	check(int(action.get("lane", -1)) == 2, "On a neutral board the CPU prefers the center instead of always lane one")
+
+func _test_cpu_answers_lane_threats() -> void:
+	var battle := Battle.new()
+	battle.setup_cpu_starter(Catalog.DOMAIN_FOREST)
+	battle.cpu_hand = ["zorro_acechante"]
+	battle.cpu_energy_current = 2
+	battle.cpu_energy_capacity = 2
+	battle.enemy_lanes = [null, null, null, null, null]
+	battle.player_lanes = [null, null, null, battle.create_unit("oso_ancestral", true), null]
+	battle.turn = 2
+	var action: Dictionary = CpuPolicy.choose_action(battle)
+	check(int(action.get("lane", -1)) == 3, "CPU chooses the threatened lane instead of the first empty lane")
