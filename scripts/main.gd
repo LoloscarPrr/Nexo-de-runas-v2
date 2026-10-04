@@ -4,7 +4,7 @@ extends Control
 ## La campaña legado sigue cargada para conservar saves, pero deja de dominar la UI.
 
 const CampaignViewScript = preload("res://scripts/ui/mockup_campaign_view.gd")
-const CanonicalBattleViewScript = preload("res://scripts/presentation/battle/vertical_battle_view_polished.gd")
+const CanonicalBattleViewScript = preload("res://scripts/presentation/battle/vertical_battle_view_faithful.gd")
 const MenuBackdropScript = preload("res://scripts/ui/canonical_main_menu_backdrop.gd")
 
 const INK := Color("eadca8")
