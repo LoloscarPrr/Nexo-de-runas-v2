@@ -20,18 +20,18 @@ func _run_checks() -> void:
 	await process_frame
 	await process_frame
 
-	var source := FileAccess.get_file_as_string("res://scripts/main.gd")
+	var source: String = FileAccess.get_file_as_string("res://scripts/main.gd")
 	check(not source.contains("SCREEN_LANDSCAPE"), "Main navigation never forces landscape orientation")
 	check(int(ProjectSettings.get_setting("display/window/size/viewport_width", 0)) < int(ProjectSettings.get_setting("display/window/size/viewport_height", 0)), "Canonical project viewport is portrait")
 
-	var menu := app.find_child("MainMenuPortrait", true, false)
-	var content := app.find_child("MainMenuContent", true, false)
-	var logo := app.find_child("MainMenuLogo", true, false)
-	var hero := app.find_child("MainMenuHero", true, false)
-	var play := app.find_child("MainPlayButton", true, false)
-	var grid := app.find_child("MainMenuGrid", true, false)
-	var settings := app.find_child("MainSettingsButton", true, false)
-	var status := app.find_child("MainStatus", true, false)
+	var menu: Control = app.find_child("MainMenuPortrait", true, false) as Control
+	var content: Control = app.find_child("MainMenuContent", true, false) as Control
+	var logo: Control = app.find_child("MainMenuLogo", true, false) as Control
+	var hero: Control = app.find_child("MainMenuHero", true, false) as Control
+	var play: Button = app.find_child("MainPlayButton", true, false) as Button
+	var grid: GridContainer = app.find_child("MainMenuGrid", true, false) as GridContainer
+	var settings: Button = app.find_child("MainSettingsButton", true, false) as Button
+	var status: Label = app.find_child("MainStatus", true, false) as Label
 
 	check(menu != null and menu.visible, "Portrait main menu is the initial visible screen")
 	check(content != null, "Portrait menu uses an adaptive vertical content container")
