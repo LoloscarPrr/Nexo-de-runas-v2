@@ -77,6 +77,7 @@ jobs:
           "$GODOT_CHECK" --headless --path . --script tests/canonical_cpu_battle_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/cpu_ability_parity_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/vertical_battle_presentation_test.gd
+          "$GODOT_CHECK" --headless --path . --script tests/portrait_main_menu_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/canonical_forest_ui_test.gd 2>&1 | tee "$RUNNER_TEMP/godot-forest-ui.log"
           if grep -E 'SCRIPT ERROR|ERROR:' "$RUNNER_TEMP/godot-forest-ui.log"; then exit 1; fi
           "$GODOT_CHECK" --headless --path . --script tests/campaign_progression_test.gd
