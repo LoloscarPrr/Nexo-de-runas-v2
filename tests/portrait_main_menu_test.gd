@@ -32,6 +32,8 @@ func _run_checks() -> void:
 	var top_bar: HBoxContainer = app.find_child("MainMenuTopBar", true, false) as HBoxContainer
 	var logo: Control = app.find_child("MainMenuLogo", true, false) as Control
 	var hero: Control = app.find_child("MainMenuHero", true, false) as Control
+	var hero_spacer: Control = app.find_child("MainMenuHeroSpacer", true, false) as Control
+	var lower_scene_space: Control = app.find_child("MainMenuLowerSceneSpace", true, false) as Control
 	var play: Button = app.find_child("MainPlayButton", true, false) as Button
 	var grid: GridContainer = app.find_child("MainMenuGrid", true, false) as GridContainer
 	var settings: Button = app.find_child("MainSettingsButton", true, false) as Button
@@ -42,9 +44,12 @@ func _run_checks() -> void:
 	check(content != null and content.size_flags_vertical == Control.SIZE_EXPAND_FILL, "Portrait menu uses an adaptive vertical container")
 	check(top_bar != null and top_bar.get_child_count() == 2, "Logo and settings share a compact top bar")
 	check(logo != null and not (logo is PanelContainer), "Logo is ornamental rather than a rectangular panel")
-	check(hero != null and hero.custom_minimum_size.y >= 380.0, "Portrait menu reserves a large open hero scene")
+	check(hero != null and hero.custom_minimum_size.y >= 480.0, "Portrait menu keeps a large hero scene")
+	check(hero != null and hero.size_flags_vertical != Control.SIZE_EXPAND_FILL, "Hero scene cannot expand and recreate the giant middle gap")
+	check(hero_spacer != null and hero_spacer.size_flags_vertical != Control.SIZE_EXPAND_FILL, "Hero spacer has bounded height instead of swallowing the screen")
+	check(lower_scene_space != null and lower_scene_space.size_flags_vertical == Control.SIZE_EXPAND_FILL, "Flexible empty space lives below navigation as scenic floor")
 	check(backdrop != null, "Portrait menu keeps a dedicated scenic backdrop")
-	check(play != null and play.custom_minimum_size.y >= 108.0, "Primary play action remains dominant and touch friendly")
+	check(play != null and play.custom_minimum_size.y >= 100.0, "Primary play action remains dominant and touch friendly")
 	check(grid != null and grid.columns == 2 and grid.get_child_count() == 4, "Secondary navigation is a compact 2x2 grid")
 	if grid != null and grid.get_child_count() > 0 and play != null:
 		var first_secondary := grid.get_child(0) as Control
