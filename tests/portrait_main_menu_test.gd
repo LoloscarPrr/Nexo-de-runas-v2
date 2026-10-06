@@ -44,12 +44,12 @@ func _run_checks() -> void:
 	check(content != null and content.size_flags_vertical == Control.SIZE_EXPAND_FILL, "Portrait menu uses an adaptive vertical container")
 	check(top_bar != null and top_bar.get_child_count() == 2, "Logo and settings share a compact top bar")
 	check(logo != null and not (logo is PanelContainer), "Logo is ornamental rather than a rectangular panel")
-	check(hero != null and hero.custom_minimum_size.y >= 480.0, "Portrait menu keeps a large hero scene")
+	check(hero != null and hero.custom_minimum_size.y >= 590.0 and hero.custom_minimum_size.y <= 640.0, "Portrait menu reserves a bounded Guardian stage before navigation")
 	check(hero != null and hero.size_flags_vertical != Control.SIZE_EXPAND_FILL, "Hero scene cannot expand and recreate the giant middle gap")
-	check(hero_spacer != null and hero_spacer.size_flags_vertical != Control.SIZE_EXPAND_FILL, "Hero spacer has bounded height instead of swallowing the screen")
+	check(hero_spacer != null and hero_spacer.size_flags_vertical != Control.SIZE_EXPAND_FILL and hero_spacer.custom_minimum_size.y >= 500.0, "Guardian receives a bounded clear zone above the title and CTA")
 	check(lower_scene_space != null and lower_scene_space.size_flags_vertical == Control.SIZE_EXPAND_FILL, "Flexible empty space lives below navigation as scenic floor")
 	check(backdrop != null, "Portrait menu keeps a dedicated scenic backdrop")
-	check(play != null and play.custom_minimum_size.y >= 100.0, "Primary play action remains dominant and touch friendly")
+	check(play != null and play.custom_minimum_size.y >= 104.0, "Primary play action remains dominant and touch friendly")
 	check(grid != null and grid.columns == 2 and grid.get_child_count() == 4, "Secondary navigation is a compact 2x2 grid")
 	if grid != null and grid.get_child_count() > 0 and play != null:
 		var first_secondary := grid.get_child(0) as Control
