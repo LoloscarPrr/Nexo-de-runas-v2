@@ -44,8 +44,8 @@ func _draw() -> void:
 
 	# El Guardián baja hacia el centro y gana escala. Sus astas invaden el espacio
 	# del encabezado para integrarlo a la escena en lugar de parecer un icono.
-	var guardian_center := Vector2(s.x * 0.50, s.y * 0.315)
-	var guardian_scale := minf(s.x * 0.43, 320.0)
+	var guardian_center := Vector2(s.x * 0.50, s.y * 0.285)
+	var guardian_scale := minf(s.x * 0.39, 292.0)
 	_draw_glow(guardian_center + Vector2(0, 20), s.x * 0.44, Color(0.19, 0.60, 0.14, 0.12))
 	_draw_glow(guardian_center + Vector2(-38, 14), s.x * 0.26, Color(0.26, 0.72, 0.18, 0.055))
 	_draw_glow(guardian_center + Vector2(54, -18), s.x * 0.22, Color(0.18, 0.50, 0.13, 0.05))
@@ -69,6 +69,12 @@ func _draw() -> void:
 	_draw_lantern(Vector2(s.x * 0.94, s.y * 0.56), s.x * 0.015)
 
 	_draw_lower_sanctuary(s)
+
+	# Runas verticales de transición: conectan visualmente el grid con el altar
+	# para que la franja media no vuelva a sentirse como un vacío negro.
+	_draw_hanging_rune(Vector2(s.x * 0.18, s.y * 0.56), 17.0, 0.72)
+	_draw_hanging_rune(Vector2(s.x * 0.79, s.y * 0.59), 20.0, 0.58)
+	_draw_hanging_rune(Vector2(s.x * 0.49, s.y * 0.66), 15.0, 0.48)
 
 	# Viñeta leve: sólo bordes. El centro queda legible y abierto.
 	draw_rect(Rect2(0, 0, s.x, s.y * 0.065), Color(0, 0, 0, 0.18))
@@ -162,7 +168,7 @@ func _draw_guardian(center: Vector2, scale: float) -> void:
 		draw_circle(eye_center, 5.3 * k, EYE)
 
 func _draw_lower_sanctuary(s: Vector2) -> void:
-	var altar_y := s.y * 0.70
+	var altar_y := s.y * 0.615
 	_draw_glow(Vector2(s.x * 0.50, s.y * 0.87), s.x * 0.48, Color(0.95, 0.40, 0.10, 0.060))
 	_draw_glow(Vector2(s.x * 0.52, s.y * 0.91), s.x * 0.28, Color(0.20, 0.70, 0.16, 0.045))
 
@@ -172,7 +178,7 @@ func _draw_lower_sanctuary(s: Vector2) -> void:
 	draw_line(Vector2(s.x * 0.045, altar_y), Vector2(s.x * 0.955, altar_y), Color(0.60, 0.40, 0.17, 0.50), 3.0)
 
 	# Perspectiva del piso hacia un punto de fuga central.
-	var vanishing := Vector2(s.x * 0.50, s.y * 0.72)
+	var vanishing := Vector2(s.x * 0.50, s.y * 0.64)
 	for x_fraction in [0.04, 0.19, 0.34, 0.66, 0.81, 0.96]:
 		draw_line(Vector2(s.x * x_fraction, s.y), vanishing, Color(0.50, 0.28, 0.10, 0.16), 2.0)
 	for i in range(5):
@@ -181,13 +187,13 @@ func _draw_lower_sanctuary(s: Vector2) -> void:
 
 	# Raíces gruesas en primer plano, con trayectorias diferentes a cada lado.
 	_draw_root(PackedVector2Array([
-		Vector2(-8, s.y * 0.98), Vector2(s.x * 0.12, s.y * 0.90), Vector2(s.x * 0.23, s.y * 0.83), Vector2(s.x * 0.39, s.y * 0.77)
+		Vector2(-8, s.y * 0.98), Vector2(s.x * 0.12, s.y * 0.86), Vector2(s.x * 0.23, s.y * 0.74), Vector2(s.x * 0.39, s.y * 0.655)
 	]), 16.0)
 	_draw_root(PackedVector2Array([
-		Vector2(s.x + 8, s.y * 0.96), Vector2(s.x * 0.84, s.y * 0.89), Vector2(s.x * 0.73, s.y * 0.84), Vector2(s.x * 0.59, s.y * 0.76)
+		Vector2(s.x + 8, s.y * 0.96), Vector2(s.x * 0.84, s.y * 0.85), Vector2(s.x * 0.73, s.y * 0.73), Vector2(s.x * 0.59, s.y * 0.65)
 	]), 18.0)
 	_draw_root(PackedVector2Array([
-		Vector2(s.x * 0.17, s.y + 4), Vector2(s.x * 0.29, s.y * 0.92), Vector2(s.x * 0.43, s.y * 0.86)
+		Vector2(s.x * 0.17, s.y + 4), Vector2(s.x * 0.29, s.y * 0.88), Vector2(s.x * 0.43, s.y * 0.72)
 	]), 11.0)
 
 	# Piedras y runas del suelo: dispersión irregular, no tres iconos alineados.
@@ -272,6 +278,14 @@ func _draw_floor_rune(center: Vector2, radius: float, rotation_hint: float) -> v
 	var c := center + Vector2(cos(rotation_hint + 0.95), sin(rotation_hint + 0.95)) * radius * 0.55
 	var d := center + Vector2(cos(rotation_hint + 3.95), sin(rotation_hint + 3.95)) * radius * 0.55
 	draw_line(c, d, Color(RUNE.r, RUNE.g, RUNE.b, 0.22), 1.8)
+
+func _draw_hanging_rune(center: Vector2, radius: float, alpha: float) -> void:
+	var pulse := 0.78 + sin(phase * 2.0 + center.x * 0.01) * 0.14
+	_draw_glow(center, radius * 2.9, Color(RUNE.r, RUNE.g, RUNE.b, 0.035 * alpha))
+	draw_arc(center, radius, -2.7, 2.75, 24, Color(RUNE.r, RUNE.g, RUNE.b, 0.26 * alpha * pulse), 1.8)
+	draw_line(center + Vector2(0, -radius * 0.78), center + Vector2(0, radius * 0.78), Color(RUNE.r, RUNE.g, RUNE.b, 0.22 * alpha * pulse), 1.6)
+	draw_line(center + Vector2(-radius * 0.55, 0), center + Vector2(radius * 0.55, 0), Color(RUNE.r, RUNE.g, RUNE.b, 0.18 * alpha * pulse), 1.4)
+	_draw_small_rune(center, radius * 0.42, 0.32 * alpha * pulse)
 
 func _draw_small_rune(center: Vector2, radius: float, alpha: float) -> void:
 	var pts := PackedVector2Array([
