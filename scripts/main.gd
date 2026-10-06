@@ -109,18 +109,18 @@ func _build_menu() -> void:
 	settings.pressed.connect(func(): _notice("Ajustes se conectará después de cerrar la Presentation de batalla."))
 	top_bar.add_child(settings)
 
-	# La zona heroica es intencionalmente de altura acotada. No expande para no
-	# volver a empujar JUGAR y la navegación hacia el borde inferior del teléfono.
+	# La zona heroica reserva espacio limpio para el Guardián completo. Sigue sin
+	# expandir: desplaza el CTA bajo el cráneo sin recrear un hueco elástico.
 	var hero := VBoxContainer.new()
 	hero.name = "MainMenuHero"
-	hero.custom_minimum_size = Vector2(0, 500)
+	hero.custom_minimum_size = Vector2(0, 610)
 	hero.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	hero.add_theme_constant_override("separation", 1)
 	root.add_child(hero)
 
 	var hero_spacer := Control.new()
 	hero_spacer.name = "MainMenuHeroSpacer"
-	hero_spacer.custom_minimum_size = Vector2(0, 420)
+	hero_spacer.custom_minimum_size = Vector2(0, 525)
 	hero.add_child(hero_spacer)
 
 	var hero_title := _label("EL NEXO DESPIERTA", 23, INK, HORIZONTAL_ALIGNMENT_CENTER)
@@ -135,7 +135,7 @@ func _build_menu() -> void:
 
 	var play := _menu_button("JUGAR", "Entrar al Nexo", true)
 	play.name = "MainPlayButton"
-	play.custom_minimum_size = Vector2(0, 106)
+	play.custom_minimum_size = Vector2(0, 108)
 	play.pressed.connect(_start_canonical_battle)
 	root.add_child(play)
 
@@ -149,25 +149,25 @@ func _build_menu() -> void:
 
 	var deckbuilder := _menu_button("◇  CONSTRUCTOR", "Mazos")
 	deckbuilder.name = "MainDeckbuilderButton"
-	deckbuilder.custom_minimum_size = Vector2(0, 76)
+	deckbuilder.custom_minimum_size = Vector2(0, 72)
 	deckbuilder.pressed.connect(func(): _notice("El Constructor de Mazos será la siguiente sala en conectarse al nuevo core."))
 	grid.add_child(deckbuilder)
 
 	var collection := _menu_button("◇  COLECCIÓN", "Cartas")
 	collection.name = "MainCollectionButton"
-	collection.custom_minimum_size = Vector2(0, 76)
+	collection.custom_minimum_size = Vector2(0, 72)
 	collection.pressed.connect(func(): _notice("La Colección conservará el mismo lenguaje físico de cartas."))
 	grid.add_child(collection)
 
 	var profile := _menu_button("◇  PERFIL", "Viajero")
 	profile.name = "MainProfileButton"
-	profile.custom_minimum_size = Vector2(0, 76)
+	profile.custom_minimum_size = Vector2(0, 72)
 	profile.pressed.connect(func(): _notice("Perfil está reservado para el progreso del viajero."))
 	grid.add_child(profile)
 
 	var achievements := _menu_button("◇  LOGROS", "Marcas")
 	achievements.name = "MainAchievementsButton"
-	achievements.custom_minimum_size = Vector2(0, 76)
+	achievements.custom_minimum_size = Vector2(0, 72)
 	achievements.pressed.connect(func(): _notice("Logros está reservado; todavía no modifica tu progreso."))
 	grid.add_child(achievements)
 
@@ -178,8 +178,8 @@ func _build_menu() -> void:
 	menu_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(menu_status)
 
-	# El espacio flexible queda DESPUÉS de la navegación. Así la interfaz se
-	# mantiene en el tercio medio y el escenario inferior puede respirar detrás.
+	# El espacio flexible queda DESPUÉS de la navegación y ahora es menor en la
+	# práctica: el santuario sube desde el fondo para enlazar raíces con el grid.
 	var lower_scene_space := Control.new()
 	lower_scene_space.name = "MainMenuLowerSceneSpace"
 	lower_scene_space.size_flags_vertical = Control.SIZE_EXPAND_FILL
