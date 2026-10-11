@@ -392,10 +392,10 @@ func end_player_turn() -> void:
 			var unit: Dictionary = player_lanes[i]
 			unit["ready"] = true
 
-func _deal_damage_to_unit(player_side: bool, lane: int, amount: int) -> void:
+func _deal_damage_to_unit(player_side: bool, lane: int, amount: int, source_id: String = "", source_side: String = "") -> int:
 	var lanes: Array = player_lanes if player_side else enemy_lanes
 	if not _valid_occupied_lane(lanes, lane):
-		return
+		return 0
 	var unit: Dictionary = lanes[lane]
 	var shield := int(unit.get("shield", 0))
 	var damage := maxi(0, amount)
@@ -403,10 +403,33 @@ func _deal_damage_to_unit(player_side: bool, lane: int, amount: int) -> void:
 		damage = maxi(0, damage - shield)
 		unit["shield"] = 0
 	unit["hp"] = int(unit.get("hp", 0)) - damage
+	event_queue.push(GameEventScript.create("DAMAGE_DEALT", source_id, [str(unit.get("id", ""))], {
+		"source_side": source_side,
+		"target_side": "player" if player_side else "enemy",
+		"lane": lane,
+		"amount": damage
+	}))
 	if int(unit.get("hp", 0)) <= 0:
-		_kill_unit(player_side, lane)
+		_kill_unit(player_side, lane, "damage", source_id, source_side)
+	return damage
 
-func _kill_unit(player_side: bool, lane: int) -> void:
+func _heal_unit(player_side: bool, lane: int, amount: int, source_id: String = "", source_side: String = "") -> int:
+	var lanes: Array = player_lanes if player_side else enemy_lanes
+	if not _valid_occupied_lane(lanes, lane):
+		return 0
+	var unit: Dictionary = lanes[lane]
+	var before := int(unit.get("hp", 0))
+	unit["hp"] = mini(int(unit.get("max_hp", 1)), before + maxi(0, amount))
+	var healed := int(unit.get("hp", 0)) - before
+	event_queue.push(GameEventScript.create("HEAL_APPLIED", source_id, [str(unit.get("id", ""))], {
+		"source_side": source_side,
+		"target_side": "player" if player_side else "enemy",
+		"lane": lane,
+		"amount": healed
+	}))
+	return healed
+
+func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed", source_id: String = "", source_side: String = "") -> void:
 	var lanes: Array = player_lanes if player_side else enemy_lanes
 	if not _valid_occupied_lane(lanes, lane):
 		return
@@ -421,8 +444,19 @@ func _kill_unit(player_side: bool, lane: int) -> void:
 		enemy_discard.append(card_id)
 	lanes[lane] = null
 	if death_reason == "sacrifice":
-		event_queue.push(GameEventScript.create("UNIT_SACRIFICED", card_id, [], {"side":"player" if player_side else "enemy","lane":lane,"source_id":source_id,"source_side":source_side}))
-	event_queue.push(GameEventScript.create("UNIT_DIED", card_id, [], {"side":"player" if player_side else "enemy","lane":lane,"death_reason":death_reason,"source_id":source_id,"source_side":source_side}))
+		event_queue.push(GameEventScript.create("UNIT_SACRIFICED", card_id, [], {
+			"side": "player" if player_side else "enemy",
+			"lane": lane,
+			"source_id": source_id,
+			"source_side": source_side
+		}))
+	event_queue.push(GameEventScript.create("UNIT_DIED", card_id, [], {
+		"side": "player" if player_side else "enemy",
+		"lane": lane,
+		"death_reason": death_reason,
+		"source_id": source_id,
+		"source_side": source_side
+	}))
 
 func _trigger_last_breath(unit: Dictionary, player_side: bool, lane: int) -> void:
 	if not player_side:
