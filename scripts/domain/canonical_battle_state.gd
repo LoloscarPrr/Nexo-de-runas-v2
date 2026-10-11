@@ -45,6 +45,9 @@ var last_revealed: Array[String] = []
 var last_message := ""
 var event_queue = EventQueueScript.new()
 var turn_gates: Dictionary = {}
+var cost_modifiers: Dictionary = {"player": [], "enemy": []}
+var death_window_current: Dictionary = {"player": 0, "enemy": 0}
+var death_window_previous: Dictionary = {"player": 0, "enemy": 0}
 
 func setup(domain: String, deck_ids: Array[String], second_player: bool = false) -> void:
 	player_domain = domain
@@ -70,6 +73,9 @@ func setup(domain: String, deck_ids: Array[String], second_player: bool = false)
 	last_message = ""
 	event_queue.clear()
 	turn_gates.clear()
+	cost_modifiers = {"player": [], "enemy": []}
+	death_window_current = {"player": 0, "enemy": 0}
+	death_window_previous = {"player": 0, "enemy": 0}
 	for card_id in deck_ids:
 		if not Catalog.find_by_id(card_id).is_empty():
 			draw_pile.append(card_id)
@@ -90,6 +96,8 @@ func begin_new_turn() -> void:
 	turn += 1
 	recharge_energy_for_new_turn()
 	reset_turn_gates("player")
+	_roll_death_window("player")
+	_expire_cost_modifiers("player", "turn")
 	_expire_statuses_for_side("player")
 	_reset_guard_usage(player_lanes)
 	_reset_guard_usage(enemy_lanes)
@@ -223,7 +231,10 @@ func create_unit(card_id: String, ready: bool = false) -> Dictionary:
 		"shield": shield,
 		"temp_attack": 0,
 		"temp_health": 0,
-		"statuses": []
+		"statuses": [],
+		"auras": [],
+		"aura_attack": 0,
+		"aura_health": 0
 	}
 
 func place_enemy_unit(card_id: String, lane: int, ready: bool = true) -> bool:
@@ -248,7 +259,7 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 	var card := Catalog.find_by_id(card_id)
 	if card.is_empty():
 		return false
-	var cost := int(card.get("cost", 0))
+	var cost := effective_card_cost(card_id, "player")
 	if not can_pay_energy(cost):
 		last_message = "Energía Rúnica insuficiente."
 		return false
@@ -297,6 +308,7 @@ func _play_creature(card: Dictionary, lane: int) -> bool:
 	if unit.is_empty():
 		return false
 	player_lanes[lane] = unit
+	_recalculate_auras("player")
 	event_queue.push(GameEventScript.create("UNIT_SUMMONED", str(card.get("id", "")), [], {"side":"player","lane":lane,"token":false}))
 	_on_creature_entered(card, lane)
 	return true
@@ -449,6 +461,8 @@ func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed"
 	else:
 		enemy_discard.append(card_id)
 	lanes[lane] = null
+	_record_death("player" if player_side else "enemy")
+	_recalculate_auras("player" if player_side else "enemy")
 	if death_reason == "sacrifice":
 		event_queue.push(GameEventScript.create("UNIT_SACRIFICED", card_id, [], {
 			"side": "player" if player_side else "enemy",
@@ -550,6 +564,7 @@ func _move_unit(side: String, from_lane: int, to_lane: int, forced: bool = false
 		return false
 	lanes[to_lane] = unit
 	lanes[from_lane] = null
+	_recalculate_auras(side)
 	event_queue.push(GameEventScript.create("UNIT_MOVED", str(unit.get("id", "")), [], {"side":side,"from_lane":from_lane,"to_lane":to_lane,"forced":forced,"source_id":source_id,"source_side":source_side}))
 	return true
 
@@ -565,10 +580,160 @@ func _swap_units(side: String, lane_a: int, lane_b: int, source_id: String = "",
 		return false
 	lanes[lane_a] = unit_b
 	lanes[lane_b] = unit_a
+	_recalculate_auras(side)
 	event_queue.push(GameEventScript.create("UNIT_MOVED", str(unit_a.get("id", "")), [], {"side":side,"from_lane":lane_a,"to_lane":lane_b,"forced":false,"source_id":source_id,"source_side":source_side}))
 	event_queue.push(GameEventScript.create("UNIT_MOVED", str(unit_b.get("id", "")), [], {"side":side,"from_lane":lane_b,"to_lane":lane_a,"forced":false,"source_id":source_id,"source_side":source_side}))
 	event_queue.push(GameEventScript.create("UNITS_SWAPPED", source_id, [str(unit_a.get("id", "")),str(unit_b.get("id", ""))], {"side":side,"lane_a":lane_a,"lane_b":lane_b,"source_side":source_side}))
 	return true
+
+func add_cost_modifier(side: String, modifier_id: String, delta: int, floor: int = 1, duration: String = "turn", card_type: String = "", min_base_cost: int = -1) -> void:
+	if side != "player" and side != "enemy":
+		return
+	var list: Array = Array(cost_modifiers.get(side, []))
+	for i in range(list.size()):
+		var existing: Dictionary = Dictionary(list[i])
+		if str(existing.get("id", "")) == modifier_id:
+			existing["delta"] = delta
+			existing["floor"] = floor
+			existing["duration"] = duration
+			existing["card_type"] = card_type
+			existing["min_base_cost"] = min_base_cost
+			list[i] = existing
+			cost_modifiers[side] = list
+			return
+	list.append({"id": modifier_id, "delta": delta, "floor": floor, "duration": duration, "card_type": card_type, "min_base_cost": min_base_cost})
+	cost_modifiers[side] = list
+
+func _expire_cost_modifiers(side: String, duration: String) -> void:
+	var kept: Array = []
+	for raw in Array(cost_modifiers.get(side, [])):
+		var modifier: Dictionary = Dictionary(raw)
+		if str(modifier.get("duration", "")) != duration:
+			kept.append(modifier)
+	cost_modifiers[side] = kept
+
+func effective_card_cost(card_id: String, side: String = "player") -> int:
+	var card := Catalog.find_by_id(card_id)
+	if card.is_empty():
+		return 0
+	var base_cost := int(card.get("cost", 0))
+	var result_cost := base_cost
+	var intrinsic: Dictionary = Dictionary(card.get("cost_rule", {}))
+	if str(intrinsic.get("type", "")) == "deaths_since_last_turn":
+		var reduction_per_death := maxi(0, int(intrinsic.get("reduction_per_death", 1)))
+		var intrinsic_floor := maxi(0, int(intrinsic.get("floor", 0)))
+		result_cost = maxi(intrinsic_floor, result_cost - deaths_since_last_turn(side) * reduction_per_death)
+	for raw in Array(cost_modifiers.get(side, [])):
+		var modifier: Dictionary = Dictionary(raw)
+		var required_type := str(modifier.get("card_type", ""))
+		if not required_type.is_empty() and str(card.get("type", "")) != required_type:
+			continue
+		var min_base := int(modifier.get("min_base_cost", -1))
+		if min_base >= 0 and base_cost < min_base:
+			continue
+		result_cost += int(modifier.get("delta", 0))
+		result_cost = maxi(int(modifier.get("floor", 0)), result_cost)
+	return maxi(0, result_cost)
+
+func _record_death(side: String) -> void:
+	death_window_current[side] = int(death_window_current.get(side, 0)) + 1
+
+func _roll_death_window(side: String) -> void:
+	death_window_previous[side] = int(death_window_current.get(side, 0))
+	death_window_current[side] = 0
+
+func deaths_since_last_turn(side: String) -> int:
+	return int(death_window_previous.get(side, 0))
+
+func _deck_for_side(side: String) -> Array:
+	if side == "enemy" and has_method("cpu_deck_reference"):
+		return call("cpu_deck_reference")
+	return draw_pile
+
+func _move_discard_creature_to_deck_bottom(side: String, requested_card_id: String = "", max_cost: int = 999, source_id: String = "") -> bool:
+	var discard: Array = enemy_discard if side == "enemy" else discard_pile
+	var deck: Array = _deck_for_side(side)
+	for i in range(discard.size() - 1, -1, -1):
+		var card_id := str(discard[i])
+		if not requested_card_id.is_empty() and card_id != requested_card_id:
+			continue
+		var card := Catalog.find_by_id(card_id)
+		if card.is_empty() or str(card.get("type", "")) != Catalog.TYPE_CREATURE or int(card.get("cost", 999)) > max_cost:
+			continue
+		discard.remove_at(i)
+		deck.append(card_id)
+		event_queue.push(GameEventScript.create("CARD_MOVED_TO_DECK_BOTTOM", source_id, [card_id], {"side": side}))
+		return true
+	return false
+
+func _modify_unit_stats_permanent(side: String, lane: int, attack_delta: int, health_delta: int, source_id: String = "", source_side: String = "") -> bool:
+	var lanes: Array = player_lanes if side == "player" else enemy_lanes
+	if not _valid_occupied_lane(lanes, lane):
+		return false
+	var unit: Dictionary = lanes[lane]
+	unit["attack"] = maxi(0, int(unit.get("attack", 0)) + attack_delta)
+	if health_delta != 0:
+		unit["max_hp"] = maxi(1, int(unit.get("max_hp", 1)) + health_delta)
+		unit["hp"] = clampi(int(unit.get("hp", 0)) + health_delta, 1, int(unit.get("max_hp", 1)))
+	event_queue.push(GameEventScript.create("STATS_MODIFIED_PERMANENT", source_id, [str(unit.get("id", ""))], {"side": side, "lane": lane, "attack": attack_delta, "health": health_delta, "source_side": source_side}))
+	return true
+
+func _add_aura_to_unit(side: String, lane: int, aura_id: String, attack: int = 0, health: int = 0, radius: int = 1) -> bool:
+	var lanes: Array = player_lanes if side == "player" else enemy_lanes
+	if aura_id.is_empty() or not _valid_occupied_lane(lanes, lane):
+		return false
+	var unit: Dictionary = lanes[lane]
+	var auras: Array = Array(unit.get("auras", []))
+	var replaced := false
+	for i in range(auras.size()):
+		var existing: Dictionary = Dictionary(auras[i])
+		if str(existing.get("id", "")) == aura_id:
+			auras[i] = {"id": aura_id, "attack": attack, "health": health, "radius": maxi(1, radius)}
+			replaced = true
+			break
+	if not replaced:
+		auras.append({"id": aura_id, "attack": attack, "health": health, "radius": maxi(1, radius)})
+	unit["auras"] = auras
+	_recalculate_auras(side)
+	return true
+
+func _recalculate_auras(side: String) -> void:
+	var lanes: Array = player_lanes if side == "player" else enemy_lanes
+	for lane in range(lanes.size()):
+		if lanes[lane] == null:
+			continue
+		var unit: Dictionary = lanes[lane]
+		var old_max_hp := int(unit.get("max_hp", 1))
+		var damage_taken := maxi(0, old_max_hp - int(unit.get("hp", 0)))
+		unit["_aura_damage_taken"] = damage_taken
+		unit["attack"] = maxi(0, int(unit.get("attack", 0)) - int(unit.get("aura_attack", 0)))
+		unit["max_hp"] = maxi(1, old_max_hp - int(unit.get("aura_health", 0)))
+		unit["aura_attack"] = 0
+		unit["aura_health"] = 0
+	for source_lane in range(lanes.size()):
+		if lanes[source_lane] == null:
+			continue
+		var source: Dictionary = lanes[source_lane]
+		for raw_aura in Array(source.get("auras", [])):
+			var aura: Dictionary = Dictionary(raw_aura)
+			var radius := maxi(1, int(aura.get("radius", 1)))
+			for target_lane in range(lanes.size()):
+				if target_lane == source_lane or lanes[target_lane] == null or absi(target_lane - source_lane) > radius:
+					continue
+				var target: Dictionary = lanes[target_lane]
+				var attack_bonus := int(aura.get("attack", 0))
+				var health_bonus := int(aura.get("health", 0))
+				target["attack"] = int(target.get("attack", 0)) + attack_bonus
+				target["aura_attack"] = int(target.get("aura_attack", 0)) + attack_bonus
+				target["max_hp"] = maxi(1, int(target.get("max_hp", 1)) + health_bonus)
+				target["aura_health"] = int(target.get("aura_health", 0)) + health_bonus
+	for lane in range(lanes.size()):
+		if lanes[lane] == null:
+			continue
+		var unit: Dictionary = lanes[lane]
+		var damage_taken := int(unit.get("_aura_damage_taken", 0))
+		unit["hp"] = maxi(1, int(unit.get("max_hp", 1)) - damage_taken)
+		unit.erase("_aura_damage_taken")
 
 func _guard_interceptor(lanes: Array, target_lane: int) -> int:
 	for offset in [-1, 1]:
