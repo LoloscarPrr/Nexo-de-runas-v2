@@ -14,6 +14,10 @@ const APPLY_STATUS := "apply_status"
 const MOVE_UNIT := "move_unit"
 const FORCED_MOVE_UNIT := "forced_move_unit"
 const SWAP_UNITS := "swap_units"
+const MODIFY_STATS_PERMANENT := "modify_stats_permanent"
+const MOVE_DISCARD_TO_DECK_BOTTOM := "move_discard_to_deck_bottom"
+const ADD_COST_MODIFIER := "add_cost_modifier"
+const ADD_AURA := "add_aura"
 
 static func create(effect_type: String, params: Dictionary = {}) -> Dictionary:
 	return {
@@ -44,3 +48,15 @@ static func move(forced: bool = false) -> Dictionary:
 
 static func swap_units() -> Dictionary:
 	return create(SWAP_UNITS)
+
+static func permanent_stats(attack: int, health: int = 0) -> Dictionary:
+	return create(MODIFY_STATS_PERMANENT, {"attack": attack, "health": health})
+
+static func move_discard_to_deck_bottom(max_cost: int = 999) -> Dictionary:
+	return create(MOVE_DISCARD_TO_DECK_BOTTOM, {"max_cost": max_cost})
+
+static func cost_modifier(modifier_id: String, delta: int, floor: int = 1, duration: String = "turn", card_type: String = "", min_base_cost: int = -1) -> Dictionary:
+	return create(ADD_COST_MODIFIER, {"id": modifier_id, "delta": delta, "floor": floor, "duration": duration, "card_type": card_type, "min_base_cost": min_base_cost})
+
+static func aura(aura_id: String, attack: int = 0, health: int = 0, radius: int = 1) -> Dictionary:
+	return create(ADD_AURA, {"id": aura_id, "attack": attack, "health": health, "radius": radius})

@@ -61,6 +61,8 @@ func run_cpu_turn() -> void:
 	if result != "ongoing":
 		return
 	reset_turn_gates("enemy")
+	_roll_death_window("enemy")
+	_expire_cost_modifiers("enemy", "turn")
 	_expire_statuses_for_side("enemy")
 	cpu_energy_capacity = mini(maxi(1, turn), STANDARD_ENERGY_CAP)
 	cpu_energy_current = cpu_energy_capacity
@@ -99,7 +101,7 @@ func cpu_legal_actions_for_card(hand_index: int) -> Array:
 	var card := CatalogScript.find_by_id(cpu_hand[hand_index])
 	if card.is_empty():
 		return actions
-	var cost := int(card.get("cost", 0))
+	var cost := effective_card_cost(str(card.get("id", "")), "enemy")
 	if not cpu_can_pay_energy(cost):
 		return actions
 	var card_type := str(card.get("type", ""))
@@ -156,7 +158,7 @@ func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, repla
 	var card := CatalogScript.find_by_id(card_id)
 	if card.is_empty():
 		return false
-	var cost := int(card.get("cost", 0))
+	var cost := effective_card_cost(card_id, "enemy")
 	if not cpu_can_pay_energy(cost):
 		return false
 	var card_type := str(card.get("type", ""))
@@ -202,6 +204,7 @@ func _cpu_play_creature(card: Dictionary, lane: int) -> bool:
 	if unit.is_empty():
 		return false
 	enemy_lanes[lane] = unit
+	_recalculate_auras("enemy")
 	event_queue.push(GameEventScriptCpu.create("UNIT_SUMMONED", str(card.get("id", "")), [], {"side":"enemy","lane":lane,"token":false}))
 	var effect_id := str(card.get("effect_id", ""))
 	if not effect_id.is_empty():
@@ -403,6 +406,8 @@ func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed"
 		if enemy_domain == CatalogScript.DOMAIN_CRYPT:
 			cpu_gain_essence(1)
 	lanes[lane] = null
+	_record_death("player" if player_side else "enemy")
+	_recalculate_auras("player" if player_side else "enemy")
 	if death_reason == "sacrifice":
 		event_queue.push(GameEventScriptCpu.create("UNIT_SACRIFICED", card_id, [], {"side":"player" if player_side else "enemy","lane":lane,"source_id":source_id,"source_side":source_side}))
 	event_queue.push(GameEventScriptCpu.create("UNIT_DIED", card_id, [], {
@@ -466,3 +471,6 @@ func _build_lane_combinations(lanes: Array[int], count: int, start: int, current
 		current.append(lanes[i])
 		_build_lane_combinations(lanes, count, i + 1, current, result)
 		current.pop_back()
+
+func cpu_deck_reference() -> Array:
+	return cpu_draw_pile

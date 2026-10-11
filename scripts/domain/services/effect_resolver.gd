@@ -46,6 +46,11 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 					battle.cpu_draw_card()
 				else:
 					battle.draw_card()
+		EffectScript.MODIFY_STATS_PERMANENT:
+			var permanent_targets := _targets(target)
+			for item in permanent_targets:
+				if battle._modify_unit_stats_permanent(str(item.get("side", "")), int(item.get("lane", -1)), int(params.get("attack", 0)), int(params.get("health", 0)), str(context.get("source_card_id", "")), source_side):
+					ok = true
 		EffectScript.MODIFY_STATS_TEMP:
 			var unit = target.get("unit", null)
 			if unit != null:
@@ -73,6 +78,7 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 				if target_side == "enemy":
 					token["domain"] = battle.enemy_domain
 				lanes[lane] = token
+				battle._recalculate_auras(target_side)
 				battle.event_queue.push(GameEventScript.create("UNIT_SUMMONED", str(token.get("id", "")), [], {"side": target_side, "lane": lane, "token": true, "source_id": str(context.get("source_card_id", ""))}))
 				ok = true
 		EffectScript.REVEAL_TOP:
@@ -110,6 +116,16 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 			var swap_targets := _targets(target)
 			if swap_targets.size() == 2 and str(swap_targets[0].get("side", "")) == str(swap_targets[1].get("side", "")):
 				ok = battle._swap_units(str(swap_targets[0].get("side", "")), int(swap_targets[0].get("lane", -1)), int(swap_targets[1].get("lane", -1)), str(context.get("source_card_id", "")), source_side)
+		EffectScript.MOVE_DISCARD_TO_DECK_BOTTOM:
+			ok = battle._move_discard_creature_to_deck_bottom(source_side, str(context.get("discard_card_id", "")), int(params.get("max_cost", 999)), str(context.get("source_card_id", "")))
+		EffectScript.ADD_COST_MODIFIER:
+			battle.add_cost_modifier(source_side, str(params.get("id", str(context.get("source_card_id", "")))), int(params.get("delta", 0)), int(params.get("floor", 1)), str(params.get("duration", "turn")), str(params.get("card_type", "")), int(params.get("min_base_cost", -1)))
+			ok = true
+		EffectScript.ADD_AURA:
+			var aura_targets := _targets(target)
+			if aura_targets.size() == 1:
+				var item: Dictionary = aura_targets[0]
+				ok = battle._add_aura_to_unit(str(item.get("side", "")), int(item.get("lane", -1)), str(params.get("id", "")), int(params.get("attack", 0)), int(params.get("health", 0)), int(params.get("radius", 1)))
 		EffectScript.RETURN_CREATURE_FROM_DISCARD:
 			var max_cost := int(params.get("max_cost", 999))
 			var discard: Array = battle.enemy_discard if source_side == "enemy" else battle.discard_pile
