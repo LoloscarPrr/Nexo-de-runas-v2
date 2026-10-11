@@ -6,6 +6,8 @@ const PLAYER_LANE := "player_lane"
 const ENEMY_LANE := "enemy_lane"
 const OPPOSING_ENEMY_LANE := "opposing_enemy_lane"
 const FIRST_FREE_PLAYER_LANE := "first_free_player_lane"
+const ADJACENT_ALLY_LANE := "adjacent_ally_lane"
+const EMPTY_ADJACENT_ALLY_LANE := "empty_adjacent_ally_lane"
 
 static func create(target_type: String, required: bool = false) -> Dictionary:
 	return {"type": target_type, "required": required}
@@ -24,3 +26,9 @@ static func opposing_enemy_lane() -> Dictionary:
 
 static func first_free_player_lane() -> Dictionary:
 	return create(FIRST_FREE_PLAYER_LANE, false)
+
+static func adjacent_ally_lane(required: bool = true) -> Dictionary:
+	return create(ADJACENT_ALLY_LANE, required)
+
+static func empty_adjacent_ally_lane(required: bool = true) -> Dictionary:
+	return create(EMPTY_ADJACENT_ALLY_LANE, required)
