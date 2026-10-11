@@ -61,6 +61,7 @@ func run_cpu_turn() -> void:
 	if result != "ongoing":
 		return
 	reset_turn_gates("enemy")
+	_expire_statuses_for_side("enemy")
 	cpu_energy_capacity = mini(maxi(1, turn), STANDARD_ENERGY_CAP)
 	cpu_energy_current = cpu_energy_capacity
 	cpu_draw_card()

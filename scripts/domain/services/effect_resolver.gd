@@ -28,13 +28,17 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 				battle.grant_temporary_energy(amount)
 				ok = true
 		EffectScript.DAMAGE_UNIT:
-			if target.get("unit", null) != null:
-				battle._deal_damage_to_unit(str(target.get("side", "")) == "player", int(target.get("lane", -1)), int(params.get("amount", 0)), str(context.get("source_card_id", "")), source_side)
+			var damage_targets := _targets(target)
+			if not damage_targets.is_empty():
 				ok = true
+				for item in damage_targets:
+					battle._deal_damage_to_unit(str(item.get("side", "")) == "player", int(item.get("lane", -1)), int(params.get("amount", 0)), str(context.get("source_card_id", "")), source_side)
 		EffectScript.HEAL_UNIT:
-			if target.get("unit", null) != null:
-				battle._heal_unit(str(target.get("side", "")) == "player", int(target.get("lane", -1)), int(params.get("amount", 0)), str(context.get("source_card_id", "")), source_side)
+			var heal_targets := _targets(target)
+			if not heal_targets.is_empty():
 				ok = true
+				for item in heal_targets:
+					battle._heal_unit(str(item.get("side", "")) == "player", int(item.get("lane", -1)), int(params.get("amount", 0)), str(context.get("source_card_id", "")), source_side)
 		EffectScript.DRAW_CARDS:
 			ok = true
 			for i in range(maxi(0, int(params.get("amount", 0)))):
@@ -92,6 +96,20 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 			if target.get("unit", null) != null:
 				battle._kill_unit(str(target.get("side", "")) == "player", int(target.get("lane", -1)), str(params.get("reason", "destroyed")), str(context.get("source_card_id", "")), source_side)
 				ok = true
+		EffectScript.APPLY_STATUS:
+			var status_targets := _targets(target)
+			for item in status_targets:
+				if battle._apply_status_to_unit(str(item.get("side", "")), int(item.get("lane", -1)), str(params.get("status", "")), str(params.get("duration", "until_next_turn")), str(context.get("source_card_id", "")), source_side):
+					ok = true
+		EffectScript.MOVE_UNIT, EffectScript.FORCED_MOVE_UNIT:
+			var move_targets := _targets(target)
+			if move_targets.size() == 1:
+				var item: Dictionary = move_targets[0]
+				ok = battle._move_unit(str(item.get("side", "")), int(item.get("lane", -1)), int(context.get("destination_lane", -1)), effect_type == EffectScript.FORCED_MOVE_UNIT, str(context.get("source_card_id", "")), source_side)
+		EffectScript.SWAP_UNITS:
+			var swap_targets := _targets(target)
+			if swap_targets.size() == 2 and str(swap_targets[0].get("side", "")) == str(swap_targets[1].get("side", "")):
+				ok = battle._swap_units(str(swap_targets[0].get("side", "")), int(swap_targets[0].get("lane", -1)), int(swap_targets[1].get("lane", -1)), str(context.get("source_card_id", "")), source_side)
 		EffectScript.RETURN_CREATURE_FROM_DISCARD:
 			var max_cost := int(params.get("max_cost", 999))
 			var discard: Array = battle.enemy_discard if source_side == "enemy" else battle.discard_pile
@@ -111,3 +129,11 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 			"target_side": str(target.get("side", "none"))
 		}))
 	return ok
+
+static func _targets(target: Dictionary) -> Array:
+	var batch: Array = Array(target.get("targets", []))
+	if not batch.is_empty():
+		return batch
+	if bool(target.get("valid", false)) and target.get("unit", null) != null:
+		return [target]
+	return []
