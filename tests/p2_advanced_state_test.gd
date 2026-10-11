@@ -43,7 +43,8 @@ func _test_dynamic_cost_floor_and_expiry() -> void:
 	check(not rite_id.is_empty(), "Starter deck exposes a rite for cost test")
 	var base_cost := int(Catalog.find_by_id(rite_id).get("cost", 0))
 	battle.add_cost_modifier("player", "test_discount", -99, 1, "turn", Catalog.TYPE_RITE)
-	check(battle.effective_card_cost(rite_id, "player") == mini(base_cost, 1) if base_cost < 1 else 1, "Dynamic cost respects floor 1")
+	var expected_cost: int = base_cost if base_cost < 1 else 1
+	check(battle.effective_card_cost(rite_id, "player") == expected_cost, "Dynamic cost respects floor 1")
 	battle._expire_cost_modifiers("player", "turn")
 	check(battle.effective_card_cost(rite_id, "player") == base_cost, "Turn cost modifier expires cleanly")
 
@@ -63,7 +64,7 @@ func _test_deck_bottom_move() -> void:
 	var creature_id := _first_creature(Catalog.DOMAIN_TOWER)
 	battle.discard_pile = [creature_id]
 	battle.draw_pile = ["sentinela_runico"]
-	var before := battle.draw_pile.size()
+	var before: int = int(battle.draw_pile.size())
 	check(battle._move_discard_creature_to_deck_bottom("player", creature_id, 999, "p2_test"), "Creature moves from discard to deck bottom")
 	check(battle.discard_pile.is_empty(), "Moved card leaves discard")
 	check(battle.draw_pile.size() == before + 1 and str(battle.draw_pile.back()) == creature_id, "Moved card becomes bottom card deterministically")
