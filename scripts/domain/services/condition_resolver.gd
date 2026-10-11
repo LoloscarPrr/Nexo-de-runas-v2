@@ -22,6 +22,15 @@ static func is_met(condition: Dictionary, target: Dictionary, context: Dictionar
 			if target_unit == null:
 				return false
 			return Array(target_unit.get("tags", [])).has(str(params.get("tag", "")))
+		ConditionScript.ADJACENT_ALLY_EXISTS:
+			var source_side := str(context.get("source_side", "player"))
+			var source_lane := int(context.get("source_lane", -1))
+			var lanes: Array = battle.player_lanes if source_side == "player" else battle.enemy_lanes
+			for offset in [-1, 1]:
+				var lane := source_lane + int(offset)
+				if lane >= 0 and lane < lanes.size() and lanes[lane] != null:
+					return true
+			return false
 		ConditionScript.OTHER_ALLY_HAS_TAG:
 			var source_side := str(context.get("source_side", "player"))
 			var source_lane := int(context.get("source_lane", -1))

@@ -29,7 +29,11 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 				ok = true
 		EffectScript.DAMAGE_UNIT:
 			if target.get("unit", null) != null:
-				battle._deal_damage_to_unit(str(target.get("side", "")) == "player", int(target.get("lane", -1)), int(params.get("amount", 0)))
+				battle._deal_damage_to_unit(str(target.get("side", "")) == "player", int(target.get("lane", -1)), int(params.get("amount", 0)), str(context.get("source_card_id", "")), source_side)
+				ok = true
+		EffectScript.HEAL_UNIT:
+			if target.get("unit", null) != null:
+				battle._heal_unit(str(target.get("side", "")) == "player", int(target.get("lane", -1)), int(params.get("amount", 0)), str(context.get("source_card_id", "")), source_side)
 				ok = true
 		EffectScript.DRAW_CARDS:
 			ok = true
@@ -65,6 +69,7 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 				if target_side == "enemy":
 					token["domain"] = battle.enemy_domain
 				lanes[lane] = token
+				battle.event_queue.push(GameEventScript.create("UNIT_SUMMONED", str(token.get("id", "")), [], {"side": target_side, "lane": lane, "token": true, "source_id": str(context.get("source_card_id", ""))}))
 				ok = true
 		EffectScript.REVEAL_TOP:
 			if source_side == "enemy" and battle.has_method("cpu_draw_card"):
@@ -85,7 +90,7 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 				ok = true
 		EffectScript.KILL_UNIT:
 			if target.get("unit", null) != null:
-				battle._kill_unit(str(target.get("side", "")) == "player", int(target.get("lane", -1)))
+				battle._kill_unit(str(target.get("side", "")) == "player", int(target.get("lane", -1)), str(params.get("reason", "destroyed")), str(context.get("source_card_id", "")), source_side)
 				ok = true
 		EffectScript.RETURN_CREATURE_FROM_DISCARD:
 			var max_cost := int(params.get("max_cost", 999))

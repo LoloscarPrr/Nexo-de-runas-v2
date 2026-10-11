@@ -27,7 +27,7 @@ static func abilities_for(effect_id: String) -> Array:
 		"forest_growth":
 			return [Ability.create("violent_growth", Ability.ON_PLAY, Target.player_lane(), [Effect.temp_stats(2, 2)], [Condition.target_exists()])]
 		"crypt_ash_offering":
-			return [Ability.create("ash_offering", Ability.ON_PLAY, Target.player_lane(), [Effect.create(Effect.KILL_UNIT), Effect.draw(2)], [Condition.target_exists()])]
+			return [Ability.create("ash_offering", Ability.ON_PLAY, Target.player_lane(), [Effect.create(Effect.KILL_UNIT, {"reason":"sacrifice"}), Effect.draw(2)], [Condition.target_exists()])]
 		"crypt_exhumation":
 			return [Ability.create("exhumation", Ability.ON_PLAY, Target.none(), [Effect.create(Effect.RETURN_CREATURE_FROM_DISCARD, {"max_cost": 3})])]
 		"tower_rune_bolt":

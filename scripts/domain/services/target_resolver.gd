@@ -24,9 +24,38 @@ static func resolve(target_spec: Dictionary, context: Dictionary, battle) -> Dic
 				if ally_lanes[lane] == null:
 					return {"valid": true, "side": ally_side, "lane": lane, "unit": null}
 			return {"valid": false, "side": ally_side, "lane": -1, "unit": null}
+		TargetSpecScript.ADJACENT_ALLY_LANE:
+			return _adjacent_target(ally_side, ally_lanes, int(context.get("source_lane", -1)), int(context.get("target_lane", -1)), true)
+		TargetSpecScript.EMPTY_ADJACENT_ALLY_LANE:
+			return _adjacent_target(ally_side, ally_lanes, int(context.get("source_lane", -1)), int(context.get("target_lane", -1)), false)
 	return {"valid": false, "side": "none", "lane": -1, "unit": null}
 
 static func _lane_target(side: String, lane: int, lanes: Array) -> Dictionary:
 	if lane < 0 or lane >= lanes.size():
 		return {"valid": false, "side": side, "lane": lane, "unit": null}
 	return {"valid": true, "side": side, "lane": lane, "unit": lanes[lane]}
+
+static func _adjacent_target(side: String, lanes: Array, source_lane: int, requested_lane: int, occupied: bool) -> Dictionary:
+	if source_lane < 0 or source_lane >= lanes.size():
+		return {"valid": false, "side": side, "lane": -1, "unit": null}
+	var candidates: Array[int] = []
+	for offset in [-1, 1]:
+		var lane := source_lane + int(offset)
+		if lane >= 0 and lane < lanes.size():
+			candidates.append(lane)
+	if requested_lane >= 0:
+		if not candidates.has(requested_lane):
+			return {"valid": false, "side": side, "lane": requested_lane, "unit": null}
+		var requested_unit = lanes[requested_lane]
+		if occupied and requested_unit == null:
+			return {"valid": false, "side": side, "lane": requested_lane, "unit": null}
+		if not occupied and requested_unit != null:
+			return {"valid": false, "side": side, "lane": requested_lane, "unit": requested_unit}
+		return {"valid": true, "side": side, "lane": requested_lane, "unit": requested_unit}
+	for lane in candidates:
+		var unit = lanes[lane]
+		if occupied and unit != null:
+			return {"valid": true, "side": side, "lane": lane, "unit": unit}
+		if not occupied and unit == null:
+			return {"valid": true, "side": side, "lane": lane, "unit": null}
+	return {"valid": false, "side": side, "lane": -1, "unit": null}
