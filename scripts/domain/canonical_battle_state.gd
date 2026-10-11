@@ -44,6 +44,7 @@ var impulse_available := false
 var last_revealed: Array[String] = []
 var last_message := ""
 var event_queue = EventQueueScript.new()
+var turn_gates: Dictionary = {}
 
 func setup(domain: String, deck_ids: Array[String], second_player: bool = false) -> void:
 	player_domain = domain
@@ -68,6 +69,7 @@ func setup(domain: String, deck_ids: Array[String], second_player: bool = false)
 	last_revealed.clear()
 	last_message = ""
 	event_queue.clear()
+	turn_gates.clear()
 	for card_id in deck_ids:
 		if not Catalog.find_by_id(card_id).is_empty():
 			draw_pile.append(card_id)
@@ -87,6 +89,7 @@ func begin_new_turn() -> void:
 		return
 	turn += 1
 	recharge_energy_for_new_turn()
+	reset_turn_gates("player")
 	_reset_guard_usage(player_lanes)
 	_reset_guard_usage(enemy_lanes)
 	draw_card()
@@ -104,7 +107,9 @@ func draw_card() -> bool:
 		last_message = "Inestabilidad del Nexo: -%d Integridad." % failed_draws
 		_check_result()
 		return false
-	hand.append(draw_pile.pop_front())
+	var card_id := str(draw_pile.pop_front())
+	hand.append(card_id)
+	event_queue.push(GameEventScript.create("CARD_DRAWN", card_id, [], {"side":"player","turn":turn}))
 	return true
 
 func use_impulse() -> bool:
@@ -177,6 +182,21 @@ func spend_essence(amount: int) -> bool:
 
 func drain_events() -> Array[Dictionary]:
 	return event_queue.drain_serialized()
+
+func reset_turn_gates(side: String) -> void:
+	turn_gates[side] = {}
+
+func consume_first_turn_gate(side: String, gate_id: String) -> bool:
+	if gate_id.is_empty():
+		return false
+	if not turn_gates.has(side):
+		turn_gates[side] = {}
+	var gates: Dictionary = turn_gates[side]
+	if bool(gates.get(gate_id, false)):
+		return false
+	gates[gate_id] = true
+	turn_gates[side] = gates
+	return true
 
 func create_unit(card_id: String, ready: bool = false) -> Dictionary:
 	var card := Catalog.find_by_id(card_id)
@@ -254,6 +274,10 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 			gain_essence(1)
 	elif card_type == Catalog.TYPE_SEAL and player_domain == Catalog.DOMAIN_TOWER:
 		gain_essence(1)
+	if card_type == Catalog.TYPE_RELIC:
+		event_queue.push(GameEventScript.create("RELIC_PLAYED", card_id, [], {"side":"player"}))
+	elif card_type == Catalog.TYPE_SEAL:
+		event_queue.push(GameEventScript.create("SEAL_PLAYED", card_id, [], {"side":"player"}))
 	event_queue.push(GameEventScript.create("CARD_PLAYED", card_id, [], {
 		"card_type": card_type,
 		"lane": lane,
@@ -269,6 +293,7 @@ func _play_creature(card: Dictionary, lane: int) -> bool:
 	if unit.is_empty():
 		return false
 	player_lanes[lane] = unit
+	event_queue.push(GameEventScript.create("UNIT_SUMMONED", str(card.get("id", "")), [], {"side":"player","lane":lane,"token":false}))
 	_on_creature_entered(card, lane)
 	return true
 
@@ -308,10 +333,12 @@ func _on_creature_entered(card: Dictionary, lane: int) -> void:
 func resolve_player_attacks() -> void:
 	if result != "ongoing":
 		return
+	event_queue.push(GameEventScript.create("COMBAT_STARTED", "", [], {"side":"player","turn":turn}))
 	for lane in range(LANE_COUNT):
 		var attacker = player_lanes[lane]
 		if attacker == null or not bool(attacker.get("ready", false)):
 			continue
+		event_queue.push(GameEventScript.create("UNIT_ATTACK_STARTED", str(attacker.get("id", "")), [], {"side":"player","lane":lane}))
 		var defender_lane := lane
 		if enemy_lanes[defender_lane] == null:
 			defender_lane = _guard_interceptor(enemy_lanes, lane)
@@ -329,7 +356,9 @@ func resolve_player_attacks() -> void:
 			guard["guard_used"] = true
 		_resolve_creature_combat(lane, defender_lane)
 		if result != "ongoing":
+			event_queue.push(GameEventScript.create("COMBAT_ENDED", "", [], {"side":"player","turn":turn}))
 			return
+	event_queue.push(GameEventScript.create("COMBAT_ENDED", "", [], {"side":"player","turn":turn}))
 
 func _resolve_creature_combat(player_lane: int, enemy_lane: int) -> void:
 	var attacker: Dictionary = player_lanes[player_lane]
@@ -341,12 +370,12 @@ func _resolve_creature_combat(player_lane: int, enemy_lane: int) -> void:
 	var ambush := _unit_has_keyword(attacker, "EMBOSCADA") and not bool(attacker.get("has_fought", false))
 	attacker["has_fought"] = true
 	if ambush:
-		_deal_damage_to_unit(false, enemy_lane, attacker_damage)
+		_deal_damage_to_unit(false, enemy_lane, attacker_damage, str(attacker.get("id", "")), "player")
 		if enemy_lanes[enemy_lane] != null:
-			_deal_damage_to_unit(true, player_lane, defender_damage)
+			_deal_damage_to_unit(true, player_lane, defender_damage, str(defender.get("id", "")), "enemy")
 	else:
-		_deal_damage_to_unit(false, enemy_lane, attacker_damage)
-		_deal_damage_to_unit(true, player_lane, defender_damage)
+		_deal_damage_to_unit(false, enemy_lane, attacker_damage, str(attacker.get("id", "")), "player")
+		_deal_damage_to_unit(true, player_lane, defender_damage, str(defender.get("id", "")), "enemy")
 
 func end_player_turn() -> void:
 	if result != "ongoing":
@@ -391,7 +420,9 @@ func _kill_unit(player_side: bool, lane: int) -> void:
 	else:
 		enemy_discard.append(card_id)
 	lanes[lane] = null
-	event_queue.push(GameEventScript.create("UNIT_DIED", card_id, [], {"side": "player" if player_side else "enemy", "lane": lane}))
+	if death_reason == "sacrifice":
+		event_queue.push(GameEventScript.create("UNIT_SACRIFICED", card_id, [], {"side":"player" if player_side else "enemy","lane":lane,"source_id":source_id,"source_side":source_side}))
+	event_queue.push(GameEventScript.create("UNIT_DIED", card_id, [], {"side":"player" if player_side else "enemy","lane":lane,"death_reason":death_reason,"source_id":source_id,"source_side":source_side}))
 
 func _trigger_last_breath(unit: Dictionary, player_side: bool, lane: int) -> void:
 	if not player_side:
