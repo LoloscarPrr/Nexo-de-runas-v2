@@ -241,7 +241,7 @@ func ability_target_spec(card_id: String, trigger: String = AbilityDefinitionScr
 		return {}
 	return AbilityCatalogScript.target_spec_for(str(card.get("effect_id", "")), trigger)
 
-func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_index: int = -1) -> bool:
+func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_index: int = -1, target_lanes: Array = [], destination_lane: int = -1) -> bool:
 	if result != "ongoing" or hand_index < 0 or hand_index >= hand.size():
 		return false
 	var card_id := hand[hand_index]
@@ -258,7 +258,7 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 		Catalog.TYPE_CREATURE:
 			success = _play_creature(card, lane)
 		Catalog.TYPE_RITE:
-			success = _play_rite(card, target_lane)
+			success = _play_rite(card, target_lane, target_lanes, destination_lane)
 		Catalog.TYPE_RELIC:
 			success = _play_persistent(card_id, active_relics, MAX_RELICS, replace_index)
 		Catalog.TYPE_SEAL:
@@ -283,7 +283,9 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 	event_queue.push(GameEventScript.create("CARD_PLAYED", card_id, [], {
 		"card_type": card_type,
 		"lane": lane,
-		"target_lane": target_lane
+		"target_lane": target_lane,
+		"target_lanes": target_lanes.duplicate(),
+		"destination_lane": destination_lane
 	}))
 	return true
 
@@ -310,7 +312,7 @@ func _play_persistent(card_id: String, slots: Array[String], limit: int, replace
 	slots[replace_index] = card_id
 	return true
 
-func _play_rite(card: Dictionary, target_lane: int) -> bool:
+func _play_rite(card: Dictionary, target_lane: int, target_lanes: Array = [], destination_lane: int = -1) -> bool:
 	var effect_id := str(card.get("effect_id", ""))
 	if effect_id.is_empty():
 		return false
@@ -318,7 +320,9 @@ func _play_rite(card: Dictionary, target_lane: int) -> bool:
 		"source_card_id": str(card.get("id", "")),
 		"source_side": "player",
 		"source_lane": -1,
-		"target_lane": target_lane
+		"target_lane": target_lane,
+		"target_lanes": target_lanes.duplicate(),
+		"destination_lane": destination_lane
 	}, self)
 
 func _on_creature_entered(card: Dictionary, lane: int) -> void:
