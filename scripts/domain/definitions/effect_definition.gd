@@ -3,6 +3,7 @@ extends RefCounted
 
 const GAIN_RESOURCE := "gain_resource"
 const DAMAGE_UNIT := "damage_unit"
+const HEAL_UNIT := "heal_unit"
 const DRAW_CARDS := "draw_cards"
 const MODIFY_STATS_TEMP := "modify_stats_temp"
 const SUMMON_TOKEN := "summon_token"
@@ -21,6 +22,9 @@ static func gain_resource(resource: String, amount: int) -> Dictionary:
 
 static func damage(amount: int) -> Dictionary:
 	return create(DAMAGE_UNIT, {"amount": amount})
+
+static func heal(amount: int) -> Dictionary:
+	return create(HEAL_UNIT, {"amount": amount})
 
 static func draw(amount: int) -> Dictionary:
 	return create(DRAW_CARDS, {"amount": amount})
