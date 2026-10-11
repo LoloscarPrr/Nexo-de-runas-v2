@@ -10,14 +10,19 @@ var hand_index := -1
 var lane := -1
 var target_lane := -1
 var replace_index := -1
+var target_lanes: Array[int] = []
+var destination_lane := -1
 
-static func play_card(hand_index_value: int, lane_value: int = -1, target_lane_value: int = -1, replace_index_value: int = -1):
+static func play_card(hand_index_value: int, lane_value: int = -1, target_lane_value: int = -1, replace_index_value: int = -1, target_lanes_value: Array = [], destination_lane_value: int = -1):
 	var command := BattleCommand.new()
 	command.type = PLAY_CARD
 	command.hand_index = hand_index_value
 	command.lane = lane_value
 	command.target_lane = target_lane_value
 	command.replace_index = replace_index_value
+	for raw_lane in target_lanes_value:
+		command.target_lanes.append(int(raw_lane))
+	command.destination_lane = destination_lane_value
 	return command
 
 static func end_round():
@@ -36,5 +41,7 @@ func to_dict() -> Dictionary:
 		"hand_index": hand_index,
 		"lane": lane,
 		"target_lane": target_lane,
-		"replace_index": replace_index
+		"replace_index": replace_index,
+		"target_lanes": target_lanes.duplicate(),
+		"destination_lane": destination_lane
 	}

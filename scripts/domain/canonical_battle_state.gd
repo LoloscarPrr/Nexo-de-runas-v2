@@ -90,6 +90,7 @@ func begin_new_turn() -> void:
 	turn += 1
 	recharge_energy_for_new_turn()
 	reset_turn_gates("player")
+	_expire_statuses_for_side("player")
 	_reset_guard_usage(player_lanes)
 	_reset_guard_usage(enemy_lanes)
 	draw_card()
@@ -221,7 +222,8 @@ func create_unit(card_id: String, ready: bool = false) -> Dictionary:
 		"guard_used": false,
 		"shield": shield,
 		"temp_attack": 0,
-		"temp_health": 0
+		"temp_health": 0,
+		"statuses": []
 	}
 
 func place_enemy_unit(card_id: String, lane: int, ready: bool = true) -> bool:
@@ -239,7 +241,7 @@ func ability_target_spec(card_id: String, trigger: String = AbilityDefinitionScr
 		return {}
 	return AbilityCatalogScript.target_spec_for(str(card.get("effect_id", "")), trigger)
 
-func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_index: int = -1) -> bool:
+func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_index: int = -1, target_lanes: Array = [], destination_lane: int = -1) -> bool:
 	if result != "ongoing" or hand_index < 0 or hand_index >= hand.size():
 		return false
 	var card_id := hand[hand_index]
@@ -256,7 +258,7 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 		Catalog.TYPE_CREATURE:
 			success = _play_creature(card, lane)
 		Catalog.TYPE_RITE:
-			success = _play_rite(card, target_lane)
+			success = _play_rite(card, target_lane, target_lanes, destination_lane)
 		Catalog.TYPE_RELIC:
 			success = _play_persistent(card_id, active_relics, MAX_RELICS, replace_index)
 		Catalog.TYPE_SEAL:
@@ -281,7 +283,9 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 	event_queue.push(GameEventScript.create("CARD_PLAYED", card_id, [], {
 		"card_type": card_type,
 		"lane": lane,
-		"target_lane": target_lane
+		"target_lane": target_lane,
+		"target_lanes": target_lanes.duplicate(),
+		"destination_lane": destination_lane
 	}))
 	return true
 
@@ -308,7 +312,7 @@ func _play_persistent(card_id: String, slots: Array[String], limit: int, replace
 	slots[replace_index] = card_id
 	return true
 
-func _play_rite(card: Dictionary, target_lane: int) -> bool:
+func _play_rite(card: Dictionary, target_lane: int, target_lanes: Array = [], destination_lane: int = -1) -> bool:
 	var effect_id := str(card.get("effect_id", ""))
 	if effect_id.is_empty():
 		return false
@@ -316,7 +320,9 @@ func _play_rite(card: Dictionary, target_lane: int) -> bool:
 		"source_card_id": str(card.get("id", "")),
 		"source_side": "player",
 		"source_lane": -1,
-		"target_lane": target_lane
+		"target_lane": target_lane,
+		"target_lanes": target_lanes.duplicate(),
+		"destination_lane": destination_lane
 	}, self)
 
 func _on_creature_entered(card: Dictionary, lane: int) -> void:
@@ -491,6 +497,78 @@ func _expire_temporary_bonuses() -> void:
 			unit["temp_health"] = 0
 			if int(unit.get("hp", 0)) <= 0:
 				_kill_unit(true, lane)
+
+func _apply_status_to_unit(side: String, lane: int, status_id: String, duration: String = "until_next_turn", source_id: String = "", source_side: String = "") -> bool:
+	var lanes: Array = player_lanes if side == "player" else enemy_lanes
+	if status_id.is_empty() or not _valid_occupied_lane(lanes, lane):
+		return false
+	var unit: Dictionary = lanes[lane]
+	var statuses: Array = Array(unit.get("statuses", []))
+	for i in range(statuses.size()):
+		var existing: Dictionary = Dictionary(statuses[i])
+		if str(existing.get("id", "")) == status_id:
+			existing["duration"] = duration
+			existing["source_id"] = source_id
+			existing["source_side"] = source_side
+			statuses[i] = existing
+			unit["statuses"] = statuses
+			return true
+	statuses.append({"id":status_id,"duration":duration,"source_id":source_id,"source_side":source_side})
+	unit["statuses"] = statuses
+	event_queue.push(GameEventScript.create("STATUS_APPLIED", source_id, [str(unit.get("id", ""))], {"side":side,"lane":lane,"status":status_id,"duration":duration,"source_side":source_side}))
+	return true
+
+func _unit_has_status(unit: Dictionary, status_id: String) -> bool:
+	for raw_status in Array(unit.get("statuses", [])):
+		if str(Dictionary(raw_status).get("id", "")) == status_id:
+			return true
+	return false
+
+func _expire_statuses_for_side(side: String) -> void:
+	var lanes: Array = player_lanes if side == "player" else enemy_lanes
+	for lane in range(lanes.size()):
+		if lanes[lane] == null:
+			continue
+		var unit: Dictionary = lanes[lane]
+		var kept: Array = []
+		for raw_status in Array(unit.get("statuses", [])):
+			var status: Dictionary = Dictionary(raw_status)
+			if str(status.get("duration", "")) == "until_next_turn":
+				event_queue.push(GameEventScript.create("STATUS_EXPIRED", str(status.get("source_id", "")), [str(unit.get("id", ""))], {"side":side,"lane":lane,"status":str(status.get("id", ""))}))
+			else:
+				kept.append(status)
+		unit["statuses"] = kept
+
+func _move_unit(side: String, from_lane: int, to_lane: int, forced: bool = false, source_id: String = "", source_side: String = "") -> bool:
+	var lanes: Array = player_lanes if side == "player" else enemy_lanes
+	if from_lane < 0 or from_lane >= lanes.size() or to_lane < 0 or to_lane >= lanes.size() or from_lane == to_lane:
+		return false
+	if lanes[from_lane] == null or lanes[to_lane] != null:
+		return false
+	var unit: Dictionary = lanes[from_lane]
+	if _unit_has_status(unit, "ROOTED"):
+		return false
+	lanes[to_lane] = unit
+	lanes[from_lane] = null
+	event_queue.push(GameEventScript.create("UNIT_MOVED", str(unit.get("id", "")), [], {"side":side,"from_lane":from_lane,"to_lane":to_lane,"forced":forced,"source_id":source_id,"source_side":source_side}))
+	return true
+
+func _swap_units(side: String, lane_a: int, lane_b: int, source_id: String = "", source_side: String = "") -> bool:
+	var lanes: Array = player_lanes if side == "player" else enemy_lanes
+	if lane_a < 0 or lane_a >= lanes.size() or lane_b < 0 or lane_b >= lanes.size() or lane_a == lane_b:
+		return false
+	if lanes[lane_a] == null or lanes[lane_b] == null:
+		return false
+	var unit_a: Dictionary = lanes[lane_a]
+	var unit_b: Dictionary = lanes[lane_b]
+	if _unit_has_status(unit_a, "ROOTED") or _unit_has_status(unit_b, "ROOTED"):
+		return false
+	lanes[lane_a] = unit_b
+	lanes[lane_b] = unit_a
+	event_queue.push(GameEventScript.create("UNIT_MOVED", str(unit_a.get("id", "")), [], {"side":side,"from_lane":lane_a,"to_lane":lane_b,"forced":false,"source_id":source_id,"source_side":source_side}))
+	event_queue.push(GameEventScript.create("UNIT_MOVED", str(unit_b.get("id", "")), [], {"side":side,"from_lane":lane_b,"to_lane":lane_a,"forced":false,"source_id":source_id,"source_side":source_side}))
+	event_queue.push(GameEventScript.create("UNITS_SWAPPED", source_id, [str(unit_a.get("id", "")),str(unit_b.get("id", ""))], {"side":side,"lane_a":lane_a,"lane_b":lane_b,"source_side":source_side}))
+	return true
 
 func _guard_interceptor(lanes: Array, target_lane: int) -> int:
 	for offset in [-1, 1]:

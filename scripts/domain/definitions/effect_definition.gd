@@ -10,6 +10,10 @@ const SUMMON_TOKEN := "summon_token"
 const REVEAL_TOP := "reveal_top"
 const KILL_UNIT := "kill_unit"
 const RETURN_CREATURE_FROM_DISCARD := "return_creature_from_discard"
+const APPLY_STATUS := "apply_status"
+const MOVE_UNIT := "move_unit"
+const FORCED_MOVE_UNIT := "forced_move_unit"
+const SWAP_UNITS := "swap_units"
 
 static func create(effect_type: String, params: Dictionary = {}) -> Dictionary:
 	return {
@@ -31,3 +35,12 @@ static func draw(amount: int) -> Dictionary:
 
 static func temp_stats(attack: int, health: int = 0) -> Dictionary:
 	return create(MODIFY_STATS_TEMP, {"attack": attack, "health": health})
+
+static func rooted(duration: String = "until_next_turn") -> Dictionary:
+	return create(APPLY_STATUS, {"status":"ROOTED","duration":duration})
+
+static func move(forced: bool = false) -> Dictionary:
+	return create(FORCED_MOVE_UNIT if forced else MOVE_UNIT)
+
+static func swap_units() -> Dictionary:
+	return create(SWAP_UNITS)

@@ -151,6 +151,8 @@ func _execute_play_card(command: Object) -> Dictionary:
 	var lane := int(command.lane)
 	var target_lane := int(command.target_lane)
 	var replace_index := int(command.replace_index)
+	var target_lanes: Array = Array(command.target_lanes)
+	var destination_lane := int(command.destination_lane)
 	var card := hand_card_definition(hand_index)
 	if card.is_empty():
 		return _result(false, "La carta seleccionada no existe.")
@@ -160,7 +162,7 @@ func _execute_play_card(command: Object) -> Dictionary:
 		ok = _engine.play_card(hand_index, lane)
 	elif card_type == TYPE_RITE:
 		var resolved_target := target_lane if target_lane >= 0 else lane
-		ok = _engine.play_card(hand_index, -1, resolved_target)
+		ok = _engine.play_card(hand_index, -1, resolved_target, -1, target_lanes, destination_lane)
 	elif card_type == TYPE_RELIC or card_type == TYPE_SEAL:
 		ok = _engine.play_card(hand_index, -1, -1, replace_index)
 	if ok:
