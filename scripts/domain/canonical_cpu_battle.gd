@@ -60,6 +60,7 @@ func advance_round() -> void:
 func run_cpu_turn() -> void:
 	if result != "ongoing":
 		return
+	reset_turn_gates("enemy")
 	cpu_energy_capacity = mini(maxi(1, turn), STANDARD_ENERGY_CAP)
 	cpu_energy_current = cpu_energy_capacity
 	cpu_draw_card()
@@ -158,6 +159,10 @@ func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, repla
 			cpu_gain_essence(1)
 	elif card_type == CatalogScript.TYPE_SEAL and enemy_domain == CatalogScript.DOMAIN_TOWER:
 		cpu_gain_essence(1)
+	if card_type == CatalogScript.TYPE_RELIC:
+		event_queue.push(GameEventScriptCpu.create("RELIC_PLAYED", card_id, [], {"side":"enemy"}))
+	elif card_type == CatalogScript.TYPE_SEAL:
+		event_queue.push(GameEventScriptCpu.create("SEAL_PLAYED", card_id, [], {"side":"enemy"}))
 	event_queue.push(GameEventScriptCpu.create("CARD_PLAYED", card_id, [], {
 		"side": "enemy",
 		"card_type": card_type,
@@ -173,6 +178,7 @@ func _cpu_play_creature(card: Dictionary, lane: int) -> bool:
 	if unit.is_empty():
 		return false
 	enemy_lanes[lane] = unit
+	event_queue.push(GameEventScriptCpu.create("UNIT_SUMMONED", str(card.get("id", "")), [], {"side":"enemy","lane":lane,"token":false}))
 	var effect_id := str(card.get("effect_id", ""))
 	if not effect_id.is_empty():
 		AbilityResolverScriptCpu.resolve(effect_id, AbilityDefinitionScriptCpu.ON_SUMMON, {
@@ -298,7 +304,9 @@ func cpu_draw_card() -> bool:
 		enemy_integrity -= cpu_failed_draws
 		_check_result()
 		return false
-	cpu_hand.append(cpu_draw_pile.pop_front())
+	var card_id := str(cpu_draw_pile.pop_front())
+	cpu_hand.append(card_id)
+	event_queue.push(GameEventScriptCpu.create("CARD_DRAWN", card_id, [], {"side":"enemy","turn":turn}))
 	return true
 
 func _cpu_draw_card() -> bool:
@@ -307,10 +315,12 @@ func _cpu_draw_card() -> bool:
 func resolve_cpu_attacks() -> void:
 	if result != "ongoing":
 		return
+	event_queue.push(GameEventScriptCpu.create("COMBAT_STARTED", "", [], {"side":"enemy","turn":turn}))
 	for lane in range(LANE_COUNT):
 		var attacker = enemy_lanes[lane]
 		if attacker == null or not bool(attacker.get("ready", false)):
 			continue
+		event_queue.push(GameEventScriptCpu.create("UNIT_ATTACK_STARTED", str(attacker.get("id", "")), [], {"side":"enemy","lane":lane}))
 		var defender_lane := lane
 		if player_lanes[defender_lane] == null:
 			defender_lane = _guard_interceptor(player_lanes, lane)
@@ -328,7 +338,9 @@ func resolve_cpu_attacks() -> void:
 			guard["guard_used"] = true
 		_resolve_cpu_creature_combat(lane, defender_lane)
 		if result != "ongoing":
+			event_queue.push(GameEventScriptCpu.create("COMBAT_ENDED", "", [], {"side":"enemy","turn":turn}))
 			return
+	event_queue.push(GameEventScriptCpu.create("COMBAT_ENDED", "", [], {"side":"enemy","turn":turn}))
 
 func _resolve_cpu_creature_combat(enemy_lane: int, player_lane: int) -> void:
 	var attacker: Dictionary = enemy_lanes[enemy_lane]
@@ -340,14 +352,14 @@ func _resolve_cpu_creature_combat(enemy_lane: int, player_lane: int) -> void:
 	var ambush := _unit_has_keyword(attacker, "EMBOSCADA") and not bool(attacker.get("has_fought", false))
 	attacker["has_fought"] = true
 	if ambush:
-		_deal_damage_to_unit(true, player_lane, attacker_damage)
+		_deal_damage_to_unit(true, player_lane, attacker_damage, str(attacker.get("id", "")), "enemy")
 		if player_lanes[player_lane] != null:
-			_deal_damage_to_unit(false, enemy_lane, defender_damage)
+			_deal_damage_to_unit(false, enemy_lane, defender_damage, str(defender.get("id", "")), "player")
 	else:
-		_deal_damage_to_unit(true, player_lane, attacker_damage)
-		_deal_damage_to_unit(false, enemy_lane, defender_damage)
+		_deal_damage_to_unit(true, player_lane, attacker_damage, str(attacker.get("id", "")), "enemy")
+		_deal_damage_to_unit(false, enemy_lane, defender_damage, str(defender.get("id", "")), "player")
 
-func _kill_unit(player_side: bool, lane: int) -> void:
+func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed", source_id: String = "", source_side: String = "") -> void:
 	var lanes: Array = player_lanes if player_side else enemy_lanes
 	if not _valid_occupied_lane(lanes, lane):
 		return
@@ -363,9 +375,14 @@ func _kill_unit(player_side: bool, lane: int) -> void:
 		if enemy_domain == CatalogScript.DOMAIN_CRYPT:
 			cpu_gain_essence(1)
 	lanes[lane] = null
+	if death_reason == "sacrifice":
+		event_queue.push(GameEventScriptCpu.create("UNIT_SACRIFICED", card_id, [], {"side":"player" if player_side else "enemy","lane":lane,"source_id":source_id,"source_side":source_side}))
 	event_queue.push(GameEventScriptCpu.create("UNIT_DIED", card_id, [], {
-		"side": "player" if player_side else "enemy",
-		"lane": lane
+		"side":"player" if player_side else "enemy",
+		"lane":lane,
+		"death_reason":death_reason,
+		"source_id":source_id,
+		"source_side":source_side
 	}))
 
 func _trigger_last_breath(unit: Dictionary, player_side: bool, lane: int) -> void:
