@@ -70,6 +70,7 @@ jobs:
           "$GODOT_CHECK" --headless --path . --script tests/clean_architecture_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/domain_entity_model_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/ability_effect_engine_test.gd
+          "$GODOT_CHECK" --headless --path . --script tests/p0_core_foundation_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/application_battle_session_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/infrastructure_save_repository_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/battle_test.gd
