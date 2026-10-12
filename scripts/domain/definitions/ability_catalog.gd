@@ -38,6 +38,22 @@ static func abilities_for(effect_id: String) -> Array:
 			return [Ability.create("mechanical_spark", Ability.ON_PLAY, Target.enemy_lane(), [Effect.damage(1), Effect.gain_resource("essence", 1)], [Condition.target_exists()])]
 		"forge_overload":
 			return [Ability.create("overload_construct", Ability.ON_PLAY, Target.player_lane(), [Effect.temp_stats(3, 0), Effect.gain_resource("essence", 2)], [Condition.target_exists(), Condition.target_has_tag("CONSTRUCTO")])]
+		"forest_ancient_roots":
+			return [Ability.create("ancient_roots_aura", Ability.ON_SUMMON, Target.source_unit(), [Effect.aura("bs011_adjacent_health", 0, 1, 1)])]
+		"forest_vital_sap":
+			return [Ability.create("vital_sap", Ability.ON_PLAY, Target.player_lane(), [Effect.permanent_stats(0, 2)], [Condition.target_exists()])]
+		"crypt_pit_necromancer":
+			return [Ability.create("pit_necromancer_return", Ability.ON_SUMMON, Target.none(), [Effect.create(Effect.RETURN_CREATURE_FROM_DISCARD, {"max_cost": 1})])]
+		"crypt_blood_pact":
+			return [Ability.create("blood_pact", Ability.ON_PLAY, Target.player_lane(), [Effect.create(Effect.KILL_UNIT, {"reason":"sacrifice"}), Effect.draw(2)], [Condition.target_exists()])]
+		"tower_rune_discharge":
+			return [Ability.create("rune_discharge", Ability.ON_PLAY, Target.enemy_lane(), [Effect.damage(2)], [Condition.target_exists()])]
+		"tower_impossible_geometry":
+			return [Ability.create("impossible_geometry", Ability.ON_PLAY, Target.two_ally_lanes(), [Effect.swap_units()])]
+		"tower_glyph_storm":
+			return [Ability.create("glyph_storm", Ability.ON_PLAY, Target.all_enemy_units(), [Effect.damage(1)])]
+		"forge_emergency_repair":
+			return [Ability.create("emergency_repair", Ability.ON_PLAY, Target.player_lane(), [Effect.heal(3)], [Condition.target_exists()])]
 	return []
 
 static func target_spec_for(effect_id: String, trigger: String) -> Dictionary:
