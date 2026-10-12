@@ -225,7 +225,7 @@ func create_unit(card_id: String, ready: bool = false) -> Dictionary:
 		"max_hp": int(card.get("health", 1)),
 		"keywords": Array(card.get("keywords", [])).duplicate(),
 		"tags": Array(card.get("tags", [])).duplicate(),
-		"ready": ready or Array(card.get("keywords", [])).has("CARGA"),
+		"ready": ready or Array(card.get("keywords", [])).has("CARGA") or Array(card.get("keywords", [])).has("EMBESTIDA"),
 		"has_fought": false,
 		"guard_used": false,
 		"shield": shield,
@@ -533,6 +533,10 @@ func _apply_status_to_unit(side: String, lane: int, status_id: String, duration:
 	return true
 
 func _unit_has_status(unit: Dictionary, status_id: String) -> bool:
+	if status_id == "ROOTED":
+		var keywords: Array = Array(unit.get("keywords", []))
+		if keywords.has("ROOTED") or keywords.has("ENRAIZADO"):
+			return true
 	for raw_status in Array(unit.get("statuses", [])):
 		if str(Dictionary(raw_status).get("id", "")) == status_id:
 			return true
