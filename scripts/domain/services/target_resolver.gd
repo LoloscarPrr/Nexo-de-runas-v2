@@ -32,6 +32,16 @@ static func resolve(target_spec: Dictionary, context: Dictionary, battle) -> Dic
 			return _multi_lane_target(opponent_side, opponent_lanes, Array(context.get("target_lanes", [])), int(target_spec.get("min_targets", 1)), int(target_spec.get("max_targets", 2)), true)
 		TargetSpecScript.TWO_ALLY_LANES:
 			return _multi_lane_target(ally_side, ally_lanes, Array(context.get("target_lanes", [])), 2, 2, true)
+		TargetSpecScript.SOURCE_UNIT:
+			return _lane_target(ally_side, int(context.get("source_lane", -1)), ally_lanes)
+		TargetSpecScript.ALL_ENEMY_UNITS:
+			var occupied: Array[int] = []
+			for lane in range(opponent_lanes.size()):
+				if opponent_lanes[lane] != null:
+					occupied.append(lane)
+			if occupied.is_empty():
+				return {"valid": false, "side": opponent_side, "lane": -1, "unit": null, "targets": []}
+			return _multi_lane_target(opponent_side, opponent_lanes, occupied, 1, opponent_lanes.size(), true)
 	return {"valid": false, "side": "none", "lane": -1, "unit": null}
 
 static func _lane_target(side: String, lane: int, lanes: Array) -> Dictionary:

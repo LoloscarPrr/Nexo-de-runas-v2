@@ -10,6 +10,8 @@ const ADJACENT_ALLY_LANE := "adjacent_ally_lane"
 const EMPTY_ADJACENT_ALLY_LANE := "empty_adjacent_ally_lane"
 const ENEMY_LANES := "enemy_lanes"
 const TWO_ALLY_LANES := "two_ally_lanes"
+const SOURCE_UNIT := "source_unit"
+const ALL_ENEMY_UNITS := "all_enemy_units"
 
 static func create(target_type: String, required: bool = false) -> Dictionary:
 	return {"type": target_type, "required": required}
@@ -43,3 +45,9 @@ static func enemy_lanes(max_targets: int = 2, min_targets: int = 1) -> Dictionar
 
 static func two_ally_lanes() -> Dictionary:
 	return create(TWO_ALLY_LANES, true)
+
+static func source_unit() -> Dictionary:
+	return create(SOURCE_UNIT, true)
+
+static func all_enemy_units() -> Dictionary:
+	return create(ALL_ENEMY_UNITS, true)
