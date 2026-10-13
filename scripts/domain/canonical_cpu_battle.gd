@@ -20,6 +20,7 @@ var cpu_failed_draws := 0
 var cpu_last_revealed: Array[String] = []
 var cpu_active_seals: Array[String] = []
 var cpu_active_relics: Array[String] = []
+var cpu_turn_active := false
 
 func setup_cpu(domain: String, player_deck: Array[String], enemy_domain_value: String = "", enemy_deck: Array[String] = []) -> void:
 	setup(domain, player_deck)
@@ -60,6 +61,7 @@ func advance_round() -> void:
 func run_cpu_turn() -> void:
 	if result != "ongoing":
 		return
+	cpu_turn_active = true
 	reset_turn_gates("enemy")
 	_roll_death_window("enemy")
 	_expire_cost_modifiers("enemy", "turn")
@@ -75,6 +77,7 @@ func run_cpu_turn() -> void:
 		if enemy_lanes[lane] != null:
 			var unit: Dictionary = enemy_lanes[lane]
 			unit["ready"] = true
+	cpu_turn_active = false
 
 func cpu_take_actions() -> void:
 	var safety := 0
@@ -165,7 +168,7 @@ func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, repla
 	var success := false
 	match card_type:
 		CatalogScript.TYPE_CREATURE:
-			success = _cpu_play_creature(card, lane)
+			success = _cpu_play_creature(card, lane, destination_lane)
 		CatalogScript.TYPE_RITE:
 			success = _cpu_play_rite(card, target_lane, target_lanes, destination_lane)
 		CatalogScript.TYPE_RELIC:
@@ -197,7 +200,7 @@ func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, repla
 	}))
 	return true
 
-func _cpu_play_creature(card: Dictionary, lane: int) -> bool:
+func _cpu_play_creature(card: Dictionary, lane: int, destination_lane: int = -1) -> bool:
 	if lane < 0 or lane >= LANE_COUNT or enemy_lanes[lane] != null:
 		return false
 	var unit := create_unit(str(card.get("id", "")), false)
@@ -205,6 +208,9 @@ func _cpu_play_creature(card: Dictionary, lane: int) -> bool:
 		return false
 	enemy_lanes[lane] = unit
 	_recalculate_auras("enemy")
+	_trigger_active_relics("enemy", AbilityDefinitionScriptCpu.FIRST_SUMMON_PER_TURN, {"source_side":"enemy","source_lane":lane,"target_lane":lane,"summoned_card_id":str(card.get("id",""))})
+	if int(card.get("cost", 0)) >= 4:
+		_trigger_active_relics("enemy", AbilityDefinitionScriptCpu.FIRST_HIGH_COST_UNIT_PER_TURN, {"source_side":"enemy","source_lane":lane,"target_lane":lane,"summoned_card_id":str(card.get("id",""))})
 	event_queue.push(GameEventScriptCpu.create("UNIT_SUMMONED", str(card.get("id", "")), [], {"side":"enemy","lane":lane,"token":false}))
 	var effect_id := str(card.get("effect_id", ""))
 	if not effect_id.is_empty():
@@ -212,7 +218,8 @@ func _cpu_play_creature(card: Dictionary, lane: int) -> bool:
 			"source_card_id": str(card.get("id", "")),
 			"source_side": "enemy",
 			"source_lane": lane,
-			"target_lane": lane
+			"target_lane": lane,
+			"destination_lane": destination_lane
 		}, self)
 	return true
 
@@ -355,6 +362,16 @@ func resolve_cpu_attacks() -> void:
 		var defender_lane := lane
 		if player_lanes[defender_lane] == null:
 			defender_lane = _guard_interceptor(player_lanes, lane)
+		var attacker_card := CatalogScript.find_by_id(str(attacker.get("id", "")))
+		var attacker_effect := str(attacker_card.get("effect_id", ""))
+		if not attacker_effect.is_empty():
+			AbilityResolverScriptCpu.resolve(attacker_effect, AbilityDefinitionScriptCpu.ON_ATTACK, {
+				"source_card_id": str(attacker.get("id", "")),
+				"source_side": "enemy",
+				"source_lane": lane,
+				"target_lane": defender_lane,
+				"blocked": defender_lane >= 0
+			}, self)
 		if defender_lane < 0:
 			var damage := maxi(0, int(attacker.get("attack", 0)))
 			player_integrity -= damage
@@ -474,3 +491,9 @@ func _build_lane_combinations(lanes: Array[int], count: int, start: int, current
 
 func cpu_deck_reference() -> Array:
 	return cpu_draw_pile
+
+func _current_turn_side() -> String:
+	return "enemy" if cpu_turn_active else "player"
+
+func cpu_relics_reference() -> Array:
+	return cpu_active_relics
