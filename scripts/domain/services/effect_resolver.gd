@@ -80,7 +80,7 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 					token["attack"] = int(token.get("attack", 0)) + bonus
 					token["temp_attack"] = int(token.get("temp_attack", 0)) + bonus
 				battle.event_queue.push(GameEventScript.create("UNIT_SUMMONED", str(token.get("id", "")), [], {"side": target_side, "lane": lane, "token": true, "source_id": str(context.get("source_card_id", ""))}))
-				battle._trigger_active_relics(target_side, battle.AbilityDefinitionScript.FIRST_SUMMON_PER_TURN, {"source_side":target_side,"source_lane":lane,"target_lane":lane,"summoned_card_id":str(token.get("id",""))})
+				battle._trigger_active_relics(target_side, "first_summon_per_turn", {"source_side":target_side,"source_lane":lane,"target_lane":lane,"summoned_card_id":str(token.get("id",""))})
 				ok = true
 		EffectScript.REVEAL_TOP:
 			if source_side == "enemy" and battle.has_method("cpu_draw_card"):
