@@ -98,7 +98,7 @@ func begin_new_turn() -> void:
 	reset_turn_gates("player")
 	_roll_death_window("player")
 	_expire_cost_modifiers("player", "turn")
-	_expire_statuses_for_side("player")
+	_expire_statuses_for_turn("player")
 	_reset_guard_usage(player_lanes)
 	_reset_guard_usage(enemy_lanes)
 	draw_card()
@@ -541,10 +541,11 @@ func _apply_status_to_unit(side: String, lane: int, status_id: String, duration:
 			existing["duration"] = duration
 			existing["source_id"] = source_id
 			existing["source_side"] = source_side
+			existing["expires_on_side"] = source_side if duration == "until_next_turn" else side
 			statuses[i] = existing
 			unit["statuses"] = statuses
 			return true
-	statuses.append({"id":status_id,"duration":duration,"source_id":source_id,"source_side":source_side})
+	statuses.append({"id":status_id,"duration":duration,"source_id":source_id,"source_side":source_side,"expires_on_side":source_side if duration == "until_next_turn" else side})
 	unit["statuses"] = statuses
 	event_queue.push(GameEventScript.create("STATUS_APPLIED", source_id, [str(unit.get("id", ""))], {"side":side,"lane":lane,"status":status_id,"duration":duration,"source_side":source_side}))
 	return true
@@ -559,20 +560,25 @@ func _unit_has_status(unit: Dictionary, status_id: String) -> bool:
 			return true
 	return false
 
+func _expire_statuses_for_turn(turn_side: String) -> void:
+	for board_side in ["player", "enemy"]:
+		var lanes: Array = player_lanes if board_side == "player" else enemy_lanes
+		for lane in range(lanes.size()):
+			if lanes[lane] == null:
+				continue
+			var unit: Dictionary = lanes[lane]
+			var kept: Array = []
+			for raw_status in Array(unit.get("statuses", [])):
+				var status: Dictionary = Dictionary(raw_status)
+				var expires_on := str(status.get("expires_on_side", board_side))
+				if str(status.get("duration", "")) == "until_next_turn" and expires_on == turn_side:
+					event_queue.push(GameEventScript.create("STATUS_EXPIRED", str(status.get("source_id", "")), [str(unit.get("id", ""))], {"side":board_side,"lane":lane,"status":str(status.get("id", "")),"expired_on_turn":turn_side}))
+				else:
+					kept.append(status)
+			unit["statuses"] = kept
+
 func _expire_statuses_for_side(side: String) -> void:
-	var lanes: Array = player_lanes if side == "player" else enemy_lanes
-	for lane in range(lanes.size()):
-		if lanes[lane] == null:
-			continue
-		var unit: Dictionary = lanes[lane]
-		var kept: Array = []
-		for raw_status in Array(unit.get("statuses", [])):
-			var status: Dictionary = Dictionary(raw_status)
-			if str(status.get("duration", "")) == "until_next_turn":
-				event_queue.push(GameEventScript.create("STATUS_EXPIRED", str(status.get("source_id", "")), [str(unit.get("id", ""))], {"side":side,"lane":lane,"status":str(status.get("id", ""))}))
-			else:
-				kept.append(status)
-		unit["statuses"] = kept
+	_expire_statuses_for_turn(side)
 
 func _move_unit(side: String, from_lane: int, to_lane: int, forced: bool = false, source_id: String = "", source_side: String = "", max_distance: int = -1) -> bool:
 	var lanes: Array = player_lanes if side == "player" else enemy_lanes
