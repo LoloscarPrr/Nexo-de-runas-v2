@@ -26,7 +26,7 @@ func _test_catalog_coverage() -> void:
 		"forest_call_pack",
 		"forest_growth",
 		"crypt_broken_skeleton",
-		"crypt_gravedigger",
+		"crypt_pit_necromancer",
 		"crypt_funeral_hound",
 		"crypt_mourner",
 		"crypt_ash_offering",
@@ -36,7 +36,11 @@ func _test_catalog_coverage() -> void:
 		"tower_forbidden_vision",
 		"forge_worker",
 		"forge_spark",
-		"forge_overload"
+		"forge_overload",
+		"forest_rune_squirrel",
+		"tower_sigils_apprentice",
+		"tower_spark_theurge",
+		"forge_copper_sparker"
 	]
 	for effect_id in effect_ids:
 		var abilities := AbilityCatalog.abilities_for(effect_id)
@@ -92,13 +96,14 @@ func _test_crypt_abilities() -> void:
 	check(_has_event(skeleton_events, "ABILITY_TRIGGERED"), "Broken Skeleton Last Breath emits ability event")
 	check(_has_event(skeleton_events, "EFFECT_APPLIED"), "Broken Skeleton Last Breath emits effect event")
 
-	var gravedigger := Battle.new()
-	gravedigger.setup_starter(Catalog.DOMAIN_CRYPT)
-	gravedigger.hand = ["sepulturero"]
-	gravedigger.energy_current = 12
-	gravedigger.essence_current = 0
-	check(gravedigger.play_card(0, 4), "Gravedigger can be summoned on lane five")
-	check(gravedigger.essence_current == 1, "Gravedigger gains one Remains on summon")
+	var necromancer := Battle.new()
+	necromancer.setup_starter(Catalog.DOMAIN_CRYPT)
+	necromancer.hand = ["ch_007_nigromante_de_fosa"]
+	necromancer.discard_pile.clear()
+	necromancer.discard_pile.append("ch_001_rata_de_osario")
+	necromancer.energy_current = 12
+	check(necromancer.play_card(0, 4), "Pit Necromancer can be summoned on lane five")
+	check(necromancer.hand.has("ch_001_rata_de_osario"), "Pit Necromancer returns an eligible cost-one creature")
 
 	var hound := Battle.new()
 	hound.setup_starter(Catalog.DOMAIN_CRYPT)
@@ -121,7 +126,7 @@ func _test_crypt_abilities() -> void:
 	offering.setup_starter(Catalog.DOMAIN_CRYPT)
 	offering.player_lanes[4] = offering.create_unit("lobo_joven", true)
 	offering.hand = ["ofrenda_de_ceniza"]
-	offering.draw_pile = ["esqueleto_roto", "sepulturero", "guardian_oseo"]
+	offering.draw_pile = ["esqueleto_roto", "ch_003_guardia_esqueletico", "guardian_oseo"]
 	offering.energy_current = 12
 	check(offering.play_card(0, -1, 4), "Ash Offering sacrifices selected allied unit")
 	check(offering.player_lanes[4] == null, "Ash Offering clears sacrificed lane")
@@ -141,10 +146,10 @@ func _test_tower_abilities() -> void:
 	var familiar := Battle.new()
 	familiar.setup_starter(Catalog.DOMAIN_TOWER)
 	familiar.hand = ["familiar_arcano"]
-	familiar.draw_pile = ["buho_oculum", "aprendiz_runico"]
+	familiar.draw_pile = ["ta_001_aprendiz_de_sigilos", "aprendiz_runico"]
 	familiar.energy_current = 12
 	check(familiar.play_card(0, 4), "Arcane Familiar summons on lane five")
-	check(familiar.last_revealed.size() == 1 and familiar.last_revealed[0] == "buho_oculum", "Arcane Familiar reveals the top card")
+	check(familiar.last_revealed.size() == 1 and familiar.last_revealed[0] == "ta_001_aprendiz_de_sigilos", "Arcane Familiar reveals the top card")
 
 	var bolt := Battle.new()
 	bolt.setup_starter(Catalog.DOMAIN_TOWER)
@@ -157,10 +162,10 @@ func _test_tower_abilities() -> void:
 	var vision := Battle.new()
 	vision.setup_starter(Catalog.DOMAIN_TOWER)
 	vision.hand = ["vision_prohibida"]
-	vision.draw_pile = ["familiar_arcano", "buho_oculum", "aprendiz_runico", "adepta_runica"]
+	vision.draw_pile = ["familiar_arcano", "ta_001_aprendiz_de_sigilos", "aprendiz_runico", "adepta_runica"]
 	vision.energy_current = 12
 	check(vision.play_card(0), "Forbidden Vision resolves without target")
-	check(vision.last_revealed == ["familiar_arcano", "buho_oculum", "aprendiz_runico"], "Forbidden Vision reveals top three in order")
+	check(vision.last_revealed == ["familiar_arcano", "ta_001_aprendiz_de_sigilos", "aprendiz_runico"], "Forbidden Vision reveals top three in order")
 	check(vision.hand.size() == 1 and vision.hand[0] == "familiar_arcano", "Forbidden Vision draws the first revealed card")
 
 func _test_forge_abilities() -> void:
