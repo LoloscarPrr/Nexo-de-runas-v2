@@ -21,9 +21,15 @@ static func resolve(effect_id: String, trigger: String, context: Dictionary, bat
 			continue
 		var all_effects_ok := true
 		for effect in Array(ability.get("effects", [])):
-			if not EffectResolverScript.apply(effect, target, context, battle):
-				all_effects_ok = false
-				break
+			if EffectResolverScript.apply(effect, target, context, battle):
+				continue
+			var params: Dictionary = Dictionary(effect.get("params", {}))
+			if bool(params.get("optional_if_target_missing", false)):
+				var refreshed_target := TargetResolverScript.resolve(target_spec, context, battle)
+				if not bool(refreshed_target.get("valid", false)):
+					continue
+			all_effects_ok = false
+			break
 		if all_effects_ok:
 			resolved_any = true
 			battle.event_queue.push(GameEventScript.create("ABILITY_TRIGGERED", str(context.get("source_card_id", "")), [], {"ability_id": str(ability.get("id", "")), "trigger": trigger}))
