@@ -18,7 +18,7 @@ const MAX_HAND := 8
 const STANDARD_ENERGY_CAP := 6
 const ABSOLUTE_ENERGY_CAP := 12
 const MAX_SEALS := 3
-const MAX_RELICS := 2
+const MAX_RELICS := 3
 
 var player_domain := Catalog.DOMAIN_FOREST
 var enemy_domain := Catalog.DOMAIN_FOREST
@@ -309,6 +309,9 @@ func _play_creature(card: Dictionary, lane: int) -> bool:
 		return false
 	player_lanes[lane] = unit
 	_recalculate_auras("player")
+	_trigger_active_relics("player", AbilityDefinitionScript.FIRST_SUMMON_PER_TURN, {"source_side":"player","source_lane":lane,"target_lane":lane,"summoned_card_id":str(card.get("id",""))})
+	if int(card.get("cost", 0)) >= 4:
+		_trigger_active_relics("player", AbilityDefinitionScript.FIRST_HIGH_COST_UNIT_PER_TURN, {"source_side":"player","source_lane":lane,"target_lane":lane,"summoned_card_id":str(card.get("id",""))})
 	event_queue.push(GameEventScript.create("UNIT_SUMMONED", str(card.get("id", "")), [], {"side":"player","lane":lane,"token":false}))
 	_on_creature_entered(card, lane)
 	return true
@@ -461,8 +464,11 @@ func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed"
 	else:
 		enemy_discard.append(card_id)
 	lanes[lane] = null
-	_record_death("player" if player_side else "enemy")
-	_recalculate_auras("player" if player_side else "enemy")
+	var dead_side := "player" if player_side else "enemy"
+	_record_death(dead_side)
+	_recalculate_auras(dead_side)
+	if dead_side != _current_turn_side():
+		_trigger_active_relics(dead_side, AbilityDefinitionScript.FIRST_ALLY_DEATH_BETWEEN_TURNS, {"source_side":dead_side,"target_lane":lane,"source_lane":lane,"dead_card_id":card_id})
 	if death_reason == "sacrifice":
 		event_queue.push(GameEventScript.create("UNIT_SACRIFICED", card_id, [], {
 			"side": "player" if player_side else "enemy",
@@ -557,9 +563,11 @@ func _expire_statuses_for_side(side: String) -> void:
 				kept.append(status)
 		unit["statuses"] = kept
 
-func _move_unit(side: String, from_lane: int, to_lane: int, forced: bool = false, source_id: String = "", source_side: String = "") -> bool:
+func _move_unit(side: String, from_lane: int, to_lane: int, forced: bool = false, source_id: String = "", source_side: String = "", max_distance: int = -1) -> bool:
 	var lanes: Array = player_lanes if side == "player" else enemy_lanes
 	if from_lane < 0 or from_lane >= lanes.size() or to_lane < 0 or to_lane >= lanes.size() or from_lane == to_lane:
+		return false
+	if max_distance >= 0 and absi(to_lane - from_lane) > max_distance:
 		return false
 	if lanes[from_lane] == null or lanes[to_lane] != null:
 		return false
@@ -739,6 +747,61 @@ func _recalculate_auras(side: String) -> void:
 		unit["hp"] = maxi(1, int(unit.get("max_hp", 1)) - damage_taken)
 		unit.erase("_aura_damage_taken")
 
+func _current_turn_side() -> String:
+	return "player"
+
+func _active_relics_for_side(side: String) -> Array:
+	if side == "enemy" and has_method("cpu_relics_reference"):
+		return call("cpu_relics_reference")
+	return active_relics
+
+func _trigger_active_relics(side: String, trigger: String, context: Dictionary) -> void:
+	for relic_id in _active_relics_for_side(side):
+		var card := Catalog.find_by_id(str(relic_id))
+		var effect_id := str(card.get("effect_id", ""))
+		if effect_id.is_empty():
+			continue
+		var gate_id := "%s:%s" % [str(relic_id), trigger]
+		if not consume_first_turn_gate(side, gate_id):
+			continue
+		var local_context := context.duplicate(true)
+		local_context["source_card_id"] = str(relic_id)
+		local_context["source_side"] = side
+		AbilityResolverScript.resolve(effect_id, trigger, local_context, self)
+
+func _has_adjacent_ally(side: String, lane: int) -> bool:
+	var lanes: Array = player_lanes if side == "player" else enemy_lanes
+	for offset in [-1, 1]:
+		var candidate := lane + int(offset)
+		if candidate >= 0 and candidate < lanes.size() and lanes[candidate] != null:
+			return true
+	return false
+
+func _heal_nexus(side: String, amount: int, source_id: String = "") -> int:
+	var healed := 0
+	if side == "enemy":
+		var before := enemy_integrity
+		enemy_integrity = mini(STARTING_INTEGRITY, enemy_integrity + maxi(0, amount))
+		healed = enemy_integrity - before
+	else:
+		var before := player_integrity
+		player_integrity = mini(STARTING_INTEGRITY, player_integrity + maxi(0, amount))
+		healed = player_integrity - before
+	if healed > 0:
+		event_queue.push(GameEventScript.create("NEXUS_HEALED", source_id, [], {"side":side,"amount":healed}))
+	return healed
+
+func _damage_enemy_nexus(source_side: String, amount: int, source_id: String = "") -> int:
+	var damage := maxi(0, amount)
+	if source_side == "enemy":
+		player_integrity -= damage
+	else:
+		enemy_integrity -= damage
+	if damage > 0:
+		event_queue.push(GameEventScript.create("NEXUS_DAMAGED", source_id, [], {"side":"player" if source_side == "enemy" else "enemy","amount":damage}))
+	_check_result()
+	return damage
+
 func _guard_interceptor(lanes: Array, target_lane: int) -> int:
 	for offset in [-1, 1]:
 		var candidate_lane: int = target_lane + int(offset)
@@ -776,7 +839,11 @@ func _make_token(id: String, name: String, attack: int, health: int, tags: Array
 		"guard_used": false,
 		"shield": 0,
 		"temp_attack": 0,
-		"temp_health": 0
+		"temp_health": 0,
+		"statuses": [],
+		"auras": [],
+		"aura_attack": 0,
+		"aura_health": 0
 	}
 
 func _reset_guard_usage(lanes: Array) -> void:
