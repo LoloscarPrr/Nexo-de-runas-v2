@@ -45,8 +45,8 @@ func _test_catalog_migration_state() -> void:
 			if _is_foundational(card):
 				foundational_domain += 1
 				foundational_total += 1
-		check(foundational_domain == 8, "%s has exactly 8 migrated foundational cards after Batch 3" % domain)
-	check(foundational_total == 32, "Catalog contains 32 foundational + 48 legacy cards after Batch 3")
+		check(foundational_domain >= 8, "%s preserves at least 8 migrated foundational cards from Batch 3" % domain)
+	check(foundational_total >= 32, "Catalog preserves at least 32 foundational cards reached in Batch 3")
 	for card_id in [
 		"bs_001_brote_del_claro","bs_017_raices_invasoras",
 		"ch_001_rata_de_osario","ch_002_acolito_de_ceniza",
