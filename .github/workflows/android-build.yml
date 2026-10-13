@@ -67,28 +67,38 @@ jobs:
           GODOT_CHECK="$RUNNER_TEMP/godot-check/Godot_v4.3-stable_linux.x86_64"
           "$GODOT_CHECK" --headless --path . --editor --import --quit 2>&1 | tee "$RUNNER_TEMP/godot-import.log"
           if grep -E 'SCRIPT ERROR|Parse Error|Compile Error' "$RUNNER_TEMP/godot-import.log"; then exit 1; fi
-          "$GODOT_CHECK" --headless --path . --script tests/clean_architecture_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/domain_entity_model_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/ability_effect_engine_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/p0_core_foundation_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/p1_spatial_engine_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/p2_advanced_state_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/foundation_batch_1_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/foundation_batch_2_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/foundation_batch_3_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/application_battle_session_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/infrastructure_save_repository_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/battle_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/canonical_battle_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/canonical_cpu_battle_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/cpu_ability_parity_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/vertical_battle_presentation_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/portrait_main_menu_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/canonical_forest_ui_test.gd 2>&1 | tee "$RUNNER_TEMP/godot-forest-ui.log"
-          if grep -E 'SCRIPT ERROR|ERROR:' "$RUNNER_TEMP/godot-forest-ui.log"; then exit 1; fi
-          "$GODOT_CHECK" --headless --path . --script tests/campaign_progression_test.gd
-          "$GODOT_CHECK" --headless --path . --script tests/battle_ui_test.gd 2>&1 | tee "$RUNNER_TEMP/godot-ui.log"
-          if grep -E 'SCRIPT ERROR|ERROR:' "$RUNNER_TEMP/godot-ui.log"; then exit 1; fi
+          run_godot_test() {
+            local test_path="$1"
+            local safe_name
+            safe_name="$(basename "$test_path" .gd)"
+            local log_path="$RUNNER_TEMP/${safe_name}.log"
+            if ! "$GODOT_CHECK" --headless --path . --script "$test_path" 2>&1 | tee "$log_path"; then
+              return 1
+            fi
+            if grep -E 'SCRIPT ERROR|Parse Error|Compile Error|^ERROR:' "$log_path"; then
+              return 1
+            fi
+          }
+          run_godot_test tests/clean_architecture_test.gd
+          run_godot_test tests/domain_entity_model_test.gd
+          run_godot_test tests/ability_effect_engine_test.gd
+          run_godot_test tests/p0_core_foundation_test.gd
+          run_godot_test tests/p1_spatial_engine_test.gd
+          run_godot_test tests/p2_advanced_state_test.gd
+          run_godot_test tests/foundation_batch_1_test.gd
+          run_godot_test tests/foundation_batch_2_test.gd
+          run_godot_test tests/foundation_batch_3_test.gd
+          run_godot_test tests/application_battle_session_test.gd
+          run_godot_test tests/infrastructure_save_repository_test.gd
+          run_godot_test tests/battle_test.gd
+          run_godot_test tests/canonical_battle_test.gd
+          run_godot_test tests/canonical_cpu_battle_test.gd
+          run_godot_test tests/cpu_ability_parity_test.gd
+          run_godot_test tests/vertical_battle_presentation_test.gd
+          run_godot_test tests/portrait_main_menu_test.gd
+          run_godot_test tests/canonical_forest_ui_test.gd
+          run_godot_test tests/campaign_progression_test.gd
+          run_godot_test tests/battle_ui_test.gd
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
