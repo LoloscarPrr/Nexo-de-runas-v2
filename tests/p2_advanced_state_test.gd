@@ -62,8 +62,10 @@ func _test_death_window_rollover() -> void:
 func _test_deck_bottom_move() -> void:
 	var battle = _battle()
 	var creature_id := _first_creature(Catalog.DOMAIN_TOWER)
-	battle.discard_pile = [creature_id]
-	battle.draw_pile = ["sentinela_runico"]
+	battle.discard_pile.clear()
+	battle.discard_pile.append(creature_id)
+	battle.draw_pile.clear()
+	battle.draw_pile.append("sentinela_runico")
 	var before: int = int(battle.draw_pile.size())
 	check(battle._move_discard_creature_to_deck_bottom("player", creature_id, 999, "p2_test"), "Creature moves from discard to deck bottom")
 	check(battle.discard_pile.is_empty(), "Moved card leaves discard")

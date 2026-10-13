@@ -32,9 +32,9 @@ func _battle(player_domain: String, enemy_domain: String) -> CanonicalCpuBattle:
 
 func _test_catalog_batch() -> void:
 	check(Catalog.validate_catalog().is_empty(), "Batch 2 catalog validates")
-	check(Catalog.all_card_ids().size() == 72, "Catalog contains 72 cards")
+	check(Catalog.all_card_ids().size() >= 72, "Catalog preserves at least the 72 cards reached in Batch 2")
 	for domain in [Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT, Catalog.DOMAIN_TOWER, Catalog.DOMAIN_FORGE]:
-		check(Catalog.cards_for_domain(domain).size() == 18, "%s contains 18 cards" % domain)
+		check(Catalog.cards_for_domain(domain).size() >= 18, "%s preserves at least 18 cards from Batch 2" % domain)
 	for card_id in [
 		"bs_013_avatar_del_bosque","bs_016_llamado_de_la_manada","bs_020_santuario_de_la_manada",
 		"ch_013_rey_sin_sepulcro","ch_017_llamado_de_los_caidos","ch_019_osario_ritual",

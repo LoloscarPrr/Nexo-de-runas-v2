@@ -42,8 +42,8 @@ static func draw(amount: int) -> Dictionary:
 static func temp_stats(attack: int, health: int = 0) -> Dictionary:
 	return create(MODIFY_STATS_TEMP, {"attack": attack, "health": health})
 
-static func rooted(duration: String = "until_next_turn") -> Dictionary:
-	return create(APPLY_STATUS, {"status":"ROOTED","duration":duration})
+static func rooted(duration: String = "until_next_turn", optional_if_target_missing: bool = false) -> Dictionary:
+	return create(APPLY_STATUS, {"status":"ROOTED","duration":duration,"optional_if_target_missing":optional_if_target_missing})
 
 static func move(forced: bool = false, max_distance: int = -1) -> Dictionary:
 	return create(FORCED_MOVE_UNIT if forced else MOVE_UNIT, {"max_distance": max_distance})

@@ -79,6 +79,18 @@ static func abilities_for(effect_id: String) -> Array:
 			]
 		"forge_rune_furnace_foundational":
 			return [Ability.create("forge_rune_furnace_first_large_unit", Ability.FIRST_HIGH_COST_UNIT_PER_TURN, Target.player_lane(), [Effect.permanent_stats(0, 1)], [Condition.target_exists()])]
+		"forest_clearing_sprout":
+			return [Ability.create("forest_clearing_sprout_adjacent", Ability.ON_SUMMON, Target.source_unit(), [Effect.permanent_stats(0, 1)], [Condition.adjacent_ally_exists()])]
+		"forest_invasive_roots":
+			return [Ability.create("forest_invasive_roots_damage_root", Ability.ON_PLAY, Target.enemy_lane(), [Effect.damage(2), Effect.rooted("until_next_turn", true)], [Condition.target_exists()])]
+		"crypt_ossuary_rat":
+			return [Ability.create("crypt_ossuary_rat_death", Ability.ON_DEATH, Target.none(), [Effect.damage_nexus(1)])]
+		"crypt_ash_acolyte":
+			return [Ability.create("crypt_ash_acolyte_death", Ability.ON_DEATH, Target.none(), [Effect.heal_nexus(1)])]
+		"tower_directed_spark":
+			return [Ability.create("tower_directed_spark", Ability.ON_PLAY, Target.enemy_lane(), [Effect.damage(1)], [Condition.target_exists()])]
+		"forge_riveter_apprentice":
+			return [Ability.create("forge_riveter_apprentice_relic", Ability.ON_SUMMON, Target.source_unit(), [Effect.permanent_stats(0, 1)], [Condition.controls_relic()])]
 	return []
 
 static func target_spec_for(effect_id: String, trigger: String) -> Dictionary:

@@ -55,8 +55,11 @@ func _test_sacrifice_reason() -> void:
 	var battle = _battle()
 	battle.player_domain = Catalog.DOMAIN_CRYPT
 	battle.player_lanes[0] = battle.create_unit("esqueleto_roto", true)
-	battle.hand = ["ofrenda_de_ceniza"]
-	battle.draw_pile = ["sepulturero", "guardian_oseo"]
+	battle.hand.clear()
+	battle.hand.append("ofrenda_de_ceniza")
+	battle.draw_pile.clear()
+	battle.draw_pile.append("sepulturero")
+	battle.draw_pile.append("guardian_oseo")
 	battle.energy_current = 12
 	check(battle.play_card(0, -1, 0), "Ash Offering resolves")
 	var events := battle.drain_events()
@@ -74,10 +77,12 @@ func _test_turn_gates() -> void:
 func _test_structured_draw_and_summon_events() -> void:
 	var battle = _battle()
 	battle.hand.clear()
-	battle.draw_pile = ["lobo_joven"]
+	battle.draw_pile.clear()
+	battle.draw_pile.append("lobo_joven")
 	check(battle.draw_card(), "Player draws card")
 	check(_has_event(battle.drain_events(), "CARD_DRAWN"), "Draw emits CARD_DRAWN")
-	battle.hand = ["ardilla_vigilante"]
+	battle.hand.clear()
+	battle.hand.append("ardilla_vigilante")
 	battle.energy_current = 12
 	check(battle.play_card(0, 4), "Creature can be summoned")
 	check(_has_event(battle.drain_events(), "UNIT_SUMMONED"), "Creature summon emits UNIT_SUMMONED")
