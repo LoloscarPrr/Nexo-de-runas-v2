@@ -17,8 +17,8 @@ const CARDS = [
 	{"id":"bs_002_ardilla_runica","set_id":"BS-002","name":"ARDILLA RÚNICA","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":1,"attack":1,"health":1,"keywords":[],"tags":["FUNDACIONAL","BESTIA"],"effect_id":"forest_rune_squirrel","unique":false,"rarity":"common"},
 	{"id":"lobo_joven","name":"LOBO JOVEN","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":2,"attack":2,"health":3,"keywords":["MANADA"],"tags":["BESTIA"],"effect_id":"forest_pack_attack","unique":false},
 	{"id":"cierva_lunar","name":"CIERVA LUNAR","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":2,"attack":1,"health":4,"keywords":[],"tags":["BESTIA"],"effect_id":"forest_moon_deer","unique":false},
+	{"id":"zorro_acechante","name":"ZORRO ACECHANTE","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":2,"attack":2,"health":2,"keywords":["EMBOSCADA"],"tags":["BESTIA"],"effect_id":"","unique":false},
 	{"id":"bs_008_jabali_de_corteza","set_id":"BS-008","name":"JABALÍ DE CORTEZA","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":3,"attack":4,"health":3,"keywords":[],"tags":["FUNDACIONAL","BESTIA"],"effect_id":"","unique":false,"rarity":"common"},
-	{"id":"jabali_de_raiz","name":"JABALÍ DE RAÍZ","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":3,"attack":3,"health":4,"keywords":[],"tags":["BESTIA"],"effect_id":"forest_root_boar","unique":false},
 	{"id":"lobo_alfa","name":"LOBO ALFA","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":4,"attack":4,"health":4,"keywords":["MANADA"],"tags":["BESTIA"],"effect_id":"forest_alpha_aura","unique":false},
 	{"id":"oso_ancestral","name":"OSO ANCESTRAL","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":5,"attack":5,"health":7,"keywords":["GUARDIA"],"tags":["BESTIA"],"effect_id":"","unique":false},
 	{"id":"llamado_de_la_manada","name":"LLAMADO DE LA MANADA","domain":DOMAIN_FOREST,"type":TYPE_RITE,"cost":2,"attack":0,"health":0,"keywords":[],"tags":[],"effect_id":"forest_call_pack","unique":false},
@@ -103,9 +103,9 @@ const CARDS = [
 
 const STARTER_DECKS = {
 	DOMAIN_FOREST: [
-		"ardilla_vigilante","ardilla_vigilante","bs_008_jabali_de_corteza","bs_008_jabali_de_corteza",
+		"ardilla_vigilante","ardilla_vigilante","zorro_acechante","zorro_acechante",
 		"lobo_joven","lobo_joven","cierva_lunar","cierva_lunar","bs_002_ardilla_runica",
-		"jabali_de_raiz","jabali_de_raiz","lobo_alfa","oso_ancestral",
+		"bs_008_jabali_de_corteza","bs_008_jabali_de_corteza","lobo_alfa","oso_ancestral",
 		"llamado_de_la_manada","llamado_de_la_manada","crecimiento_violento",
 		"crecimiento_violento","totem_de_manada","sello_del_rastro","sello_del_rastro"
 	],
