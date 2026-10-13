@@ -39,12 +39,14 @@ func _battle(player_domain: String, enemy_domain: String) -> CanonicalCpuBattle:
 
 func _test_cpu_summon_uses_shared_ability_engine() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT)
-	battle.cpu_hand = ["sepulturero"]
+	battle.enemy_discard.append("ch_001_rata_de_osario")
+	battle.cpu_hand = ["ch_007_nigromante_de_fosa"]
 	check(battle.cpu_play_card(0, 4), "CPU can play a creature through its canonical action path")
-	check(battle.enemy_lanes[4] != null and str(battle.enemy_lanes[4].id) == "sepulturero", "CPU creature occupies enemy lane five")
-	check(battle.cpu_essence_current == 1, "CPU summon ability grants its own Restos")
-	check(battle.essence_current == 0, "CPU summon ability never grants player Essence")
-	check(battle.cpu_energy_current == 10, "CPU pays the same printed Energy cost")
+	check(battle.enemy_lanes[4] != null and str(battle.enemy_lanes[4].id) == "ch_007_nigromante_de_fosa", "CPU creature occupies enemy lane five")
+	check(battle.cpu_hand.has("ch_001_rata_de_osario"), "CPU summon ability resolves against its own discard zone")
+	check(not battle.enemy_discard.has("ch_001_rata_de_osario"), "Returned creature leaves enemy discard")
+	check(battle.essence_current == 0, "CPU summon ability never modifies player Essence")
+	check(battle.cpu_energy_current == 9, "CPU pays the same printed Energy cost")
 	var events := battle.drain_events()
 	check(_has_event(events, "ABILITY_TRIGGERED"), "CPU summon exposes ABILITY_TRIGGERED")
 	check(_has_side_event(events, "RESOURCE_SPENT", "enemy"), "CPU Energy spending is tagged as enemy-side")
@@ -99,11 +101,11 @@ func _test_cpu_last_breath_and_crypt_resource() -> void:
 func _test_cpu_reveal_uses_own_deck() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_TOWER)
 	battle.cpu_hand = ["vision_prohibida"]
-	battle.cpu_draw_pile = ["buho_oculum", "aprendiz_runico", "adepta_runica"]
+	battle.cpu_draw_pile = ["ta_001_aprendiz_de_sigilos", "aprendiz_runico", "adepta_runica"]
 	battle.draw_pile = ["ardilla_vigilante"]
 	check(battle.cpu_play_card(0), "CPU resolves Forbidden Vision")
 	check(battle.cpu_last_revealed.size() == 3, "CPU reveal records its own top three")
-	check(battle.cpu_hand.size() == 1 and battle.cpu_hand[0] == "buho_oculum", "CPU reveal draws from CPU deck")
+	check(battle.cpu_hand.size() == 1 and battle.cpu_hand[0] == "ta_001_aprendiz_de_sigilos", "CPU reveal draws from CPU deck")
 	check(battle.draw_pile.size() == 1 and battle.draw_pile[0] == "ardilla_vigilante", "CPU reveal does not touch player deck")
 	check(battle.last_revealed.is_empty(), "CPU reveal does not overwrite player reveal state")
 

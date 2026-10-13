@@ -219,6 +219,7 @@ func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, repla
 		enemy_discard.append(card_id)
 		if enemy_domain == CatalogScript.DOMAIN_TOWER:
 			cpu_gain_essence(1)
+		_trigger_first_spell_units("enemy")
 	elif card_type == CatalogScript.TYPE_SEAL and enemy_domain == CatalogScript.DOMAIN_TOWER:
 		cpu_gain_essence(1)
 	if card_type == CatalogScript.TYPE_RELIC:

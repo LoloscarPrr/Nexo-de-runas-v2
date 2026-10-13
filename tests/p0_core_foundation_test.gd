@@ -58,7 +58,7 @@ func _test_sacrifice_reason() -> void:
 	battle.hand.clear()
 	battle.hand.append("ofrenda_de_ceniza")
 	battle.draw_pile.clear()
-	battle.draw_pile.append("sepulturero")
+	battle.draw_pile.append("ch_003_guardia_esqueletico")
 	battle.draw_pile.append("guardian_oseo")
 	battle.energy_current = 12
 	check(battle.play_card(0, -1, 0), "Ash Offering resolves")
