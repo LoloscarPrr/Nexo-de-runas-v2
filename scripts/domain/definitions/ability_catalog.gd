@@ -91,6 +91,14 @@ static func abilities_for(effect_id: String) -> Array:
 			return [Ability.create("tower_directed_spark", Ability.ON_PLAY, Target.enemy_lane(), [Effect.damage(1)], [Condition.target_exists()])]
 		"forge_riveter_apprentice":
 			return [Ability.create("forge_riveter_apprentice_relic", Ability.ON_SUMMON, Target.source_unit(), [Effect.permanent_stats(0, 1)], [Condition.controls_relic()])]
+		"forest_rune_squirrel":
+			return [Ability.create("forest_rune_squirrel_death", Ability.ON_DEATH, Target.none(), [Effect.heal_nexus(1)])]
+		"tower_sigils_apprentice":
+			return [Ability.create("tower_sigils_apprentice_first_spell", Ability.FIRST_SPELL_PER_TURN, Target.source_unit(), [Effect.temp_stats(1, 0)])]
+		"tower_spark_theurge":
+			return [Ability.create("tower_spark_theurge_first_spell", Ability.FIRST_SPELL_PER_TURN, Target.opposing_enemy_lane(), [Effect.damage(1)], [Condition.target_exists()])]
+		"forge_copper_sparker":
+			return [Ability.create("forge_copper_sparker_death", Ability.ON_DEATH, Target.opposing_enemy_lane(), [Effect.damage(1)], [Condition.target_exists()])]
 	return []
 
 static func target_spec_for(effect_id: String, trigger: String) -> Dictionary:
