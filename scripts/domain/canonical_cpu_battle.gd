@@ -110,9 +110,29 @@ func cpu_legal_actions_for_card(hand_index: int) -> Array:
 	var card_type := str(card.get("type", ""))
 	match card_type:
 		CatalogScript.TYPE_CREATURE:
+			var summon_spec := ability_target_spec(str(card.get("id", "")), AbilityDefinitionScriptCpu.ON_SUMMON)
+			var summon_target_type := str(summon_spec.get("type", TargetSpecScriptCpu.NONE))
 			for lane in range(LANE_COUNT):
-				if enemy_lanes[lane] == null:
-					actions.append({"lane": lane, "target_lane": -1, "replace_index": -1})
+				if enemy_lanes[lane] != null:
+					continue
+				var added_special := false
+				if summon_target_type == TargetSpecScriptCpu.ADJACENT_ALLY_LANE:
+					for target_lane in [lane - 1, lane + 1]:
+						if target_lane < 0 or target_lane >= LANE_COUNT or enemy_lanes[target_lane] == null:
+							continue
+						for destination_lane in [target_lane - 1, target_lane + 1]:
+							if destination_lane < 0 or destination_lane >= LANE_COUNT or enemy_lanes[destination_lane] != null:
+								continue
+							actions.append({"lane":lane,"target_lane":target_lane,"target_lanes":[],"destination_lane":destination_lane,"replace_index":-1})
+							added_special = true
+				elif summon_target_type == TargetSpecScriptCpu.OPPOSING_ENEMY_LANE and player_lanes[lane] != null:
+					for destination_lane in [lane - 1, lane + 1]:
+						if destination_lane < 0 or destination_lane >= LANE_COUNT or player_lanes[destination_lane] != null:
+							continue
+						actions.append({"lane":lane,"target_lane":lane,"target_lanes":[],"destination_lane":destination_lane,"replace_index":-1})
+						added_special = true
+				if not added_special:
+					actions.append({"lane": lane, "target_lane": -1, "target_lanes": [], "destination_lane": -1, "replace_index": -1})
 		CatalogScript.TYPE_RITE:
 			var spec := ability_target_spec(str(card.get("id", "")), AbilityDefinitionScriptCpu.ON_PLAY)
 			var target_type := str(spec.get("type", TargetSpecScriptCpu.NONE))
@@ -133,6 +153,21 @@ func cpu_legal_actions_for_card(hand_index: int) -> Array:
 				var max_targets := mini(int(spec.get("max_targets", 2)), occupied_enemy_targets.size())
 				for count in range(min_targets, max_targets + 1):
 					for lanes_choice in _lane_combinations(occupied_enemy_targets, count):
+						if _cpu_can_resolve_rite(card, -1, lanes_choice):
+							actions.append({"lane":-1,"target_lane":-1,"target_lanes":lanes_choice,"destination_lane":-1,"replace_index":-1})
+			elif target_type == TargetSpecScriptCpu.EMPTY_ALLY_LANE:
+				for lane in range(LANE_COUNT):
+					if enemy_lanes[lane] == null and _cpu_can_resolve_rite(card, lane):
+						actions.append({"lane":-1,"target_lane":lane,"target_lanes":[],"destination_lane":-1,"replace_index":-1})
+			elif target_type == TargetSpecScriptCpu.SELECTED_EMPTY_ALLY_LANES:
+				var empty_allies: Array[int] = []
+				for lane in range(LANE_COUNT):
+					if enemy_lanes[lane] == null:
+						empty_allies.append(lane)
+				var min_targets := int(spec.get("min_targets", 1))
+				var max_targets := mini(int(spec.get("max_targets", 2)), empty_allies.size())
+				for count in range(min_targets, max_targets + 1):
+					for lanes_choice in _lane_combinations(empty_allies, count):
 						if _cpu_can_resolve_rite(card, -1, lanes_choice):
 							actions.append({"lane":-1,"target_lane":-1,"target_lanes":lanes_choice,"destination_lane":-1,"replace_index":-1})
 			elif target_type == TargetSpecScriptCpu.TWO_ALLY_LANES:
