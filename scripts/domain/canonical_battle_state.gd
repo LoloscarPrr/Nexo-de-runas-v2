@@ -285,6 +285,7 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 		discard_pile.append(card_id)
 		if player_domain == Catalog.DOMAIN_TOWER:
 			gain_essence(1)
+		_trigger_first_spell_units("player")
 	elif card_type == Catalog.TYPE_SEAL and player_domain == Catalog.DOMAIN_TOWER:
 		gain_essence(1)
 	if card_type == Catalog.TYPE_RELIC:
@@ -766,6 +767,31 @@ func _recalculate_auras(side: String) -> void:
 
 func _current_turn_side() -> String:
 	return "player"
+
+func _trigger_board_units(side: String, trigger: String, context: Dictionary = {}) -> void:
+	var lanes: Array = player_lanes if side == "player" else enemy_lanes
+	for lane in range(lanes.size()):
+		if lanes[lane] == null:
+			continue
+		var unit: Dictionary = lanes[lane]
+		var card_id := str(unit.get("id", ""))
+		var card := Catalog.find_by_id(card_id)
+		if card.is_empty():
+			continue
+		var effect_id := str(card.get("effect_id", ""))
+		if effect_id.is_empty():
+			continue
+		var local_context := context.duplicate(true)
+		local_context["source_card_id"] = card_id
+		local_context["source_side"] = side
+		local_context["source_lane"] = lane
+		local_context["target_lane"] = lane
+		AbilityResolverScript.resolve(effect_id, trigger, local_context, self)
+
+func _trigger_first_spell_units(side: String) -> void:
+	if not consume_first_turn_gate(side, "first_spell_event"):
+		return
+	_trigger_board_units(side, AbilityDefinitionScript.FIRST_SPELL_PER_TURN, {"triggered_by_spell": true})
 
 func _active_relics_for_side(side: String) -> Array:
 	if side == "enemy" and has_method("cpu_relics_reference"):
