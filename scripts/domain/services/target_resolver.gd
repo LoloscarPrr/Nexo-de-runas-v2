@@ -42,6 +42,31 @@ static func resolve(target_spec: Dictionary, context: Dictionary, battle) -> Dic
 			if occupied.is_empty():
 				return {"valid": false, "side": opponent_side, "lane": -1, "unit": null, "targets": []}
 			return _multi_lane_target(opponent_side, opponent_lanes, occupied, 1, opponent_lanes.size(), true)
+		TargetSpecScript.ALL_ALLY_UNITS:
+			var allies: Array[int] = []
+			for lane in range(ally_lanes.size()):
+				if ally_lanes[lane] != null:
+					allies.append(lane)
+			if allies.is_empty():
+				return {"valid": false, "side": ally_side, "lane": -1, "unit": null, "targets": []}
+			return _multi_lane_target(ally_side, ally_lanes, allies, 1, ally_lanes.size(), true)
+		TargetSpecScript.EMPTY_ADJACENT_ALLY_LANES:
+			var source_lane := int(context.get("source_lane", -1))
+			var empty_adjacent: Array = []
+			for offset in [-1, 1]:
+				var lane := source_lane + int(offset)
+				if lane >= 0 and lane < ally_lanes.size() and ally_lanes[lane] == null:
+					empty_adjacent.append({"valid": true, "side": ally_side, "lane": lane, "unit": null})
+			return {"valid": true, "side": ally_side, "lane": -1, "unit": null, "targets": empty_adjacent}
+		TargetSpecScript.EMPTY_ALLY_LANES:
+			var empty_allies: Array = []
+			var max_targets := int(target_spec.get("max_targets", 2))
+			for lane in range(ally_lanes.size()):
+				if ally_lanes[lane] == null:
+					empty_allies.append({"valid": true, "side": ally_side, "lane": lane, "unit": null})
+					if empty_allies.size() >= max_targets:
+						break
+			return {"valid": true, "side": ally_side, "lane": -1, "unit": null, "targets": empty_allies}
 	return {"valid": false, "side": "none", "lane": -1, "unit": null}
 
 static func _lane_target(side: String, lane: int, lanes: Array) -> Dictionary:
