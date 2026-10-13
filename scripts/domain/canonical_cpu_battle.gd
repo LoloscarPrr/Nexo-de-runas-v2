@@ -168,7 +168,7 @@ func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, repla
 	var success := false
 	match card_type:
 		CatalogScript.TYPE_CREATURE:
-			success = _cpu_play_creature(card, lane, destination_lane)
+			success = _cpu_play_creature(card, lane, target_lane, destination_lane)
 		CatalogScript.TYPE_RITE:
 			success = _cpu_play_rite(card, target_lane, target_lanes, destination_lane)
 		CatalogScript.TYPE_RELIC:
@@ -200,7 +200,7 @@ func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, repla
 	}))
 	return true
 
-func _cpu_play_creature(card: Dictionary, lane: int, destination_lane: int = -1) -> bool:
+func _cpu_play_creature(card: Dictionary, lane: int, target_lane: int = -1, destination_lane: int = -1) -> bool:
 	if lane < 0 or lane >= LANE_COUNT or enemy_lanes[lane] != null:
 		return false
 	var unit := create_unit(str(card.get("id", "")), false)
@@ -218,7 +218,7 @@ func _cpu_play_creature(card: Dictionary, lane: int, destination_lane: int = -1)
 			"source_card_id": str(card.get("id", "")),
 			"source_side": "enemy",
 			"source_lane": lane,
-			"target_lane": lane,
+			"target_lane": target_lane if target_lane >= 0 else lane,
 			"destination_lane": destination_lane
 		}, self)
 	return true
@@ -423,8 +423,11 @@ func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed"
 		if enemy_domain == CatalogScript.DOMAIN_CRYPT:
 			cpu_gain_essence(1)
 	lanes[lane] = null
-	_record_death("player" if player_side else "enemy")
-	_recalculate_auras("player" if player_side else "enemy")
+	var dead_side := "player" if player_side else "enemy"
+	_record_death(dead_side)
+	_recalculate_auras(dead_side)
+	if dead_side != _current_turn_side():
+		_trigger_active_relics(dead_side, AbilityDefinitionScriptCpu.FIRST_ALLY_DEATH_BETWEEN_TURNS, {"source_side":dead_side,"target_lane":lane,"source_lane":lane,"dead_card_id":card_id})
 	if death_reason == "sacrifice":
 		event_queue.push(GameEventScriptCpu.create("UNIT_SACRIFICED", card_id, [], {"side":"player" if player_side else "enemy","lane":lane,"source_id":source_id,"source_side":source_side}))
 	event_queue.push(GameEventScriptCpu.create("UNIT_DIED", card_id, [], {
