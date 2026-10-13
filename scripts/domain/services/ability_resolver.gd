@@ -26,7 +26,9 @@ static func resolve(effect_id: String, trigger: String, context: Dictionary, bat
 			var params: Dictionary = Dictionary(effect.get("params", {}))
 			if bool(params.get("optional_if_target_missing", false)):
 				var refreshed_target := TargetResolverScript.resolve(target_spec, context, battle)
-				if not bool(refreshed_target.get("valid", false)):
+				var refreshed_batch: Array = Array(refreshed_target.get("targets", []))
+				var target_missing := refreshed_target.get("unit", null) == null and refreshed_batch.is_empty()
+				if target_missing:
 					continue
 			all_effects_ok = false
 			break
