@@ -74,6 +74,7 @@ jobs:
           "$GODOT_CHECK" --headless --path . --script tests/p1_spatial_engine_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/p2_advanced_state_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/foundation_batch_1_test.gd
+          "$GODOT_CHECK" --headless --path . --script tests/foundation_batch_2_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/application_battle_session_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/infrastructure_save_repository_test.gd
           "$GODOT_CHECK" --headless --path . --script tests/battle_test.gd

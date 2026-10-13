@@ -31,6 +31,11 @@ static func is_met(condition: Dictionary, target: Dictionary, context: Dictionar
 				if lane >= 0 and lane < lanes.size() and lanes[lane] != null:
 					return true
 			return false
+		ConditionScript.ATTACK_BLOCKED:
+			return bool(context.get("blocked", false))
+		ConditionScript.CONTROLS_RELIC:
+			var relics: Array = battle._active_relics_for_side(str(context.get("source_side", "player")))
+			return not relics.is_empty()
 		ConditionScript.OTHER_ALLY_HAS_TAG:
 			var source_side := str(context.get("source_side", "player"))
 			var source_lane := int(context.get("source_lane", -1))

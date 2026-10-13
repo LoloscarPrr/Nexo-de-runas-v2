@@ -18,6 +18,8 @@ const MODIFY_STATS_PERMANENT := "modify_stats_permanent"
 const MOVE_DISCARD_TO_DECK_BOTTOM := "move_discard_to_deck_bottom"
 const ADD_COST_MODIFIER := "add_cost_modifier"
 const ADD_AURA := "add_aura"
+const HEAL_NEXUS := "heal_nexus"
+const DAMAGE_NEXUS := "damage_nexus"
 
 static func create(effect_type: String, params: Dictionary = {}) -> Dictionary:
 	return {
@@ -43,8 +45,8 @@ static func temp_stats(attack: int, health: int = 0) -> Dictionary:
 static func rooted(duration: String = "until_next_turn") -> Dictionary:
 	return create(APPLY_STATUS, {"status":"ROOTED","duration":duration})
 
-static func move(forced: bool = false) -> Dictionary:
-	return create(FORCED_MOVE_UNIT if forced else MOVE_UNIT)
+static func move(forced: bool = false, max_distance: int = -1) -> Dictionary:
+	return create(FORCED_MOVE_UNIT if forced else MOVE_UNIT, {"max_distance": max_distance})
 
 static func swap_units() -> Dictionary:
 	return create(SWAP_UNITS)
@@ -60,3 +62,9 @@ static func cost_modifier(modifier_id: String, delta: int, floor: int = 1, durat
 
 static func aura(aura_id: String, attack: int = 0, health: int = 0, radius: int = 1) -> Dictionary:
 	return create(ADD_AURA, {"id": aura_id, "attack": attack, "health": health, "radius": radius})
+
+static func heal_nexus(amount: int) -> Dictionary:
+	return create(HEAL_NEXUS, {"amount": amount})
+
+static func damage_nexus(amount: int) -> Dictionary:
+	return create(DAMAGE_NEXUS, {"amount": amount})

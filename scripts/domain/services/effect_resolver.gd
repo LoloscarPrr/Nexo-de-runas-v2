@@ -64,22 +64,23 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 					unit["temp_health"] = int(unit.get("temp_health", 0)) + health_bonus
 				ok = true
 		EffectScript.SUMMON_TOKEN:
-			var lane := int(target.get("lane", -1))
-			var target_side := str(target.get("side", source_side))
-			var lanes: Array = battle.enemy_lanes if target_side == "enemy" else battle.player_lanes
-			if lane >= 0 and lane < battle.LANE_COUNT and lanes[lane] == null:
-				var token: Dictionary = battle._make_token(
-					str(params.get("id", "token")),
-					str(params.get("name", "TOKEN")),
-					int(params.get("attack", 0)),
-					int(params.get("health", 1)),
-					Array(params.get("tags", []))
-				)
-				if target_side == "enemy":
-					token["domain"] = battle.enemy_domain
+			var summon_targets := _targets_allow_empty(target)
+			for item in summon_targets:
+				var lane := int(item.get("lane", -1))
+				var target_side := str(item.get("side", source_side))
+				var lanes: Array = battle.enemy_lanes if target_side == "enemy" else battle.player_lanes
+				if lane < 0 or lane >= battle.LANE_COUNT or lanes[lane] != null:
+					continue
+				var token: Dictionary = battle._make_token(str(params.get("id", "token")), str(params.get("name", "TOKEN")), int(params.get("attack", 0)), int(params.get("health", 1)), Array(params.get("tags", [])))
+				if target_side == "enemy": token["domain"] = battle.enemy_domain
 				lanes[lane] = token
 				battle._recalculate_auras(target_side)
+				if int(params.get("attack_if_adjacent", 0)) != 0 and battle._has_adjacent_ally(target_side, lane):
+					var bonus := int(params.get("attack_if_adjacent", 0))
+					token["attack"] = int(token.get("attack", 0)) + bonus
+					token["temp_attack"] = int(token.get("temp_attack", 0)) + bonus
 				battle.event_queue.push(GameEventScript.create("UNIT_SUMMONED", str(token.get("id", "")), [], {"side": target_side, "lane": lane, "token": true, "source_id": str(context.get("source_card_id", ""))}))
+				battle._trigger_active_relics(target_side, "first_summon_per_turn", {"source_side":target_side,"source_lane":lane,"target_lane":lane,"summoned_card_id":str(token.get("id",""))})
 				ok = true
 		EffectScript.REVEAL_TOP:
 			if source_side == "enemy" and battle.has_method("cpu_draw_card"):
@@ -111,7 +112,7 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 			var move_targets := _targets(target)
 			if move_targets.size() == 1:
 				var item: Dictionary = move_targets[0]
-				ok = battle._move_unit(str(item.get("side", "")), int(item.get("lane", -1)), int(context.get("destination_lane", -1)), effect_type == EffectScript.FORCED_MOVE_UNIT, str(context.get("source_card_id", "")), source_side)
+				ok = battle._move_unit(str(item.get("side", "")), int(item.get("lane", -1)), int(context.get("destination_lane", -1)), effect_type == EffectScript.FORCED_MOVE_UNIT, str(context.get("source_card_id", "")), source_side, int(params.get("max_distance", -1)))
 		EffectScript.SWAP_UNITS:
 			var swap_targets := _targets(target)
 			if swap_targets.size() == 2 and str(swap_targets[0].get("side", "")) == str(swap_targets[1].get("side", "")):
@@ -121,6 +122,10 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 		EffectScript.ADD_COST_MODIFIER:
 			battle.add_cost_modifier(source_side, str(params.get("id", str(context.get("source_card_id", "")))), int(params.get("delta", 0)), int(params.get("floor", 1)), str(params.get("duration", "turn")), str(params.get("card_type", "")), int(params.get("min_base_cost", -1)))
 			ok = true
+		EffectScript.HEAL_NEXUS:
+			ok = battle._heal_nexus(source_side, int(params.get("amount", 0)), str(context.get("source_card_id", ""))) > 0
+		EffectScript.DAMAGE_NEXUS:
+			ok = battle._damage_enemy_nexus(source_side, int(params.get("amount", 0)), str(context.get("source_card_id", ""))) > 0
 		EffectScript.ADD_AURA:
 			var aura_targets := _targets(target)
 			if aura_targets.size() == 1:
@@ -151,5 +156,13 @@ static func _targets(target: Dictionary) -> Array:
 	if not batch.is_empty():
 		return batch
 	if bool(target.get("valid", false)) and target.get("unit", null) != null:
+		return [target]
+	return []
+
+static func _targets_allow_empty(target: Dictionary) -> Array:
+	var batch: Array = Array(target.get("targets", []))
+	if not batch.is_empty():
+		return batch
+	if bool(target.get("valid", false)):
 		return [target]
 	return []
