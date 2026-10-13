@@ -267,7 +267,7 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 	var success := false
 	match card_type:
 		Catalog.TYPE_CREATURE:
-			success = _play_creature(card, lane)
+			success = _play_creature(card, lane, destination_lane)
 		Catalog.TYPE_RITE:
 			success = _play_rite(card, target_lane, target_lanes, destination_lane)
 		Catalog.TYPE_RELIC:
@@ -300,7 +300,7 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 	}))
 	return true
 
-func _play_creature(card: Dictionary, lane: int) -> bool:
+func _play_creature(card: Dictionary, lane: int, destination_lane: int = -1) -> bool:
 	if lane < 0 or lane >= LANE_COUNT or player_lanes[lane] != null:
 		last_message = "El carril no está disponible."
 		return false
@@ -313,7 +313,7 @@ func _play_creature(card: Dictionary, lane: int) -> bool:
 	if int(card.get("cost", 0)) >= 4:
 		_trigger_active_relics("player", AbilityDefinitionScript.FIRST_HIGH_COST_UNIT_PER_TURN, {"source_side":"player","source_lane":lane,"target_lane":lane,"summoned_card_id":str(card.get("id",""))})
 	event_queue.push(GameEventScript.create("UNIT_SUMMONED", str(card.get("id", "")), [], {"side":"player","lane":lane,"token":false}))
-	_on_creature_entered(card, lane)
+	_on_creature_entered(card, lane, destination_lane)
 	return true
 
 func _play_persistent(card_id: String, slots: Array[String], limit: int, replace_index: int) -> bool:
@@ -340,7 +340,7 @@ func _play_rite(card: Dictionary, target_lane: int, target_lanes: Array = [], de
 		"destination_lane": destination_lane
 	}, self)
 
-func _on_creature_entered(card: Dictionary, lane: int) -> void:
+func _on_creature_entered(card: Dictionary, lane: int, destination_lane: int = -1) -> void:
 	var effect_id := str(card.get("effect_id", ""))
 	if effect_id.is_empty():
 		return
@@ -348,7 +348,8 @@ func _on_creature_entered(card: Dictionary, lane: int) -> void:
 		"source_card_id": str(card.get("id", "")),
 		"source_side": "player",
 		"source_lane": lane,
-		"target_lane": lane
+		"target_lane": lane,
+		"destination_lane": destination_lane
 	}, self)
 
 func resolve_player_attacks() -> void:
@@ -363,6 +364,16 @@ func resolve_player_attacks() -> void:
 		var defender_lane := lane
 		if enemy_lanes[defender_lane] == null:
 			defender_lane = _guard_interceptor(enemy_lanes, lane)
+		var attacker_card := Catalog.find_by_id(str(attacker.get("id", "")))
+		var attacker_effect := str(attacker_card.get("effect_id", ""))
+		if not attacker_effect.is_empty():
+			AbilityResolverScript.resolve(attacker_effect, AbilityDefinitionScript.ON_ATTACK, {
+				"source_card_id": str(attacker.get("id", "")),
+				"source_side": "player",
+				"source_lane": lane,
+				"target_lane": defender_lane,
+				"blocked": defender_lane >= 0
+			}, self)
 		if defender_lane < 0:
 			var damage := maxi(0, int(attacker.get("attack", 0)))
 			enemy_integrity -= damage
