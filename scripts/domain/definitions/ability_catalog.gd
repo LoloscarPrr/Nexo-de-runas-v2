@@ -82,7 +82,7 @@ static func abilities_for(effect_id: String) -> Array:
 		"forest_clearing_sprout":
 			return [Ability.create("forest_clearing_sprout_adjacent", Ability.ON_SUMMON, Target.source_unit(), [Effect.permanent_stats(0, 1)], [Condition.adjacent_ally_exists()])]
 		"forest_invasive_roots":
-			return [Ability.create("forest_invasive_roots_damage_root", Ability.ON_PLAY, Target.enemy_lane(), [Effect.damage(2), Effect.rooted("until_next_turn")], [Condition.target_exists()])]
+			return [Ability.create("forest_invasive_roots_damage_root", Ability.ON_PLAY, Target.enemy_lane(), [Effect.damage(2), Effect.rooted("until_next_turn", true)], [Condition.target_exists()])]
 		"crypt_ossuary_rat":
 			return [Ability.create("crypt_ossuary_rat_death", Ability.ON_DEATH, Target.none(), [Effect.damage_nexus(1)])]
 		"crypt_ash_acolyte":
