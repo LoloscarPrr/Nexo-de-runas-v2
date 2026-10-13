@@ -22,9 +22,9 @@ func _initialize() -> void:
 
 func _test_catalog_and_decks() -> void:
 	check(Catalog.validate_catalog().is_empty(), "Canonical catalog validates")
-	check(Catalog.all_card_ids().size() == 72, "Transitional catalog has exactly 72 cards in Foundation Batch 2")
+	check(Catalog.all_card_ids().size() == 80, "Stable transitional catalog has exactly 80 cards in Foundation Batch 3")
 	for domain in [Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT, Catalog.DOMAIN_TOWER, Catalog.DOMAIN_FORGE]:
-		check(Catalog.cards_for_domain(domain).size() == 18, "%s has 18 cards during Foundation Batch 2" % domain)
+		check(Catalog.cards_for_domain(domain).size() == 20, "%s has 20 cards during Foundation Batch 3" % domain)
 		var deck := Catalog.starter_deck(domain)
 		check(deck.size() == 20, "%s starter deck has 20 cards" % domain)
 		check(Catalog.validate_deck(deck, domain).is_empty(), "%s starter deck is legal" % domain)
