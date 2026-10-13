@@ -45,8 +45,10 @@ func _test_rooted_blocks_and_expires() -> void:
 	check(EffectResolver.apply(Effect.rooted(), target, {"source_card_id":"p1_root","source_side":"player"}, battle), "ROOTED applies through EffectResolver")
 	check(not battle._move_unit("enemy", 2, 1, true, "p1_push", "player"), "ROOTED blocks forced movement")
 	check(battle.enemy_lanes[2] != null and battle.enemy_lanes[1] == null, "Blocked forced movement leaves board untouched")
-	battle._expire_statuses_for_side("enemy")
-	check(battle._move_unit("enemy", 2, 1, true, "p1_push", "player"), "Movement succeeds after ROOTED expires")
+	battle._expire_statuses_for_turn("enemy")
+	check(not battle._move_unit("enemy", 2, 1, true, "p1_push", "player"), "ROOTED persists through the target turn")
+	battle._expire_statuses_for_turn("player")
+	check(battle._move_unit("enemy", 2, 1, true, "p1_push", "player"), "Movement succeeds when the source player reaches its next turn")
 
 func _test_atomic_swap() -> void:
 	var battle = _battle()
