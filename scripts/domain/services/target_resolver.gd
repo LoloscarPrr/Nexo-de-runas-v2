@@ -67,6 +67,13 @@ static func resolve(target_spec: Dictionary, context: Dictionary, battle) -> Dic
 					if empty_allies.size() >= max_targets:
 						break
 			return {"valid": true, "side": ally_side, "lane": -1, "unit": null, "targets": empty_allies}
+		TargetSpecScript.EMPTY_ALLY_LANE:
+			var lane := int(context.get("target_lane", -1))
+			if lane < 0 or lane >= ally_lanes.size() or ally_lanes[lane] != null:
+				return {"valid": false, "side": ally_side, "lane": lane, "unit": ally_lanes[lane] if lane >= 0 and lane < ally_lanes.size() else null}
+			return {"valid": true, "side": ally_side, "lane": lane, "unit": null}
+		TargetSpecScript.SELECTED_EMPTY_ALLY_LANES:
+			return _multi_lane_target(ally_side, ally_lanes, Array(context.get("target_lanes", [])), int(target_spec.get("min_targets", 1)), int(target_spec.get("max_targets", 2)), false)
 	return {"valid": false, "side": "none", "lane": -1, "unit": null}
 
 static func _lane_target(side: String, lane: int, lanes: Array) -> Dictionary:
