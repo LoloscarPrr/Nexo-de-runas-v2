@@ -74,7 +74,7 @@ func _test_crypt_cards() -> void:
 
 	battle.player_lanes[4] = battle.create_unit("guardian_oseo", true)
 	battle.hand = ["ch_016_pacto_de_sangre"]
-	battle.draw_pile = ["sepulturero", "lamentadora"]
+	battle.draw_pile = ["ch_003_guardia_esqueletico", "lamentadora"]
 	check(battle.play_card(0, -1, 4), "Pacto de Sangre resolves")
 	check(battle.player_lanes[4] == null, "Pacto sacrifices allied unit")
 	check(battle.hand.size() == 2, "Pacto draws two cards")
