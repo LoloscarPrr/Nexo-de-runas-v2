@@ -190,6 +190,8 @@ func cpu_legal_actions_for_card(hand_index: int) -> Array:
 	return actions
 
 func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_index: int = -1, target_lanes: Array = [], destination_lane: int = -1) -> bool:
+	if has_pending_discard("enemy"):
+		auto_resolve_pending_discards("enemy")
 	if result != "ongoing" or hand_index < 0 or hand_index >= cpu_hand.size():
 		return false
 	var card_id := cpu_hand[hand_index]
@@ -215,6 +217,8 @@ func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, repla
 	if not cpu_spend_energy(cost):
 		return false
 	cpu_hand.remove_at(hand_index)
+	if has_pending_discard("enemy"):
+		auto_resolve_pending_discards("enemy")
 	if card_type == CatalogScript.TYPE_RITE:
 		enemy_discard.append(card_id)
 		if enemy_domain == CatalogScript.DOMAIN_TOWER:
@@ -536,3 +540,6 @@ func _current_turn_side() -> String:
 
 func cpu_relics_reference() -> Array:
 	return cpu_active_relics
+
+func cpu_hand_reference() -> Array:
+	return cpu_hand
