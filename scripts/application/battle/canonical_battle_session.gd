@@ -61,7 +61,8 @@ func snapshot() -> Dictionary:
 		"active_seals": _engine.active_seals.duplicate(),
 		"active_relics": _engine.active_relics.duplicate(),
 		"cpu_hand_count": _engine.cpu_hand.size(),
-		"cpu_draw_count": _engine.cpu_draw_pile.size()
+		"cpu_draw_count": _engine.cpu_draw_pile.size(),
+		"pending_discard_count": _engine.pending_discard_remaining("player")
 	}
 
 func execute(command: Object) -> Dictionary:
@@ -74,6 +75,8 @@ func execute(command: Object) -> Dictionary:
 			return _execute_end_round()
 		CommandScript.USE_IMPULSE:
 			return _execute_use_impulse()
+		CommandScript.DISCARD_CARD:
+			return _execute_discard_card(command)
 		_:
 			return _result(false, "Comando de batalla desconocido.")
 
@@ -130,6 +133,9 @@ func play_hand_card(hand_index: int, lane: int = -1) -> Dictionary:
 func end_round() -> Dictionary:
 	return execute(CommandScript.end_round())
 
+func discard_hand_card(hand_index: int) -> Dictionary:
+	return execute(CommandScript.discard_card(hand_index))
+
 func use_impulse() -> Dictionary:
 	return execute(CommandScript.use_impulse())
 
@@ -172,6 +178,9 @@ func _execute_play_card(command: Object) -> Dictionary:
 func _execute_end_round() -> Dictionary:
 	if _engine == null:
 		return _result(false, "No hay una batalla activa.")
+	if _engine.has_pending_discard("player"):
+		_engine.last_message = "Debes resolver el descarte antes de finalizar el turno."
+		return _result(false, _engine.last_message)
 	if _engine.result != "ongoing":
 		return _result(false, "La batalla ya terminó.")
 	var before_player := _engine.player_integrity
@@ -187,6 +196,18 @@ func _execute_end_round() -> Dictionary:
 		else:
 			_engine.last_message = "Turno %d · la Energía Rúnica vuelve a fluir." % _engine.turn
 	return _result(true, _engine.last_message)
+
+func _execute_discard_card(command: Object) -> Dictionary:
+	if _engine == null:
+		return _result(false, "No hay una batalla activa.")
+	var index := int(command.hand_index)
+	var ok := _engine.resolve_pending_discard("player", index)
+	if ok:
+		if _engine.has_pending_discard("player"):
+			_engine.last_message = "Descarta %d carta(s) más." % _engine.pending_discard_remaining("player")
+		else:
+			_engine.last_message = "Elección de descarte resuelta."
+	return _result(ok, _engine.last_message)
 
 func _execute_use_impulse() -> Dictionary:
 	if _engine == null:
