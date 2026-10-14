@@ -228,6 +228,7 @@ func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, repla
 		cpu_gain_essence(1)
 	if card_type == CatalogScript.TYPE_RELIC:
 		event_queue.push(GameEventScriptCpu.create("RELIC_PLAYED", card_id, [], {"side":"enemy"}))
+		_trigger_first_relic_units("enemy")
 	elif card_type == CatalogScript.TYPE_SEAL:
 		event_queue.push(GameEventScriptCpu.create("SEAL_PLAYED", card_id, [], {"side":"enemy"}))
 	event_queue.push(GameEventScriptCpu.create("CARD_PLAYED", card_id, [], {
@@ -468,8 +469,10 @@ func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed"
 	_recalculate_auras(dead_side)
 	if dead_side != _current_turn_side():
 		_trigger_active_relics(dead_side, AbilityDefinitionScriptCpu.FIRST_ALLY_DEATH_BETWEEN_TURNS, {"source_side":dead_side,"target_lane":lane,"source_lane":lane,"dead_card_id":card_id})
+		_trigger_first_ally_death_units(dead_side, {"dead_card_id":card_id,"dead_lane":lane})
 	if death_reason == "sacrifice":
 		event_queue.push(GameEventScriptCpu.create("UNIT_SACRIFICED", card_id, [], {"side":"player" if player_side else "enemy","lane":lane,"source_id":source_id,"source_side":source_side}))
+		_trigger_board_units(dead_side, AbilityDefinitionScriptCpu.ON_ALLY_SACRIFICED, {"sacrificed_card_id":card_id,"sacrificed_lane":lane})
 	event_queue.push(GameEventScriptCpu.create("UNIT_DIED", card_id, [], {
 		"side":"player" if player_side else "enemy",
 		"lane":lane,
