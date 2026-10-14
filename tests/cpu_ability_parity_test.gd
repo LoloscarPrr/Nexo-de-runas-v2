@@ -54,35 +54,34 @@ func _test_cpu_summon_uses_shared_ability_engine() -> void:
 func _test_cpu_policy_plays_targeted_rite() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_TOWER)
 	battle.cpu_energy_current = 1
-	battle.cpu_hand = ["proyectil_runico"]
+	battle.cpu_hand = ["ta_013_chispa_dirigida"]
 	battle.player_lanes[4] = battle.create_unit("esqueleto_roto", true)
 	var legal := battle.cpu_legal_actions_for_card(0)
 	check(not legal.is_empty() and int(Dictionary(legal[0]).get("target_lane", -1)) == 4, "CPU policy sees legal opposing target on lane five")
 	battle.cpu_take_actions()
 	check(battle.player_lanes[4] == null, "CPU policy executes targeted Rite against player lane five")
 	check(battle.cpu_hand.is_empty(), "CPU removes played Rite from its own hand")
-	check(battle.enemy_discard.has("proyectil_runico"), "CPU Rite enters enemy discard")
+	check(battle.enemy_discard.has("ta_013_chispa_dirigida"), "CPU Rite enters enemy discard")
 	check(battle.cpu_essence_current == 1, "Tower CPU gains its own Conocimiento after playing a Rite")
 	var events := battle.drain_events()
 	check(_has_event(events, "EFFECT_APPLIED"), "CPU targeted Rite emits shared effect event")
-	check(_has_side_card_event(events, "proyectil_runico", "enemy"), "CPU CARD_PLAYED identifies enemy side")
+	check(_has_side_card_event(events, "ta_013_chispa_dirigida", "enemy"), "CPU CARD_PLAYED identifies enemy side")
 
 func _test_cpu_relative_ally_targeting() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_FORGE)
-	battle.cpu_hand = ["sobrecarga"]
-	battle.enemy_lanes[4] = battle.create_unit("centinela_de_cobre", true)
-	check(battle.cpu_play_card(0, -1, 4), "CPU can target its own Construct with Overload")
-	check(int(battle.enemy_lanes[4].attack) == 5, "Shared EffectResolver buffs CPU ally, not player lane")
-	check(battle.cpu_essence_current == 2, "Overload grants Heat to CPU wallet")
-	check(battle.essence_current == 0, "Overload does not leak Heat into player wallet")
+	battle.cpu_hand = ["fa_016_sobrecarga"]
+	battle.enemy_lanes[4] = battle.create_unit("fa_010_automata_de_engranajes", true)
+	check(battle.cpu_play_card(0, -1, 4), "CPU can target its own unit with foundational Sobrecarga")
+	check(int(battle.enemy_lanes[4].attack) == 6, "Shared EffectResolver buffs CPU ally, not player lane")
+	check(battle.cpu_essence_current == 0, "Foundational Sobrecarga does not invent Heat")
+	check(battle.essence_current == 0, "CPU buff does not leak resources into player wallet")
 
 func _test_cpu_relative_token_summon() -> void:
 	var battle := _battle(Catalog.DOMAIN_CRYPT, Catalog.DOMAIN_FOREST)
-	battle.cpu_hand = ["llamado_de_la_manada"]
-	check(battle.cpu_play_card(0), "CPU can resolve no-click Call of the Pack")
-	check(battle.enemy_lanes[0] != null and str(battle.enemy_lanes[0].id) == "cria_del_bosque", "First-free ally target resolves on CPU board")
+	battle.cpu_hand = ["bs_016_llamado_de_la_manada"]
+	check(battle.cpu_play_card(0, -1, 0), "CPU can resolve foundational Call of the Pack into chosen empty lane")
+	check(battle.enemy_lanes[0] != null and str(battle.enemy_lanes[0].id) == "brote", "Empty ally target resolves on CPU board")
 	check(battle.player_lanes[0] == null, "CPU token never appears on player board")
-	check(battle.cpu_essence_current == 1, "CPU token Rite grants its own Instinto")
 
 func _test_cpu_last_breath_and_crypt_resource() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT)
@@ -100,34 +99,33 @@ func _test_cpu_last_breath_and_crypt_resource() -> void:
 
 func _test_cpu_reveal_uses_own_deck() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_TOWER)
-	battle.cpu_hand = ["vision_prohibida"]
+	battle.cpu_hand = ["familiar_arcano"]
 	battle.cpu_draw_pile = ["ta_001_aprendiz_de_sigilos", "aprendiz_runico", "adepta_runica"]
 	battle.draw_pile = ["ardilla_vigilante"]
-	check(battle.cpu_play_card(0), "CPU resolves Forbidden Vision")
-	check(battle.cpu_last_revealed.size() == 3, "CPU reveal records its own top three")
-	check(battle.cpu_hand.size() == 1 and battle.cpu_hand[0] == "ta_001_aprendiz_de_sigilos", "CPU reveal draws from CPU deck")
+	check(battle.cpu_play_card(0, 4), "CPU summons Arcane Familiar")
+	check(battle.cpu_last_revealed.size() == 1 and battle.cpu_last_revealed[0] == "ta_001_aprendiz_de_sigilos", "CPU reveal records its own top card")
+	check(battle.cpu_draw_pile.size() == 3 and battle.cpu_draw_pile[0] == "ta_001_aprendiz_de_sigilos", "Reveal without draw leaves CPU deck intact")
 	check(battle.draw_pile.size() == 1 and battle.draw_pile[0] == "ardilla_vigilante", "CPU reveal does not touch player deck")
 	check(battle.last_revealed.is_empty(), "CPU reveal does not overwrite player reveal state")
 
 func _test_cpu_exhumation_uses_own_discard() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT)
-	battle.cpu_hand = ["exhumacion"]
-	battle.enemy_discard = ["guardian_oseo"]
+	battle.cpu_hand = ["ch_014_exhumar"]
+	battle.enemy_discard = ["ch_001_rata_de_osario"]
 	battle.discard_pile = ["lobo_joven"]
-	check(battle.cpu_play_card(0), "CPU resolves Exhumation")
-	check(battle.cpu_hand.has("guardian_oseo"), "CPU Exhumation returns creature from enemy discard")
-	check(not battle.enemy_discard.has("guardian_oseo"), "Returned CPU creature leaves enemy discard")
-	check(battle.discard_pile.has("lobo_joven"), "CPU Exhumation never consumes player discard")
+	check(battle.cpu_play_card(0), "CPU resolves foundational Exhumar")
+	check(battle.cpu_hand.has("ch_001_rata_de_osario"), "CPU Exhumar returns cost-one creature from enemy discard")
+	check(not battle.enemy_discard.has("ch_001_rata_de_osario"), "Returned CPU creature leaves enemy discard")
+	check(battle.discard_pile.has("lobo_joven"), "CPU Exhumar never consumes player discard")
 
 func _test_invalid_cpu_target_spends_nothing() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_FORGE)
 	battle.cpu_energy_current = 2
-	battle.cpu_hand = ["sobrecarga"]
-	battle.enemy_lanes[4] = battle.create_unit("lobo_joven", true)
-	check(battle.cpu_legal_actions_for_card(0).is_empty(), "CPU policy rejects non-Construct Overload target")
-	check(not battle.cpu_play_card(0, -1, 4), "CPU executor also rejects invalid Overload target")
+	battle.cpu_hand = ["fa_015_golpe_de_martillo"]
+	check(battle.cpu_legal_actions_for_card(0).is_empty(), "CPU policy rejects hammer spell when no enemy unit exists")
+	check(not battle.cpu_play_card(0, -1, 4), "CPU executor also rejects empty enemy lane")
 	check(battle.cpu_energy_current == 2, "Rejected CPU ability spends no Energy")
-	check(battle.cpu_hand.size() == 1 and battle.cpu_hand[0] == "sobrecarga", "Rejected CPU ability stays in CPU hand")
+	check(battle.cpu_hand.size() == 1 and battle.cpu_hand[0] == "fa_015_golpe_de_martillo", "Rejected CPU ability stays in CPU hand")
 
 func _has_event(events: Array, event_type: String) -> bool:
 	for event in events:

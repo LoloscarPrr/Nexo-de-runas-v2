@@ -63,7 +63,7 @@ func _initialize() -> void:
 
 func _test_declarative_targeting() -> void:
 	var session := SessionScript.new()
-	var deck: Array[String] = ["proyectil_runico", "familiar_arcano", "buho_oculum", "aprendiz_runico"]
+	var deck: Array[String] = ["ta_013_chispa_dirigida", "familiar_arcano", "ta_001_aprendiz_de_sigilos", "aprendiz_runico"]
 	session.start_vs_cpu(SessionScript.DOMAIN_TOWER, deck)
 	session._engine.energy_current = 12
 	session._engine.enemy_lanes[4] = session._engine.create_unit("esqueleto_roto", true)

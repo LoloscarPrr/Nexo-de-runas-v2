@@ -135,9 +135,9 @@ func _test_ability_system() -> void:
 	check(forest.essence_current == 1, "Conditional summon ability sees another Beast and grants Instinct")
 
 	forest.energy_current = 12
-	forest.hand = ["crecimiento_violento"]
+	forest.hand = ["bs_015_crecimiento_repentino"]
 	check(forest.play_card(0, -1, 0), "Targeted rite resolves declaratively")
-	check(int(forest.player_lanes[0].attack) == 4 and int(forest.player_lanes[0].hp) == 5, "EffectResolver applies temporary attack and health")
+	check(int(forest.player_lanes[0].attack) == 3 and int(forest.player_lanes[0].hp) == 4, "EffectResolver applies permanent attack and health")
 	var forest_events := forest.drain_events()
 	check(_has_event(forest_events, "ABILITY_TRIGGERED"), "Ability resolution emits ABILITY_TRIGGERED")
 	check(_has_event(forest_events, "EFFECT_APPLIED"), "Ability effects emit EFFECT_APPLIED")
@@ -145,7 +145,7 @@ func _test_ability_system() -> void:
 	var tower := Battle.new()
 	tower.setup_starter(Catalog.DOMAIN_TOWER)
 	tower.energy_current = 12
-	tower.hand = ["proyectil_runico"]
+	tower.hand = ["ta_013_chispa_dirigida"]
 	tower.enemy_lanes[4] = tower.create_unit("esqueleto_roto", true)
 	check(tower.play_card(0, -1, 4), "Enemy-targeted rite can target lane five")
 	check(tower.enemy_lanes[4] == null, "Generic damage effect kills its target")
@@ -153,17 +153,16 @@ func _test_ability_system() -> void:
 	var forge := Battle.new()
 	forge.setup_starter(Catalog.DOMAIN_FORGE)
 	forge.energy_current = 12
-	forge.player_lanes[4] = forge.create_unit("centinela_de_cobre", true)
-	forge.hand = ["sobrecarga"]
-	check(forge.play_card(0, -1, 4), "Tag-conditioned overload resolves on Construct")
-	check(int(forge.player_lanes[4].attack) == 5 and forge.essence_current == 2, "Overload combines stat and resource effects")
+	forge.enemy_lanes[4] = forge.create_unit("bs_010_oso_musgoso", true)
+	forge.hand = ["fa_015_golpe_de_martillo"]
+	check(forge.play_card(0, -1, 4), "Target-conditioned hammer spell resolves on enemy unit")
+	check(int(forge.enemy_lanes[4].hp) == 4, "Golpe de Martillo deals two damage through generic effects")
 
 	var invalid := Battle.new()
 	invalid.setup_starter(Catalog.DOMAIN_FORGE)
 	invalid.energy_current = 12
-	invalid.player_lanes[4] = invalid.create_unit("lobo_joven", true)
-	invalid.hand = ["sobrecarga"]
-	check(not invalid.play_card(0, -1, 4), "Ability condition rejects invalid target")
+	invalid.hand = ["fa_015_golpe_de_martillo"]
+	check(not invalid.play_card(0, -1, 4), "Ability condition rejects empty enemy lane")
 	check(invalid.energy_current == 12, "Rejected ability does not spend Energy")
 
 func _has_event(events: Array, event_type: String) -> bool:

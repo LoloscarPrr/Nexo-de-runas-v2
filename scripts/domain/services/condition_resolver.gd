@@ -36,6 +36,35 @@ static func is_met(condition: Dictionary, target: Dictionary, context: Dictionar
 		ConditionScript.CONTROLS_RELIC:
 			var relics: Array = battle._active_relics_for_side(str(context.get("source_side", "player")))
 			return not relics.is_empty()
+		ConditionScript.TARGET_DAMAGED:
+			var damaged_unit = target.get("unit", null)
+			if damaged_unit == null:
+				return false
+			return int(damaged_unit.get("hp", 0)) < int(damaged_unit.get("max_hp", 0))
+		ConditionScript.TARGET_ATTACK_LOWER_THAN_SOURCE:
+			var compared_target = target.get("unit", null)
+			if compared_target == null:
+				return false
+			var source_side := str(context.get("source_side", "player"))
+			var source_lane := int(context.get("source_lane", -1))
+			var lanes: Array = battle.player_lanes if source_side == "player" else battle.enemy_lanes
+			if source_lane < 0 or source_lane >= lanes.size() or lanes[source_lane] == null:
+				return false
+			var source_unit: Dictionary = lanes[source_lane]
+			return int(compared_target.get("attack", 0)) < int(source_unit.get("attack", 0))
+		ConditionScript.OPPOSING_ENEMY_ATTACK_LOWER_THAN_SOURCE:
+			var source_side := str(context.get("source_side", "player"))
+			var source_lane := int(context.get("source_lane", -1))
+			var target_lane := int(context.get("target_lane", -1))
+			var source_lanes: Array = battle.player_lanes if source_side == "player" else battle.enemy_lanes
+			var opposing_lanes: Array = battle.enemy_lanes if source_side == "player" else battle.player_lanes
+			if source_lane < 0 or source_lane >= source_lanes.size() or source_lanes[source_lane] == null:
+				return false
+			if target_lane < 0 or target_lane >= opposing_lanes.size() or opposing_lanes[target_lane] == null:
+				return false
+			var source_unit: Dictionary = source_lanes[source_lane]
+			var opposing_unit: Dictionary = opposing_lanes[target_lane]
+			return int(opposing_unit.get("attack", 0)) < int(source_unit.get("attack", 0))
 		ConditionScript.OTHER_ALLY_HAS_TAG:
 			var source_side := str(context.get("source_side", "player"))
 			var source_lane := int(context.get("source_lane", -1))
