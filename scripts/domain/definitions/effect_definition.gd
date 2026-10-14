@@ -5,6 +5,7 @@ const GAIN_RESOURCE := "gain_resource"
 const DAMAGE_UNIT := "damage_unit"
 const HEAL_UNIT := "heal_unit"
 const DRAW_CARDS := "draw_cards"
+const DRAW_THEN_DISCARD := "draw_then_discard"
 const MODIFY_STATS_TEMP := "modify_stats_temp"
 const SUMMON_TOKEN := "summon_token"
 const REVEAL_TOP := "reveal_top"
@@ -38,6 +39,9 @@ static func heal(amount: int) -> Dictionary:
 
 static func draw(amount: int) -> Dictionary:
 	return create(DRAW_CARDS, {"amount": amount})
+
+static func draw_then_discard(draw_amount: int, discard_amount: int) -> Dictionary:
+	return create(DRAW_THEN_DISCARD, {"draw": maxi(0, draw_amount), "discard": maxi(0, discard_amount)})
 
 static func temp_stats(attack: int, health: int = 0) -> Dictionary:
 	return create(MODIFY_STATS_TEMP, {"attack": attack, "health": health})

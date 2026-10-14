@@ -19,11 +19,11 @@ const CARDS = [
 	{"id":"cierva_lunar","name":"CIERVA LUNAR","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":2,"attack":1,"health":4,"keywords":[],"tags":["BESTIA"],"effect_id":"forest_moon_deer","unique":false},
 	{"id":"zorro_acechante","name":"ZORRO ACECHANTE","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":2,"attack":2,"health":2,"keywords":["EMBOSCADA"],"tags":["BESTIA"],"effect_id":"","unique":false},
 	{"id":"bs_008_jabali_de_corteza","set_id":"BS-008","name":"JABALÍ DE CORTEZA","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":3,"attack":4,"health":3,"keywords":[],"tags":["FUNDACIONAL","BESTIA"],"effect_id":"","unique":false,"rarity":"common"},
-	{"id":"lobo_alfa","name":"LOBO ALFA","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":4,"attack":4,"health":4,"keywords":["MANADA"],"tags":["BESTIA"],"effect_id":"forest_alpha_aura","unique":false},
+	{"id":"bs_003_lobo_joven","set_id":"BS-003","name":"LOBO JOVEN","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":2,"attack":2,"health":3,"keywords":[],"tags":["FUNDACIONAL","BESTIA"],"effect_id":"forest_young_wolf_foundational","unique":false,"rarity":"common"},
 	{"id":"oso_ancestral","name":"OSO ANCESTRAL","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":5,"attack":5,"health":7,"keywords":["GUARDIA"],"tags":["BESTIA"],"effect_id":"","unique":false},
 	{"id":"llamado_de_la_manada","name":"LLAMADO DE LA MANADA","domain":DOMAIN_FOREST,"type":TYPE_RITE,"cost":2,"attack":0,"health":0,"keywords":[],"tags":[],"effect_id":"forest_call_pack","unique":false},
 	{"id":"crecimiento_violento","name":"CRECIMIENTO VIOLENTO","domain":DOMAIN_FOREST,"type":TYPE_RITE,"cost":2,"attack":0,"health":0,"keywords":[],"tags":[],"effect_id":"forest_growth","unique":false},
-	{"id":"totem_de_manada","name":"TÓTEM DE MANADA","domain":DOMAIN_FOREST,"type":TYPE_RELIC,"cost":3,"attack":0,"health":0,"keywords":[],"tags":[],"effect_id":"forest_pack_totem","unique":false},
+	{"id":"bs_010_oso_musgoso","set_id":"BS-010","name":"OSO MUSGOSO","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":4,"attack":4,"health":6,"keywords":[],"tags":["FUNDACIONAL","BESTIA"],"effect_id":"","unique":false,"rarity":"common"},
 	{"id":"sello_del_rastro","name":"SELLO DEL RASTRO","domain":DOMAIN_FOREST,"type":TYPE_SEAL,"cost":2,"attack":0,"health":0,"keywords":[],"tags":[],"effect_id":"forest_trail_seal","unique":false},
 	{"id":"bs_005_enredadera_vigilante","set_id":"BS-005","name":"ENREDADERA VIGILANTE","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":2,"attack":1,"health":5,"keywords":["ENRAIZADO"],"tags":["FUNDACIONAL"],"effect_id":"","unique":false,"rarity":"uncommon"},
 	{"id":"bs_011_anciano_de_raices","set_id":"BS-011","name":"ANCIANO DE RAÍCES","domain":DOMAIN_FOREST,"type":TYPE_CREATURE,"cost":5,"attack":4,"health":7,"keywords":["ENRAIZADO"],"tags":["FUNDACIONAL"],"effect_id":"forest_ancient_roots","unique":false,"rarity":"rare"},
@@ -41,8 +41,8 @@ const CARDS = [
 	{"id":"lamentadora","name":"LAMENTADORA","domain":DOMAIN_CRYPT,"type":TYPE_CREATURE,"cost":3,"attack":2,"health":4,"keywords":["ULTIMO_ALIENTO"],"tags":["NO_MUERTO"],"effect_id":"crypt_mourner","unique":false},
 	{"id":"guardian_oseo","name":"GUARDIÁN ÓSEO","domain":DOMAIN_CRYPT,"type":TYPE_CREATURE,"cost":3,"attack":3,"health":4,"keywords":["GUARDIA"],"tags":["NO_MUERTO"],"effect_id":"","unique":false},
 	{"id":"ch_005_perro_de_la_fosa","set_id":"CH-005","name":"PERRO DE LA FOSA","domain":DOMAIN_CRYPT,"type":TYPE_CREATURE,"cost":2,"attack":3,"health":2,"keywords":["EMBESTIDA"],"tags":["FUNDACIONAL","NO_MUERTO"],"effect_id":"","unique":false,"rarity":"common"},
-	{"id":"caballero_vacio","name":"CABALLERO VACÍO","domain":DOMAIN_CRYPT,"type":TYPE_CREATURE,"cost":4,"attack":4,"health":5,"keywords":[],"tags":["NO_MUERTO"],"effect_id":"crypt_empty_knight","unique":false},
-	{"id":"revenante","name":"REVENANTE","domain":DOMAIN_CRYPT,"type":TYPE_CREATURE,"cost":5,"attack":4,"health":6,"keywords":["EXHUMAR"],"tags":["NO_MUERTO"],"effect_id":"crypt_revenant","unique":false},
+	{"id":"ch_008_caballero_desollado","set_id":"CH-008","name":"CABALLERO DESOLLADO","domain":DOMAIN_CRYPT,"type":TYPE_CREATURE,"cost":3,"attack":4,"health":3,"keywords":[],"tags":["FUNDACIONAL","NO_MUERTO"],"effect_id":"","unique":false,"rarity":"common"},
+	{"id":"ch_009_portador_del_ataud","set_id":"CH-009","name":"PORTADOR DEL ATAÚD","domain":DOMAIN_CRYPT,"type":TYPE_CREATURE,"cost":4,"attack":3,"health":6,"keywords":[],"tags":["FUNDACIONAL","NO_MUERTO"],"effect_id":"crypt_coffin_bearer","unique":false,"rarity":"uncommon"},
 	{"id":"ofrenda_de_ceniza","name":"OFRENDA DE CENIZA","domain":DOMAIN_CRYPT,"type":TYPE_RITE,"cost":1,"attack":0,"health":0,"keywords":[],"tags":[],"effect_id":"crypt_ash_offering","unique":false},
 	{"id":"exhumacion","name":"EXHUMACIÓN","domain":DOMAIN_CRYPT,"type":TYPE_RITE,"cost":2,"attack":0,"health":0,"keywords":["EXHUMAR"],"tags":[],"effect_id":"crypt_exhumation","unique":false},
 	{"id":"urna_de_restos","name":"URNA DE RESTOS","domain":DOMAIN_CRYPT,"type":TYPE_RELIC,"cost":2,"attack":0,"health":0,"keywords":[],"tags":[],"effect_id":"crypt_remains_urn","unique":false},
@@ -63,8 +63,8 @@ const CARDS = [
 	{"id":"adepta_runica","name":"ADEPTA RÚNICA","domain":DOMAIN_TOWER,"type":TYPE_CREATURE,"cost":3,"attack":2,"health":4,"keywords":[],"tags":["ARCANO"],"effect_id":"tower_adept","unique":false},
 	{"id":"golem_sigilado","name":"GÓLEM SIGILADO","domain":DOMAIN_TOWER,"type":TYPE_CREATURE,"cost":3,"attack":2,"health":5,"keywords":["BLINDAJE_1"],"tags":["ARCANO","CONSTRUCTO"],"effect_id":"","unique":false},
 	{"id":"ta_005_teurgo_de_chispas","set_id":"TA-005","name":"TEÚRGO DE CHISPAS","domain":DOMAIN_TOWER,"type":TYPE_CREATURE,"cost":2,"attack":2,"health":2,"keywords":[],"tags":["FUNDACIONAL","ARCANO"],"effect_id":"tower_spark_theurge","unique":false,"rarity":"uncommon"},
-	{"id":"espectro_del_tomo","name":"ESPECTRO DEL TOMO","domain":DOMAIN_TOWER,"type":TYPE_CREATURE,"cost":4,"attack":3,"health":4,"keywords":[],"tags":["ARCANO"],"effect_id":"tower_tome_specter","unique":false},
-	{"id":"cartografo_astral","name":"CARTÓGRAFO ASTRAL","domain":DOMAIN_TOWER,"type":TYPE_CREATURE,"cost":4,"attack":2,"health":5,"keywords":["REVELAR"],"tags":["ARCANO"],"effect_id":"tower_astral_cartographer","unique":false},
+	{"id":"ta_006_maga_de_refraccion","set_id":"TA-006","name":"MAGA DE REFRACCIÓN","domain":DOMAIN_TOWER,"type":TYPE_CREATURE,"cost":3,"attack":2,"health":4,"keywords":[],"tags":["FUNDACIONAL","ARCANO"],"effect_id":"tower_refraction_mage","unique":false,"rarity":"uncommon"},
+	{"id":"ta_014_reordenar","set_id":"TA-014","name":"REORDENAR","domain":DOMAIN_TOWER,"type":TYPE_RITE,"cost":1,"attack":0,"health":0,"keywords":[],"tags":["FUNDACIONAL"],"effect_id":"tower_reorder_foundational","unique":false,"rarity":"common"},
 	{"id":"proyectil_runico","name":"PROYECTIL RÚNICO","domain":DOMAIN_TOWER,"type":TYPE_RITE,"cost":1,"attack":0,"health":0,"keywords":["CANALIZAR_1"],"tags":[],"effect_id":"tower_rune_bolt","unique":false},
 	{"id":"vision_prohibida","name":"VISIÓN PROHIBIDA","domain":DOMAIN_TOWER,"type":TYPE_RITE,"cost":1,"attack":0,"health":0,"keywords":["REVELAR"],"tags":[],"effect_id":"tower_forbidden_vision","unique":false},
 	{"id":"astrolabio","name":"ASTROLABIO","domain":DOMAIN_TOWER,"type":TYPE_RELIC,"cost":2,"attack":0,"health":0,"keywords":["REVELAR"],"tags":[],"effect_id":"tower_astrolabe","unique":false},
@@ -84,13 +84,13 @@ const CARDS = [
 	{"id":"fa_002_chispero_de_cobre","set_id":"FA-002","name":"CHISPERO DE COBRE","domain":DOMAIN_FORGE,"type":TYPE_CREATURE,"cost":1,"attack":2,"health":1,"keywords":[],"tags":["FUNDACIONAL","CONSTRUCTO"],"effect_id":"forge_copper_sparker","unique":false,"rarity":"common"},
 	{"id":"reparador_mecanico","name":"REPARADOR MECÁNICO","domain":DOMAIN_FORGE,"type":TYPE_CREATURE,"cost":3,"attack":2,"health":4,"keywords":[],"tags":["CONSTRUCTO"],"effect_id":"forge_repairer","unique":false},
 	{"id":"fa_006_soldado_remachado","set_id":"FA-006","name":"SOLDADO REMACHADO","domain":DOMAIN_FORGE,"type":TYPE_CREATURE,"cost":3,"attack":3,"health":4,"keywords":[],"tags":["FUNDACIONAL"],"effect_id":"","unique":false,"rarity":"common"},
-	{"id":"caldera_andante","name":"CALDERA ANDANTE","domain":DOMAIN_FORGE,"type":TYPE_CREATURE,"cost":4,"attack":2,"health":6,"keywords":[],"tags":["CONSTRUCTO"],"effect_id":"forge_walking_boiler","unique":false},
+	{"id":"fa_008_lanzallamas_de_taller","set_id":"FA-008","name":"LANZALLAMAS DE TALLER","domain":DOMAIN_FORGE,"type":TYPE_CREATURE,"cost":3,"attack":3,"health":3,"keywords":[],"tags":["FUNDACIONAL"],"effect_id":"forge_workshop_flamethrower","unique":false,"rarity":"rare"},
 	{"id":"golem_de_hierro","name":"GÓLEM DE HIERRO","domain":DOMAIN_FORGE,"type":TYPE_CREATURE,"cost":4,"attack":4,"health":6,"keywords":["BLINDAJE_1"],"tags":["CONSTRUCTO"],"effect_id":"","unique":false},
 	{"id":"coloso_de_bronce","name":"COLOSO DE BRONCE","domain":DOMAIN_FORGE,"type":TYPE_CREATURE,"cost":6,"attack":6,"health":8,"keywords":[],"tags":["CONSTRUCTO"],"effect_id":"forge_bronze_colossus","unique":false},
 	{"id":"chispa_mecanica","name":"CHISPA MECÁNICA","domain":DOMAIN_FORGE,"type":TYPE_RITE,"cost":1,"attack":0,"health":0,"keywords":[],"tags":[],"effect_id":"forge_spark","unique":false},
 	{"id":"sobrecarga","name":"SOBRECARGA","domain":DOMAIN_FORGE,"type":TYPE_RITE,"cost":2,"attack":0,"health":0,"keywords":["SOBRECALENTAR"],"tags":[],"effect_id":"forge_overload","unique":false},
 	{"id":"horno_runico","name":"HORNO RÚNICO","domain":DOMAIN_FORGE,"type":TYPE_RELIC,"cost":2,"attack":0,"health":0,"keywords":[],"tags":[],"effect_id":"forge_rune_furnace","unique":false},
-	{"id":"sello_de_presion","name":"SELLO DE PRESIÓN","domain":DOMAIN_FORGE,"type":TYPE_SEAL,"cost":2,"attack":0,"health":0,"keywords":[],"tags":[],"effect_id":"forge_pressure_seal","unique":false},
+	{"id":"fa_010_automata_de_engranajes","set_id":"FA-010","name":"AUTÓMATA DE ENGRANAJES","domain":DOMAIN_FORGE,"type":TYPE_CREATURE,"cost":4,"attack":4,"health":5,"keywords":[],"tags":["FUNDACIONAL","CONSTRUCTO"],"effect_id":"","unique":false,"rarity":"common"},
 	{"id":"fa_005_ariete_de_bronce","set_id":"FA-005","name":"ARIETE DE BRONCE","domain":DOMAIN_FORGE,"type":TYPE_CREATURE,"cost":2,"attack":3,"health":2,"keywords":["EMBESTIDA"],"tags":["FUNDACIONAL"],"effect_id":"","unique":false,"rarity":"uncommon"},
 	{"id":"fa_009_bastion_rodante","set_id":"FA-009","name":"BASTIÓN RODANTE","domain":DOMAIN_FORGE,"type":TYPE_CREATURE,"cost":4,"attack":3,"health":7,"keywords":["ENRAIZADO"],"tags":["FUNDACIONAL"],"effect_id":"","unique":false,"rarity":"rare"},
 	{"id":"fa_014_reparacion_de_emergencia","set_id":"FA-014","name":"REPARACIÓN DE EMERGENCIA","domain":DOMAIN_FORGE,"type":TYPE_RITE,"cost":1,"attack":0,"health":0,"keywords":[],"tags":["FUNDACIONAL"],"effect_id":"forge_emergency_repair","unique":false,"rarity":"common"},
@@ -105,29 +105,29 @@ const STARTER_DECKS = {
 	DOMAIN_FOREST: [
 		"ardilla_vigilante","ardilla_vigilante","zorro_acechante","zorro_acechante",
 		"lobo_joven","lobo_joven","cierva_lunar","cierva_lunar","bs_002_ardilla_runica",
-		"bs_008_jabali_de_corteza","bs_008_jabali_de_corteza","lobo_alfa","oso_ancestral",
+		"bs_008_jabali_de_corteza","bs_008_jabali_de_corteza","bs_003_lobo_joven","oso_ancestral",
 		"llamado_de_la_manada","llamado_de_la_manada","crecimiento_violento",
-		"crecimiento_violento","totem_de_manada","sello_del_rastro","sello_del_rastro"
+		"crecimiento_violento","bs_010_oso_musgoso","sello_del_rastro","sello_del_rastro"
 	],
 	DOMAIN_CRYPT: [
 		"esqueleto_roto","esqueleto_roto","ch_003_guardia_esqueletico","ch_003_guardia_esqueletico","perro_funebre",
 		"perro_funebre","lamentadora","lamentadora","guardian_oseo","ch_005_perro_de_la_fosa","ch_005_perro_de_la_fosa",
-		"caballero_vacio","revenante","ofrenda_de_ceniza","ofrenda_de_ceniza",
+		"ch_008_caballero_desollado","ch_009_portador_del_ataud","ofrenda_de_ceniza","ofrenda_de_ceniza",
 		"exhumacion","exhumacion","urna_de_restos","sello_del_funeral","sello_del_funeral"
 	],
 	DOMAIN_TOWER: [
 		"familiar_arcano","familiar_arcano","ta_001_aprendiz_de_sigilos","ta_001_aprendiz_de_sigilos","aprendiz_runico",
 		"aprendiz_runico","adepta_runica","golem_sigilado","golem_sigilado","ta_005_teurgo_de_chispas",
-		"espectro_del_tomo","cartografo_astral","proyectil_runico","proyectil_runico",
+		"ta_006_maga_de_refraccion","ta_014_reordenar","proyectil_runico","proyectil_runico",
 		"vision_prohibida","vision_prohibida","astrolabio","astrolabio",
 		"sello_del_circulo","sello_del_circulo"
 	],
 	DOMAIN_FORGE: [
 		"automata_obrero","automata_obrero","centinela_de_cobre","centinela_de_cobre",
 		"fa_002_chispero_de_cobre","fa_002_chispero_de_cobre","reparador_mecanico","reparador_mecanico",
-		"fa_006_soldado_remachado","caldera_andante","golem_de_hierro","coloso_de_bronce",
+		"fa_006_soldado_remachado","fa_008_lanzallamas_de_taller","golem_de_hierro","coloso_de_bronce",
 		"chispa_mecanica","chispa_mecanica","sobrecarga","sobrecarga","horno_runico",
-		"horno_runico","sello_de_presion","sello_de_presion"
+		"horno_runico","fa_010_automata_de_engranajes","fa_010_automata_de_engranajes"
 	]
 }
 

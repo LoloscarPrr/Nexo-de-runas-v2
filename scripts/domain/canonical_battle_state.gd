@@ -48,6 +48,8 @@ var turn_gates: Dictionary = {}
 var cost_modifiers: Dictionary = {"player": [], "enemy": []}
 var death_window_current: Dictionary = {"player": 0, "enemy": 0}
 var death_window_previous: Dictionary = {"player": 0, "enemy": 0}
+var pending_discard_count: Dictionary = {"player": 0, "enemy": 0}
+var pending_discard_source: Dictionary = {"player": "", "enemy": ""}
 
 func setup(domain: String, deck_ids: Array[String], second_player: bool = false) -> void:
 	player_domain = domain
@@ -76,6 +78,8 @@ func setup(domain: String, deck_ids: Array[String], second_player: bool = false)
 	cost_modifiers = {"player": [], "enemy": []}
 	death_window_current = {"player": 0, "enemy": 0}
 	death_window_previous = {"player": 0, "enemy": 0}
+	pending_discard_count = {"player": 0, "enemy": 0}
+	pending_discard_source = {"player": "", "enemy": ""}
 	for card_id in deck_ids:
 		if not Catalog.find_by_id(card_id).is_empty():
 			draw_pile.append(card_id)
@@ -120,6 +124,56 @@ func draw_card() -> bool:
 	hand.append(card_id)
 	event_queue.push(GameEventScript.create("CARD_DRAWN", card_id, [], {"side":"player","turn":turn}))
 	return true
+
+func _hand_for_side(side: String) -> Array:
+	if side == "enemy" and has_method("cpu_hand_reference"):
+		return call("cpu_hand_reference")
+	return hand
+
+func has_pending_discard(side: String = "player") -> bool:
+	return int(pending_discard_count.get(side, 0)) > 0
+
+func pending_discard_remaining(side: String = "player") -> int:
+	return maxi(0, int(pending_discard_count.get(side, 0)))
+
+func queue_pending_discard(side: String, amount: int, source_id: String = "") -> void:
+	if side != "player" and side != "enemy":
+		return
+	var hand_ref: Array = _hand_for_side(side)
+	var required := mini(maxi(0, amount), hand_ref.size())
+	if required <= 0:
+		return
+	pending_discard_count[side] = int(pending_discard_count.get(side, 0)) + required
+	pending_discard_source[side] = source_id
+	event_queue.push(GameEventScript.create("DISCARD_CHOICE_REQUESTED", source_id, [], {"side":side,"count":required}))
+
+func resolve_pending_discard(side: String, hand_index: int) -> bool:
+	if not has_pending_discard(side):
+		return false
+	var hand_ref: Array = _hand_for_side(side)
+	if hand_index < 0 or hand_index >= hand_ref.size():
+		return false
+	var card_id := str(hand_ref[hand_index])
+	hand_ref.remove_at(hand_index)
+	if side == "enemy":
+		enemy_discard.append(card_id)
+	else:
+		discard_pile.append(card_id)
+	pending_discard_count[side] = maxi(0, pending_discard_remaining(side) - 1)
+	var source_id := str(pending_discard_source.get(side, ""))
+	event_queue.push(GameEventScript.create("CARD_DISCARDED", source_id, [card_id], {"side":side,"remaining":pending_discard_remaining(side)}))
+	if not has_pending_discard(side):
+		pending_discard_source[side] = ""
+	return true
+
+func auto_resolve_pending_discards(side: String) -> void:
+	while has_pending_discard(side):
+		var hand_ref: Array = _hand_for_side(side)
+		if hand_ref.is_empty():
+			pending_discard_count[side] = 0
+			pending_discard_source[side] = ""
+			return
+		resolve_pending_discard(side, hand_ref.size() - 1)
 
 func use_impulse() -> bool:
 	if not impulse_available or result != "ongoing":
@@ -253,6 +307,9 @@ func ability_target_spec(card_id: String, trigger: String = AbilityDefinitionScr
 	return AbilityCatalogScript.target_spec_for(str(card.get("effect_id", "")), trigger)
 
 func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_index: int = -1, target_lanes: Array = [], destination_lane: int = -1) -> bool:
+	if has_pending_discard("player"):
+		last_message = "Debes descartar una carta antes de continuar."
+		return false
 	if result != "ongoing" or hand_index < 0 or hand_index >= hand.size():
 		return false
 	var card_id := hand[hand_index]
@@ -281,6 +338,8 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 	if not spend_energy(cost):
 		return false
 	hand.remove_at(hand_index)
+	if has_pending_discard("player"):
+		last_message = "Elige %d carta(s) para descartar." % pending_discard_remaining("player")
 	if card_type == Catalog.TYPE_RITE:
 		discard_pile.append(card_id)
 		if player_domain == Catalog.DOMAIN_TOWER:
@@ -467,7 +526,6 @@ func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed"
 	if not _valid_occupied_lane(lanes, lane):
 		return
 	var unit: Dictionary = lanes[lane]
-	_trigger_last_breath(unit, player_side, lane)
 	var card_id := str(unit.get("id", ""))
 	if player_side:
 		discard_pile.append(card_id)
@@ -476,6 +534,7 @@ func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed"
 	else:
 		enemy_discard.append(card_id)
 	lanes[lane] = null
+	_trigger_last_breath(unit, player_side, lane)
 	var dead_side := "player" if player_side else "enemy"
 	_record_death(dead_side)
 	_recalculate_auras(dead_side)

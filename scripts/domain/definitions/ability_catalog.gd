@@ -99,6 +99,16 @@ static func abilities_for(effect_id: String) -> Array:
 			return [Ability.create("tower_spark_theurge_first_spell", Ability.FIRST_SPELL_PER_TURN, Target.opposing_enemy_lane(), [Effect.damage(1)], [Condition.target_exists()])]
 		"forge_copper_sparker":
 			return [Ability.create("forge_copper_sparker_death", Ability.ON_DEATH, Target.opposing_enemy_lane(), [Effect.damage(1)], [Condition.target_exists()])]
+		"forest_young_wolf_foundational":
+			return [Ability.create("forest_young_wolf_attack", Ability.ON_ATTACK, Target.source_unit(), [Effect.temp_stats(1, 0)])]
+		"crypt_coffin_bearer":
+			return [Ability.create("crypt_coffin_bearer_death", Ability.ON_DEATH, Target.empty_ally_lane(), [Effect.create(Effect.SUMMON_TOKEN, {"id":"esqueleto_token","name":"ESQUELETO","attack":1,"health":1,"tags":["TOKEN","NO_MUERTO"]})])]
+		"tower_refraction_mage":
+			return [Ability.create("tower_refraction_mage_sift", Ability.ON_SUMMON, Target.none(), [Effect.draw_then_discard(1, 1)])]
+		"tower_reorder_foundational":
+			return [Ability.create("tower_reorder_sift", Ability.ON_PLAY, Target.none(), [Effect.draw_then_discard(1, 1)])]
+		"forge_workshop_flamethrower":
+			return [Ability.create("forge_workshop_flamethrower_attack", Ability.ON_ATTACK, Target.opposing_enemy_lane(), [Effect.damage(1)], [Condition.target_exists()])]
 	return []
 
 static func target_spec_for(effect_id: String, trigger: String) -> Dictionary:

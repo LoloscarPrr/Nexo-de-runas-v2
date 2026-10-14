@@ -46,6 +46,14 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 					battle.cpu_draw_card()
 				else:
 					battle.draw_card()
+		EffectScript.DRAW_THEN_DISCARD:
+			ok = true
+			for i in range(maxi(0, int(params.get("draw", 0)))):
+				if source_side == "enemy" and battle.has_method("cpu_draw_card"):
+					battle.cpu_draw_card()
+				else:
+					battle.draw_card()
+			battle.queue_pending_discard(source_side, maxi(0, int(params.get("discard", 0))), str(context.get("source_card_id", "")))
 		EffectScript.MODIFY_STATS_PERMANENT:
 			var permanent_targets := _targets(target)
 			for item in permanent_targets:

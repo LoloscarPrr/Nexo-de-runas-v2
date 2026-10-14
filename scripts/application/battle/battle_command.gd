@@ -4,6 +4,7 @@ extends RefCounted
 const PLAY_CARD := "play_card"
 const END_ROUND := "end_round"
 const USE_IMPULSE := "use_impulse"
+const DISCARD_CARD := "discard_card"
 
 var type := ""
 var hand_index := -1
@@ -33,6 +34,12 @@ static func end_round():
 static func use_impulse():
 	var command := BattleCommand.new()
 	command.type = USE_IMPULSE
+	return command
+
+static func discard_card(hand_index_value: int):
+	var command := BattleCommand.new()
+	command.type = DISCARD_CARD
+	command.hand_index = hand_index_value
 	return command
 
 func to_dict() -> Dictionary:

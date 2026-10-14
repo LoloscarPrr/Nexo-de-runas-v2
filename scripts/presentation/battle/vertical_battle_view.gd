@@ -276,10 +276,12 @@ func _render() -> void:
 	seals_label.text = "SELLOS %d/3\nRELIQUIAS %d/2" % [Array(_snapshot.get("active_seals", [])).size(), Array(_snapshot.get("active_relics", [])).size()]
 	deck_label.text = "MAZO %d\nDESCARTE %d" % [int(_snapshot.get("draw_count", 0)), Array(_snapshot.get("discard", [])).size()]
 	impulse_button.visible = bool(_snapshot.get("impulse_available", false))
-	end_turn_button.disabled = str(_snapshot.get("result", "ongoing")) != "ongoing"
+	end_turn_button.disabled = str(_snapshot.get("result", "ongoing")) != "ongoing" or int(_snapshot.get("pending_discard_count", 0)) > 0
 	_refresh_lanes()
 	_rebuild_hand()
-	if not str(_snapshot.get("message", "")).is_empty():
+	if int(_snapshot.get("pending_discard_count", 0)) > 0:
+		status_label.text = "ELIGE %d CARTA(S) PARA DESCARTAR" % int(_snapshot.get("pending_discard_count", 0))
+	elif not str(_snapshot.get("message", "")).is_empty():
 		status_label.text = str(_snapshot.get("message", ""))
 
 func _refresh_lanes() -> void:
@@ -315,6 +317,11 @@ func _rebuild_hand() -> void:
 
 func _on_hand_card_pressed(index: int) -> void:
 	if session == null:
+		return
+	if int(_snapshot.get("pending_discard_count", 0)) > 0:
+		selected_hand_index = -1
+		var discard_result: Dictionary = session.discard_hand_card(index)
+		_apply_result(discard_result)
 		return
 	if selected_hand_index == index:
 		selected_hand_index = -1
@@ -356,6 +363,9 @@ func _on_lane_pressed(side: String, lane: int) -> void:
 
 func _on_end_turn_pressed() -> void:
 	if session == null:
+		return
+	if int(_snapshot.get("pending_discard_count", 0)) > 0:
+		status_label.text = "Debes descartar antes de finalizar el turno."
 		return
 	selected_hand_index = -1
 	var result: Dictionary = session.end_round()
