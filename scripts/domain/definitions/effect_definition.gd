@@ -21,6 +21,7 @@ const ADD_COST_MODIFIER := "add_cost_modifier"
 const ADD_AURA := "add_aura"
 const HEAL_NEXUS := "heal_nexus"
 const DAMAGE_NEXUS := "damage_nexus"
+const HEAL_NEXUS_IF_TARGET_GONE := "heal_nexus_if_target_gone"
 
 static func create(effect_type: String, params: Dictionary = {}) -> Dictionary:
 	return {
@@ -72,3 +73,6 @@ static func heal_nexus(amount: int) -> Dictionary:
 
 static func damage_nexus(amount: int) -> Dictionary:
 	return create(DAMAGE_NEXUS, {"amount": amount})
+
+static func heal_nexus_if_target_gone(amount: int) -> Dictionary:
+	return create(HEAL_NEXUS_IF_TARGET_GONE, {"amount": amount})
