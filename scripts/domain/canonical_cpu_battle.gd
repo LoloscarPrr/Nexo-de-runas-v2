@@ -116,7 +116,13 @@ func cpu_legal_actions_for_card(hand_index: int) -> Array:
 				if enemy_lanes[lane] != null:
 					continue
 				var added_special := false
-				if summon_target_type == TargetSpecScriptCpu.ADJACENT_ALLY_LANE:
+				if summon_target_type == TargetSpecScriptCpu.PLAYER_LANE:
+					for target_lane in range(LANE_COUNT):
+						if enemy_lanes[target_lane] == null:
+							continue
+						actions.append({"lane":lane,"target_lane":target_lane,"target_lanes":[],"destination_lane":-1,"replace_index":-1})
+						added_special = true
+				elif summon_target_type == TargetSpecScriptCpu.ADJACENT_ALLY_LANE:
 					for target_lane in [lane - 1, lane + 1]:
 						if target_lane < 0 or target_lane >= LANE_COUNT or enemy_lanes[target_lane] == null:
 							continue
