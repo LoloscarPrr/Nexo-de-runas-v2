@@ -134,6 +134,15 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 			ok = battle._heal_nexus(source_side, int(params.get("amount", 0)), str(context.get("source_card_id", ""))) > 0
 		EffectScript.DAMAGE_NEXUS:
 			ok = battle._damage_enemy_nexus(source_side, int(params.get("amount", 0)), str(context.get("source_card_id", ""))) > 0
+		EffectScript.HEAL_NEXUS_IF_TARGET_GONE:
+			ok = true
+			var original_unit = target.get("unit", null)
+			var target_side := str(target.get("side", ""))
+			var lane := int(target.get("lane", -1))
+			if original_unit != null and lane >= 0 and lane < battle.LANE_COUNT:
+				var lanes: Array = battle.player_lanes if target_side == "player" else battle.enemy_lanes
+				if lanes[lane] == null:
+					battle._heal_nexus(source_side, int(params.get("amount", 0)), str(context.get("source_card_id", "")))
 		EffectScript.ADD_AURA:
 			var aura_targets := _targets(target)
 			if aura_targets.size() == 1:
