@@ -125,7 +125,7 @@ static func abilities_for(effect_id: String) -> Array:
 		"tower_five_runes_archmage":
 			return [Ability.create("tower_five_runes_archmage_invocation", Ability.ON_SUMMON, Target.none(), [Effect.draw_then_discard(2, 1), Effect.cost_modifier("ta012_spell_discount", -1, 1, "turn", "rite")])]
 		"forge_walking_hammer":
-			return [Ability.create("forge_walking_hammer_attack", Ability.ON_ATTACK, Target.opposing_enemy_lane(), [Effect.temp_stats(1, 0)], [Condition.target_exists(), Condition.target_attack_lower_than_source()])]
+			return [Ability.create("forge_walking_hammer_attack", Ability.ON_ATTACK, Target.source_unit(), [Effect.temp_stats(1, 0)], [Condition.opposing_enemy_attack_lower_than_source()])]
 		"forge_hammer_blow":
 			return [Ability.create("forge_hammer_blow", Ability.ON_PLAY, Target.enemy_lane(), [Effect.damage(2)], [Condition.target_exists()])]
 	return []
