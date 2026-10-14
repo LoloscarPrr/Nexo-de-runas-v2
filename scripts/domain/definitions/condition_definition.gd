@@ -8,6 +8,8 @@ const TARGET_EXISTS := "target_exists"
 const ADJACENT_ALLY_EXISTS := "adjacent_ally_exists"
 const ATTACK_BLOCKED := "attack_blocked"
 const CONTROLS_RELIC := "controls_relic"
+const TARGET_DAMAGED := "target_damaged"
+const TARGET_ATTACK_LOWER_THAN_SOURCE := "target_attack_lower_than_source"
 
 static func create(condition_type: String, params: Dictionary = {}) -> Dictionary:
 	return {"type": condition_type, "params": params.duplicate(true)}
@@ -32,3 +34,9 @@ static func attack_blocked() -> Dictionary:
 
 static func controls_relic() -> Dictionary:
 	return create(CONTROLS_RELIC)
+
+static func target_damaged() -> Dictionary:
+	return create(TARGET_DAMAGED)
+
+static func target_attack_lower_than_source() -> Dictionary:
+	return create(TARGET_ATTACK_LOWER_THAN_SOURCE)
