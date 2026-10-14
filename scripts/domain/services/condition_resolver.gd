@@ -65,6 +65,12 @@ static func is_met(condition: Dictionary, target: Dictionary, context: Dictionar
 			var source_unit: Dictionary = source_lanes[source_lane]
 			var opposing_unit: Dictionary = opposing_lanes[target_lane]
 			return int(opposing_unit.get("attack", 0)) < int(source_unit.get("attack", 0))
+		ConditionScript.TARGET_IS_OTHER_ALLY:
+			if not bool(target.get("valid", false)) or target.get("unit", null) == null:
+				return false
+			var source_side := str(context.get("source_side", "player"))
+			var source_lane := int(context.get("source_lane", -1))
+			return str(target.get("side", "")) == source_side and int(target.get("lane", -1)) != source_lane
 		ConditionScript.OTHER_ALLY_HAS_TAG:
 			var source_side := str(context.get("source_side", "player"))
 			var source_lane := int(context.get("source_lane", -1))
