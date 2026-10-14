@@ -128,6 +128,22 @@ static func abilities_for(effect_id: String) -> Array:
 			return [Ability.create("forge_walking_hammer_attack", Ability.ON_ATTACK, Target.source_unit(), [Effect.temp_stats(1, 0)], [Condition.opposing_enemy_attack_lower_than_source()])]
 		"forge_hammer_blow":
 			return [Ability.create("forge_hammer_blow", Ability.ON_PLAY, Target.enemy_lane(), [Effect.damage(2)], [Condition.target_exists()])]
+		"forest_guard_deer":
+			return [Ability.create("forest_guard_deer_heal", Ability.ON_SUMMON, Target.player_lane(false), [Effect.heal(1)], [Condition.target_exists(), Condition.target_is_other_ally()])]
+		"forest_clearing_roar":
+			return [Ability.create("forest_clearing_roar_allies", Ability.ON_PLAY, Target.all_ally_units(), [Effect.temp_stats(1, 0)])]
+		"crypt_bone_collector":
+			return [Ability.create("crypt_bone_collector_first_death", Ability.FIRST_ALLY_DEATH_BETWEEN_TURNS, Target.source_unit(), [Effect.permanent_stats(1, 0)])]
+		"crypt_marrow_witch":
+			return [Ability.create("crypt_marrow_witch_sacrifice", Ability.ON_ALLY_SACRIFICED, Target.none(), [Effect.heal_nexus(1)])]
+		"tower_prismatic_familiar":
+			return [Ability.create("tower_prismatic_familiar_death", Ability.ON_DEATH, Target.none(), [Effect.draw_then_discard(1, 1)])]
+		"tower_scroll_keeper":
+			return [Ability.create("tower_scroll_keeper_first_discard", Ability.FIRST_DISCARD_PER_TURN, Target.source_unit(), [Effect.permanent_stats(0, 1)])]
+		"forge_field_mechanic":
+			return [Ability.create("forge_field_mechanic_heal", Ability.ON_SUMMON, Target.player_lane(false), [Effect.heal(2)], [Condition.target_exists(), Condition.target_is_other_ally()])]
+		"forge_core_smith":
+			return [Ability.create("forge_core_smith_first_relic", Ability.FIRST_RELIC_PER_TURN, Target.source_unit(), [Effect.permanent_stats(1, 1)])]
 	return []
 
 static func target_spec_for(effect_id: String, trigger: String) -> Dictionary:
