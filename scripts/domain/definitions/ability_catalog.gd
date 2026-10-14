@@ -109,6 +109,25 @@ static func abilities_for(effect_id: String) -> Array:
 			return [Ability.create("tower_reorder_sift", Ability.ON_PLAY, Target.none(), [Effect.draw_then_discard(1, 1)])]
 		"forge_workshop_flamethrower":
 			return [Ability.create("forge_workshop_flamethrower_attack", Ability.ON_ATTACK, Target.opposing_enemy_lane(), [Effect.damage(1)], [Condition.target_exists()])]
+		"forest_pack_wolf":
+			return [Ability.create("forest_pack_wolf_adjacent", Ability.ON_SUMMON, Target.source_unit(), [Effect.permanent_stats(1, 1)], [Condition.adjacent_ally_exists()])]
+		"forest_sudden_growth":
+			return [
+				Ability.create("forest_sudden_growth_base", Ability.ON_PLAY, Target.player_lane(), [Effect.permanent_stats(1, 1)], [Condition.target_exists()]),
+				Ability.create("forest_sudden_growth_heal", Ability.ON_PLAY, Target.player_lane(), [Effect.heal(1)], [Condition.target_exists(), Condition.target_damaged()])
+			]
+		"crypt_exhume_foundational":
+			return [Ability.create("crypt_exhume_cost_one", Ability.ON_PLAY, Target.none(), [Effect.create(Effect.RETURN_CREATURE_FROM_DISCARD, {"max_cost":1})])]
+		"crypt_funeral_touch":
+			return [Ability.create("crypt_funeral_touch_damage", Ability.ON_PLAY, Target.enemy_lane(), [Effect.damage(2), Effect.heal_nexus_if_target_gone(1)], [Condition.target_exists()])]
+		"tower_five_strokes_master":
+			return [Ability.create("tower_five_strokes_first_spell", Ability.FIRST_SPELL_PER_TURN, Target.source_unit(), [Effect.heal(1), Effect.temp_stats(1, 0)])]
+		"tower_five_runes_archmage":
+			return [Ability.create("tower_five_runes_archmage_invocation", Ability.ON_SUMMON, Target.none(), [Effect.draw_then_discard(2, 1), Effect.cost_modifier("ta012_spell_discount", -1, 1, "turn", "rite")])]
+		"forge_walking_hammer":
+			return [Ability.create("forge_walking_hammer_attack", Ability.ON_ATTACK, Target.opposing_enemy_lane(), [Effect.temp_stats(1, 0)], [Condition.target_exists(), Condition.target_attack_lower_than_source()])]
+		"forge_hammer_blow":
+			return [Ability.create("forge_hammer_blow", Ability.ON_PLAY, Target.enemy_lane(), [Effect.damage(2)], [Condition.target_exists()])]
 	return []
 
 static func target_spec_for(effect_id: String, trigger: String) -> Dictionary:
