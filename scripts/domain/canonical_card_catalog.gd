@@ -119,7 +119,7 @@ const STARTER_DECKS = {
 		"familiar_arcano","familiar_arcano","ta_001_aprendiz_de_sigilos","ta_001_aprendiz_de_sigilos","aprendiz_runico",
 		"aprendiz_runico","adepta_runica","golem_sigilado","golem_sigilado","ta_005_teurgo_de_chispas",
 		"ta_006_maga_de_refraccion","ta_014_reordenar","ta_011_maestro_de_cinco_trazos","ta_011_maestro_de_cinco_trazos",
-		"ta_012_archimaga_de_las_cinco_runas","ta_012_archimaga_de_las_cinco_runas","astrolabio","astrolabio",
+		"ta_012_archimaga_de_las_cinco_runas","ta_013_chispa_dirigida","astrolabio","astrolabio",
 		"sello_del_circulo","sello_del_circulo"
 	],
 	DOMAIN_FORGE: [
