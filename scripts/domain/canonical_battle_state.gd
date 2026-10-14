@@ -526,7 +526,6 @@ func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed"
 	if not _valid_occupied_lane(lanes, lane):
 		return
 	var unit: Dictionary = lanes[lane]
-	_trigger_last_breath(unit, player_side, lane)
 	var card_id := str(unit.get("id", ""))
 	if player_side:
 		discard_pile.append(card_id)
@@ -535,6 +534,7 @@ func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed"
 	else:
 		enemy_discard.append(card_id)
 	lanes[lane] = null
+	_trigger_last_breath(unit, player_side, lane)
 	var dead_side := "player" if player_side else "enemy"
 	_record_death(dead_side)
 	_recalculate_auras(dead_side)
