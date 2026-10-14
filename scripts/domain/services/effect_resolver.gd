@@ -60,10 +60,13 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 				if battle._modify_unit_stats_permanent(str(item.get("side", "")), int(item.get("lane", -1)), int(params.get("attack", 0)), int(params.get("health", 0)), str(context.get("source_card_id", "")), source_side):
 					ok = true
 		EffectScript.MODIFY_STATS_TEMP:
-			var unit = target.get("unit", null)
-			if unit != null:
-				var attack_bonus := int(params.get("attack", 0))
-				var health_bonus := int(params.get("health", 0))
+			var temp_targets := _targets(target)
+			var attack_bonus := int(params.get("attack", 0))
+			var health_bonus := int(params.get("health", 0))
+			for item in temp_targets:
+				var unit = item.get("unit", null)
+				if unit == null:
+					continue
 				unit["attack"] = int(unit.get("attack", 0)) + attack_bonus
 				unit["temp_attack"] = int(unit.get("temp_attack", 0)) + attack_bonus
 				if health_bonus != 0:
