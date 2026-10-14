@@ -26,9 +26,6 @@ func _test_catalog_coverage() -> void:
 		"crypt_broken_skeleton",
 		"crypt_pit_necromancer",
 		"crypt_funeral_hound",
-		"crypt_mourner",
-		"crypt_ash_offering",
-		"tower_familiar",
 		"forge_worker",
 		"forge_spark",
 		"forest_rune_squirrel",
@@ -42,7 +39,15 @@ func _test_catalog_coverage() -> void:
 		"tower_five_strokes_master",
 		"tower_five_runes_archmage",
 		"forge_walking_hammer",
-		"forge_hammer_blow"
+		"forge_hammer_blow",
+		"forest_guard_deer",
+		"forest_clearing_roar",
+		"crypt_bone_collector",
+		"crypt_marrow_witch",
+		"tower_prismatic_familiar",
+		"tower_scroll_keeper",
+		"forge_field_mechanic",
+		"forge_core_smith"
 	]
 	for effect_id in effect_ids:
 		var abilities := AbilityCatalog.abilities_for(effect_id)
@@ -115,24 +120,16 @@ func _test_crypt_abilities() -> void:
 	check(hound.enemy_lanes[4] != null and int(hound.enemy_lanes[4].get("hp", 0)) == 2, "Funeral Hound damages opposing enemy on death")
 	check(hound.essence_current == 1, "Funeral Hound death grants base Remains")
 
-	var mourner := Battle.new()
-	mourner.setup_starter(Catalog.DOMAIN_CRYPT)
-	mourner.player_lanes[0] = mourner.create_unit("lamentadora", true)
-	mourner.hand.clear()
-	mourner.draw_pile = ["esqueleto_roto"]
-	mourner._deal_damage_to_unit(true, 0, 9)
-	check(mourner.hand.size() == 1 and mourner.hand[0] == "esqueleto_roto", "Mourner draws a card on death")
-
 	var offering := Battle.new()
 	offering.setup_starter(Catalog.DOMAIN_CRYPT)
 	offering.player_lanes[4] = offering.create_unit("lobo_joven", true)
-	offering.hand = ["ofrenda_de_ceniza"]
+	offering.hand = ["ch_016_pacto_de_sangre"]
 	offering.draw_pile = ["esqueleto_roto", "ch_003_guardia_esqueletico", "guardian_oseo"]
 	offering.energy_current = 12
-	check(offering.play_card(0, -1, 4), "Ash Offering sacrifices selected allied unit")
-	check(offering.player_lanes[4] == null, "Ash Offering clears sacrificed lane")
-	check(offering.hand.size() == 2, "Ash Offering draws two cards")
-	check(offering.discard_pile.has("lobo_joven") and offering.discard_pile.has("ofrenda_de_ceniza"), "Ash Offering sends unit and rite to discard")
+	check(offering.play_card(0, -1, 4), "Pacto de Sangre sacrifices selected allied unit")
+	check(offering.player_lanes[4] == null, "Pacto de Sangre clears sacrificed lane")
+	check(offering.hand.size() == 2, "Pacto de Sangre draws two cards")
+	check(offering.discard_pile.has("lobo_joven") and offering.discard_pile.has("ch_016_pacto_de_sangre"), "Pacto de Sangre sends unit and rite to discard")
 
 	var exhumation := Battle.new()
 	exhumation.setup_starter(Catalog.DOMAIN_CRYPT)
@@ -146,11 +143,12 @@ func _test_crypt_abilities() -> void:
 func _test_tower_abilities() -> void:
 	var familiar := Battle.new()
 	familiar.setup_starter(Catalog.DOMAIN_TOWER)
-	familiar.hand = ["familiar_arcano"]
-	familiar.draw_pile = ["ta_001_aprendiz_de_sigilos", "aprendiz_runico"]
-	familiar.energy_current = 12
-	check(familiar.play_card(0, 4), "Arcane Familiar summons on lane five")
-	check(familiar.last_revealed.size() == 1 and familiar.last_revealed[0] == "ta_001_aprendiz_de_sigilos", "Arcane Familiar reveals the top card")
+	familiar.player_lanes[4] = familiar.create_unit("ta_002_familiar_prismatico", true)
+	familiar.hand.clear()
+	familiar.draw_pile = ["ta_001_aprendiz_de_sigilos"]
+	familiar._deal_damage_to_unit(true, 4, 9)
+	check(familiar.hand.size() == 1 and familiar.hand[0] == "ta_001_aprendiz_de_sigilos", "Familiar Prismático draws one on death")
+	check(familiar.has_pending_discard("player"), "Familiar Prismático then requests one discard")
 
 	var archmage := Battle.new()
 	archmage.setup_starter(Catalog.DOMAIN_TOWER)
