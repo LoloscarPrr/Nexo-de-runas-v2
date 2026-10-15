@@ -49,7 +49,7 @@ func _test_forest_cards() -> void:
 	battle.player_lanes[0] = rooted
 	check(not battle._move_unit("player", 0, 1, false, "test", "player"), "Printed Enraizado blocks movement")
 
-	battle.player_lanes = [null, battle.create_unit("lobo_joven", true), null, null, null]
+	battle.player_lanes = [null, battle.create_unit("bs_003_lobo_joven", true), null, null, null]
 	battle.hand = ["bs_011_anciano_de_raices"]
 	check(battle.play_card(0, 2), "Anciano de Raíces can be summoned")
 	check(int(battle.player_lanes[1].get("max_hp", 0)) == 4, "Anciano aura grants +0/+1 to adjacent ally")
@@ -60,19 +60,19 @@ func _test_forest_cards() -> void:
 
 func _test_crypt_cards() -> void:
 	var battle := _battle(Catalog.DOMAIN_CRYPT, Catalog.DOMAIN_FOREST)
-	battle.discard_pile = ["esqueleto_roto"]
+	battle.discard_pile = ["ch_001_rata_de_osario"]
 	battle.hand = ["ch_007_nigromante_de_fosa"]
 	check(battle.play_card(0, 2), "Nigromante de Fosa can be summoned")
-	check(battle.hand.has("esqueleto_roto"), "Nigromante returns a cost-1 creature from discard")
+	check(battle.hand.has("ch_001_rata_de_osario"), "Nigromante returns a cost-1 creature from discard")
 
-	battle.player_lanes[0] = battle.create_unit("esqueleto_roto", true)
+	battle.player_lanes[0] = battle.create_unit("ch_001_rata_de_osario", true)
 	battle.player_lanes[1] = battle.create_unit("ch_003_guardia_esqueletico", true)
 	battle._kill_unit(true, 0, "damage", "test", "enemy")
 	battle._kill_unit(true, 1, "damage", "test", "enemy")
 	battle._roll_death_window("player")
 	check(battle.effective_card_cost("ch_012_abominacion_ensamblada", "player") == 3, "Abominación reaches floor 3 after two allied deaths")
 
-	battle.player_lanes[4] = battle.create_unit("guardian_oseo", true)
+	battle.player_lanes[4] = battle.create_unit("ch_003_guardia_esqueletico", true)
 	battle.hand = ["ch_016_pacto_de_sangre"]
 	battle.draw_pile = ["ch_003_guardia_esqueletico", "ch_004_recolector_de_huesos"]
 	check(battle.play_card(0, -1, 4), "Pacto de Sangre resolves")
@@ -81,10 +81,10 @@ func _test_crypt_cards() -> void:
 
 func _test_tower_cards() -> void:
 	var battle := _battle(Catalog.DOMAIN_TOWER, Catalog.DOMAIN_CRYPT)
-	battle.enemy_lanes[0] = battle.create_unit("guardian_oseo", true)
+	battle.enemy_lanes[0] = battle.create_unit("ch_003_guardia_esqueletico", true)
 	battle.hand = ["ta_016_descarga_runica"]
 	check(battle.play_card(0, -1, 0), "Descarga Rúnica resolves")
-	check(int(battle.enemy_lanes[0].get("hp", 0)) == 2, "Descarga Rúnica deals 2 damage")
+	check(int(battle.enemy_lanes[0].get("hp", 0)) == 1, "Descarga Rúnica deals 2 damage")
 
 	battle.player_lanes[0] = battle.create_unit("ta_004_custodio_de_pergaminos", true)
 	battle.player_lanes[4] = battle.create_unit("ta_009_cronista_del_nexo", true)
@@ -94,7 +94,7 @@ func _test_tower_cards() -> void:
 	check(battle.play_card(0, -1, -1, -1, [4, 0]), "Geometría Imposible resolves with two allied targets")
 	check(str(battle.player_lanes[0].get("id", "")) == right_id and str(battle.player_lanes[4].get("id", "")) == left_id, "Geometría swaps units atomically")
 
-	battle.enemy_lanes[1] = battle.create_unit("lobo_joven", true)
+	battle.enemy_lanes[1] = battle.create_unit("bs_003_lobo_joven", true)
 	battle.enemy_lanes[3] = battle.create_unit("bs_004_cierva_guardabosques", true)
 	var hp1 := int(battle.enemy_lanes[1].get("hp", 0))
 	var hp3 := int(battle.enemy_lanes[3].get("hp", 0))
@@ -118,7 +118,7 @@ func _test_forge_cards() -> void:
 
 func _test_cpu_foundational_parity() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_TOWER)
-	battle.player_lanes[0] = battle.create_unit("lobo_joven", true)
+	battle.player_lanes[0] = battle.create_unit("bs_003_lobo_joven", true)
 	battle.player_lanes[1] = battle.create_unit("bs_004_cierva_guardabosques", true)
 	battle.cpu_hand = ["ta_018_tormenta_de_glifos"]
 	var hp0 := int(battle.player_lanes[0].get("hp", 0))
