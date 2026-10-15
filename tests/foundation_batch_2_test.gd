@@ -98,10 +98,10 @@ func _test_crypt_batch() -> void:
 
 func _test_tower_batch() -> void:
 	var adept := _battle(Catalog.DOMAIN_TOWER, Catalog.DOMAIN_CRYPT)
-	adept.player_lanes[1] = adept.create_unit("aprendiz_runico", true)
+	adept.player_lanes[1] = adept.create_unit("ta_004_custodio_de_pergaminos", true)
 	adept.hand = ["ta_003_adepta_del_vector"]
 	check(adept.play_card(0, 2, 1, -1, [], 0), "Adepta del Vector can move adjacent ally by one lane")
-	check(adept.player_lanes[0] != null and str(adept.player_lanes[0].get("id", "")) == "aprendiz_runico" and adept.player_lanes[1] == null, "Adepta moves the selected adjacent ally")
+	check(adept.player_lanes[0] != null and str(adept.player_lanes[0].get("id", "")) == "ta_004_custodio_de_pergaminos" and adept.player_lanes[1] == null, "Adepta moves the selected adjacent ally")
 
 	var kinetic := _battle(Catalog.DOMAIN_TOWER, Catalog.DOMAIN_CRYPT)
 	kinetic.enemy_lanes[2] = kinetic.create_unit("guardian_oseo", true)
@@ -116,7 +116,7 @@ func _test_tower_batch() -> void:
 func _test_forge_batch() -> void:
 	var colossus := _battle(Catalog.DOMAIN_FORGE, Catalog.DOMAIN_FOREST)
 	colossus.player_lanes[2] = colossus.create_unit("fa_013_coloso_de_bronce", true)
-	colossus.enemy_lanes[2] = colossus.create_unit("oso_ancestral", true)
+	colossus.enemy_lanes[2] = colossus.create_unit("bs_010_oso_musgoso", true)
 	colossus.resolve_player_attacks()
 	check(colossus.enemy_integrity == 19, "Blocked Coloso deals 1 additional Nexus damage")
 
