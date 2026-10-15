@@ -57,7 +57,7 @@ func _test_catalog_migration_state() -> void:
 
 func _test_forest_batch3() -> void:
 	var sprout := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT)
-	sprout.player_lanes[1] = sprout.create_unit("lobo_joven", true)
+	sprout.player_lanes[1] = sprout.create_unit("bs_003_lobo_joven", true)
 	sprout.hand = ["bs_001_brote_del_claro"]
 	check(sprout.play_card(0, 2), "Brote del Claro can be summoned adjacent to ally")
 	check(int(sprout.player_lanes[2].get("max_hp", 0)) == 3, "Brote del Claro gains permanent +0/+1 when adjacent")
@@ -67,10 +67,10 @@ func _test_forest_batch3() -> void:
 	check(int(isolated.player_lanes[4].get("max_hp", 0)) == 2, "Isolated Brote does not gain adjacency bonus")
 
 	var roots := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT)
-	roots.enemy_lanes[2] = roots.create_unit("guardian_oseo", true)
+	roots.enemy_lanes[2] = roots.create_unit("ch_003_guardia_esqueletico", true)
 	roots.hand = ["bs_017_raices_invasoras"]
 	check(roots.play_card(0, -1, 2), "Raíces Invasoras resolves on surviving enemy")
-	check(int(roots.enemy_lanes[2].get("hp", 0)) == 2, "Raíces Invasoras deals 2 damage")
+	check(int(roots.enemy_lanes[2].get("hp", 0)) == 1, "Raíces Invasoras deals 2 damage")
 	check(not roots._move_unit("enemy", 2, 1, true, "test_push", "player"), "Survivor is Enraizado")
 	roots._expire_statuses_for_turn("enemy")
 	check(not roots._move_unit("enemy", 2, 1, true, "test_push", "player"), "Root persists through enemy turn start")
@@ -78,7 +78,7 @@ func _test_forest_batch3() -> void:
 	check(roots._move_unit("enemy", 2, 1, true, "test_push", "player"), "Root expires on source player's next turn")
 
 	var lethal := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT)
-	lethal.enemy_lanes[2] = lethal.create_unit("esqueleto_roto", true)
+	lethal.enemy_lanes[2] = lethal.create_unit("ch_001_rata_de_osario", true)
 	lethal.hand = ["bs_017_raices_invasoras"]
 	check(lethal.play_card(0, -1, 2), "Raíces Invasoras resolves lethally")
 	check(lethal.enemy_lanes[2] == null, "Destroyed target is not left with a ghost Root status")
@@ -101,7 +101,7 @@ func _test_tower_batch3() -> void:
 	check(int(sentinel.get("cost", 0)) == 3 and int(sentinel.get("attack", 0)) == 3 and int(sentinel.get("health", 0)) == 4, "Centinela Rúnico is canonical vanilla 3/3/4")
 
 	var spark := _battle(Catalog.DOMAIN_TOWER, Catalog.DOMAIN_CRYPT)
-	spark.enemy_lanes[4] = spark.create_unit("guardian_oseo", true)
+	spark.enemy_lanes[4] = spark.create_unit("ch_003_guardia_esqueletico", true)
 	var hp_before := int(spark.enemy_lanes[4].get("hp", 0))
 	spark.hand = ["ta_013_chispa_dirigida"]
 	check(spark.play_card(0, -1, 4), "Chispa Dirigida resolves")
@@ -131,7 +131,7 @@ func _test_cpu_batch3_parity() -> void:
 	check(rat.player_integrity == player_before - 1, "Enemy Rata death uses same Nexus-damage semantics")
 
 	var spark := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_TOWER)
-	spark.player_lanes[2] = spark.create_unit("lobo_joven", true)
+	spark.player_lanes[2] = spark.create_unit("bs_003_lobo_joven", true)
 	spark.cpu_hand = ["ta_013_chispa_dirigida"]
 	var actions := spark.cpu_legal_actions_for_card(0)
 	var can_target_lane_two := false
