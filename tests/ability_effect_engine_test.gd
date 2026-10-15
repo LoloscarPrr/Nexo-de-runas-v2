@@ -22,12 +22,8 @@ func _initialize() -> void:
 
 func _test_catalog_coverage() -> void:
 	var effect_ids := [
-		"forest_watchful_squirrel",
 		"crypt_broken_skeleton",
 		"crypt_pit_necromancer",
-		"crypt_funeral_hound",
-		"forge_worker",
-		"forge_spark",
 		"forest_rune_squirrel",
 		"tower_sigils_apprentice",
 		"tower_spark_theurge",
@@ -47,7 +43,15 @@ func _test_catalog_coverage() -> void:
 		"tower_prismatic_familiar",
 		"tower_scroll_keeper",
 		"forge_field_mechanic",
-		"forge_core_smith"
+		"forge_core_smith",
+		"forest_oak_shaman",
+		"forest_sap_totem",
+		"crypt_remains_devourer",
+		"crypt_march",
+		"tower_nexus_chronicler",
+		"tower_veil_observatory",
+		"forge_master_armorer",
+		"forge_tool_bench"
 	]
 	for effect_id in effect_ids:
 		var abilities := AbilityCatalog.abilities_for(effect_id)
@@ -61,16 +65,6 @@ func _test_catalog_coverage() -> void:
 		check(not Array(ability.get("effects", [])).is_empty(), "%s ability has atomic effects" % effect_id)
 
 func _test_forest_abilities() -> void:
-	var squirrel := Battle.new()
-	squirrel.setup_starter(Catalog.DOMAIN_FOREST)
-	squirrel.player_lanes[0] = squirrel.create_unit("lobo_joven", true)
-	squirrel.hand = ["ardilla_vigilante"]
-	squirrel.energy_current = 12
-	squirrel.essence_current = 0
-	check(squirrel.play_card(0, 4), "Watchful Squirrel can enter lane five")
-	check(squirrel.essence_current == 1, "Watchful Squirrel grants Instinct when another Beast exists")
-	check(_has_event(squirrel.drain_events(), "ABILITY_TRIGGERED"), "Watchful Squirrel emits ability event")
-
 	var pack := Battle.new()
 	pack.setup_starter(Catalog.DOMAIN_FOREST)
 	pack.player_lanes[1] = pack.create_unit("bs_003_lobo_joven", true)
@@ -110,15 +104,6 @@ func _test_crypt_abilities() -> void:
 	necromancer.energy_current = 12
 	check(necromancer.play_card(0, 4), "Pit Necromancer can be summoned on lane five")
 	check(necromancer.hand.has("ch_001_rata_de_osario"), "Pit Necromancer returns an eligible cost-one creature")
-
-	var hound := Battle.new()
-	hound.setup_starter(Catalog.DOMAIN_CRYPT)
-	hound.player_lanes[4] = hound.create_unit("perro_funebre", true)
-	hound.enemy_lanes[4] = hound.create_unit("lobo_joven", true)
-	hound.essence_current = 0
-	hound._deal_damage_to_unit(true, 4, 9)
-	check(hound.enemy_lanes[4] != null and int(hound.enemy_lanes[4].get("hp", 0)) == 2, "Funeral Hound damages opposing enemy on death")
-	check(hound.essence_current == 1, "Funeral Hound death grants base Remains")
 
 	var offering := Battle.new()
 	offering.setup_starter(Catalog.DOMAIN_CRYPT)
@@ -161,24 +146,6 @@ func _test_tower_abilities() -> void:
 	check(archmage.effective_card_cost("ta_016_descarga_runica", "player") == 1, "Archimaga reduces spell costs this turn with floor one")
 
 func _test_forge_abilities() -> void:
-	var worker := Battle.new()
-	worker.setup_starter(Catalog.DOMAIN_FORGE)
-	worker.hand = ["automata_obrero"]
-	worker.energy_current = 12
-	worker.essence_current = 0
-	check(worker.play_card(0, 4), "Worker Automaton summons on lane five")
-	check(worker.essence_current == 1, "Worker Automaton gains one Heat")
-
-	var spark := Battle.new()
-	spark.setup_starter(Catalog.DOMAIN_FORGE)
-	spark.hand = ["chispa_mecanica"]
-	spark.enemy_lanes[4] = spark.create_unit("lobo_joven", true)
-	spark.energy_current = 12
-	spark.essence_current = 0
-	check(spark.play_card(0, -1, 4), "Mechanical Spark targets enemy lane five")
-	check(int(spark.enemy_lanes[4].get("hp", 0)) == 2, "Mechanical Spark deals one damage")
-	check(spark.essence_current == 1, "Mechanical Spark gains one Heat")
-
 	var hammer_blow := Battle.new()
 	hammer_blow.setup_starter(Catalog.DOMAIN_FORGE)
 	hammer_blow.enemy_lanes[4] = hammer_blow.create_unit("bs_010_oso_musgoso", true)

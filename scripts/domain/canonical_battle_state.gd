@@ -50,6 +50,8 @@ var death_window_current: Dictionary = {"player": 0, "enemy": 0}
 var death_window_previous: Dictionary = {"player": 0, "enemy": 0}
 var pending_discard_count: Dictionary = {"player": 0, "enemy": 0}
 var pending_discard_source: Dictionary = {"player": "", "enemy": ""}
+var turn_activity_current: Dictionary = {"player": {}, "enemy": {}}
+var turn_activity_previous: Dictionary = {"player": {}, "enemy": {}}
 
 func setup(domain: String, deck_ids: Array[String], second_player: bool = false) -> void:
 	player_domain = domain
@@ -80,6 +82,8 @@ func setup(domain: String, deck_ids: Array[String], second_player: bool = false)
 	death_window_previous = {"player": 0, "enemy": 0}
 	pending_discard_count = {"player": 0, "enemy": 0}
 	pending_discard_source = {"player": "", "enemy": ""}
+	turn_activity_current = {"player": {}, "enemy": {}}
+	turn_activity_previous = {"player": {}, "enemy": {}}
 	for card_id in deck_ids:
 		if not Catalog.find_by_id(card_id).is_empty():
 			draw_pile.append(card_id)
@@ -101,14 +105,16 @@ func begin_new_turn() -> void:
 	recharge_energy_for_new_turn()
 	reset_turn_gates("player")
 	_roll_death_window("player")
+	_roll_turn_activity("player")
 	_expire_cost_modifiers("player", "turn")
 	_expire_statuses_for_turn("player")
 	_reset_guard_usage(player_lanes)
 	_reset_guard_usage(enemy_lanes)
-	draw_card()
+	draw_card(true)
+	_trigger_board_units("player", AbilityDefinitionScript.TURN_START, {"turn":turn})
 	event_queue.push(GameEventScript.create("TURN_STARTED", "", [], {"turn": turn}))
 
-func draw_card() -> bool:
+func draw_card(draw_phase: bool = false) -> bool:
 	if result != "ongoing":
 		return false
 	if hand.size() >= MAX_HAND:
@@ -122,7 +128,9 @@ func draw_card() -> bool:
 		return false
 	var card_id := str(draw_pile.pop_front())
 	hand.append(card_id)
-	event_queue.push(GameEventScript.create("CARD_DRAWN", card_id, [], {"side":"player","turn":turn}))
+	event_queue.push(GameEventScript.create("CARD_DRAWN", card_id, [], {"side":"player","turn":turn,"draw_phase":draw_phase}))
+	if not draw_phase:
+		_trigger_active_relics("player", AbilityDefinitionScript.FIRST_DRAW_OUTSIDE_DRAW_PHASE_PER_TURN, {"source_side":"player","drawn_card_id":card_id})
 	return true
 
 func _hand_for_side(side: String) -> Array:
@@ -353,6 +361,7 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 		_trigger_first_relic_units("player")
 	elif card_type == Catalog.TYPE_SEAL:
 		event_queue.push(GameEventScript.create("SEAL_PLAYED", card_id, [], {"side":"player"}))
+	_record_card_played("player", card_type)
 	event_queue.push(GameEventScript.create("CARD_PLAYED", card_id, [], {
 		"card_type": card_type,
 		"lane": lane,
@@ -521,6 +530,9 @@ func _heal_unit(player_side: bool, lane: int, amount: int, source_id: String = "
 		"lane": lane,
 		"amount": healed
 	}))
+	if healed > 0:
+		var healed_side := "player" if player_side else "enemy"
+		_trigger_active_relics(healed_side, AbilityDefinitionScript.FIRST_UNIT_HEAL_PER_TURN, {"source_side":healed_side,"target_lane":lane,"healed_card_id":str(unit.get("id",""))})
 	return healed
 
 func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed", source_id: String = "", source_side: String = "") -> void:
@@ -727,6 +739,20 @@ func effective_card_cost(card_id: String, side: String = "player") -> int:
 		result_cost += int(modifier.get("delta", 0))
 		result_cost = maxi(int(modifier.get("floor", 0)), result_cost)
 	return maxi(0, result_cost)
+
+func _record_card_played(side: String, card_type: String) -> void:
+	if not turn_activity_current.has(side):
+		turn_activity_current[side] = {}
+	var activity: Dictionary = Dictionary(turn_activity_current[side])
+	activity[card_type] = int(activity.get(card_type, 0)) + 1
+	turn_activity_current[side] = activity
+
+func _roll_turn_activity(side: String) -> void:
+	turn_activity_previous[side] = Dictionary(turn_activity_current.get(side, {})).duplicate(true)
+	turn_activity_current[side] = {}
+
+func played_card_type_previous_turn(side: String, card_type: String) -> bool:
+	return int(Dictionary(turn_activity_previous.get(side, {})).get(card_type, 0)) > 0
 
 func _record_death(side: String) -> void:
 	death_window_current[side] = int(death_window_current.get(side, 0)) + 1

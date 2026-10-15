@@ -74,6 +74,22 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 					unit["max_hp"] = int(unit.get("max_hp", 1)) + health_bonus
 					unit["temp_health"] = int(unit.get("temp_health", 0)) + health_bonus
 				ok = true
+		EffectScript.MODIFY_STATS_TEMP_FOR_TAG:
+			var tagged_targets := _targets(target)
+			var required_tag := str(params.get("tag", ""))
+			var tagged_attack := int(params.get("attack", 0))
+			var tagged_health := int(params.get("health", 0))
+			for item in tagged_targets:
+				var unit = item.get("unit", null)
+				if unit == null or not Array(unit.get("tags", [])).has(required_tag):
+					continue
+				unit["attack"] = int(unit.get("attack", 0)) + tagged_attack
+				unit["temp_attack"] = int(unit.get("temp_attack", 0)) + tagged_attack
+				if tagged_health != 0:
+					unit["hp"] = int(unit.get("hp", 0)) + tagged_health
+					unit["max_hp"] = int(unit.get("max_hp", 1)) + tagged_health
+					unit["temp_health"] = int(unit.get("temp_health", 0)) + tagged_health
+				ok = true
 		EffectScript.SUMMON_TOKEN:
 			var summon_targets := _targets_allow_empty(target)
 			for item in summon_targets:
