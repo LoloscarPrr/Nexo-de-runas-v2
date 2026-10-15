@@ -111,7 +111,7 @@ func _test_ability_system() -> void:
 	tower.setup_starter(Catalog.DOMAIN_TOWER)
 	tower.energy_current = 12
 	tower.hand = ["ta_013_chispa_dirigida"]
-	tower.enemy_lanes[4] = tower.create_unit("ch_001_rata_de_osario", true)
+	tower.enemy_lanes[4] = tower.create_unit("fa_002_chispero_de_cobre", true)
 	check(tower.play_card(0, -1, 4), "Enemy-targeted rite can target lane five")
 	check(tower.enemy_lanes[4] == null, "Generic damage effect kills its target")
 
