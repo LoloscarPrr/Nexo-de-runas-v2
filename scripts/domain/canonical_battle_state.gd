@@ -52,6 +52,7 @@ var pending_discard_count: Dictionary = {"player": 0, "enemy": 0}
 var pending_discard_source: Dictionary = {"player": "", "enemy": ""}
 var turn_activity_current: Dictionary = {"player": {}, "enemy": {}}
 var turn_activity_previous: Dictionary = {"player": {}, "enemy": {}}
+var profanation_ready: Dictionary = {"player": false, "enemy": false}
 
 func setup(domain: String, deck_ids: Array[String], second_player: bool = false) -> void:
 	player_domain = domain
@@ -84,6 +85,7 @@ func setup(domain: String, deck_ids: Array[String], second_player: bool = false)
 	pending_discard_source = {"player": "", "enemy": ""}
 	turn_activity_current = {"player": {}, "enemy": {}}
 	turn_activity_previous = {"player": {}, "enemy": {}}
+	profanation_ready = {"player": false, "enemy": false}
 	for card_id in deck_ids:
 		if not Catalog.find_by_id(card_id).is_empty():
 			draw_pile.append(card_id)
@@ -723,6 +725,8 @@ func effective_card_cost(card_id: String, side: String = "player") -> int:
 		return 0
 	var base_cost := int(card.get("cost", 0))
 	var result_cost := base_cost
+	if str(card.get("type", "")) == Catalog.TYPE_CREATURE and bool(profanation_ready.get(side, false)):
+		result_cost = maxi(1, result_cost - 1)
 	var intrinsic: Dictionary = Dictionary(card.get("cost_rule", {}))
 	if str(intrinsic.get("type", "")) == "deaths_since_last_turn":
 		var reduction_per_death := maxi(0, int(intrinsic.get("reduction_per_death", 1)))
@@ -739,6 +743,29 @@ func effective_card_cost(card_id: String, side: String = "player") -> int:
 		result_cost += int(modifier.get("delta", 0))
 		result_cost = maxi(int(modifier.get("floor", 0)), result_cost)
 	return maxi(0, result_cost)
+
+func _domain_for_side(side: String) -> String:
+	return enemy_domain if side == "enemy" else player_domain
+
+func _grant_profanation(side: String) -> void:
+	if _domain_for_side(side) != Catalog.DOMAIN_CRYPT:
+		return
+	profanation_ready[side] = true
+	event_queue.push(GameEventScript.create("PROFANATION_GAINED", "", [], {"side":side}))
+
+func _consume_profanation(side: String, target_lane: int) -> void:
+	if not bool(profanation_ready.get(side, false)):
+		return
+	profanation_ready[side] = false
+	_trigger_active_relics(side, AbilityDefinitionScript.UNIT_PLAYED_AFTER_PROFANATION, {"source_side":side,"target_lane":target_lane})
+	event_queue.push(GameEventScript.create("PROFANATION_CONSUMED", "", [], {"side":side,"target_lane":target_lane}))
+
+func cards_played_current_turn(side: String) -> int:
+	var activity: Dictionary = Dictionary(turn_activity_current.get(side, {}))
+	var total := 0
+	for value in activity.values():
+		total += int(value)
+	return total
 
 func _record_card_played(side: String, card_type: String) -> void:
 	if not turn_activity_current.has(side):
@@ -895,6 +922,7 @@ func _trigger_first_relic_units(side: String) -> void:
 func _trigger_first_ally_death_units(side: String, context: Dictionary = {}) -> void:
 	if not consume_first_turn_gate(side, "first_ally_death_between_turns_event"):
 		return
+	_grant_profanation(side)
 	_trigger_board_units(side, AbilityDefinitionScript.FIRST_ALLY_DEATH_BETWEEN_TURNS, context)
 
 func _active_relics_for_side(side: String) -> Array:
