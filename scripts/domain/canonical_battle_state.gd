@@ -82,8 +82,8 @@ func setup(domain: String, deck_ids: Array[String], second_player: bool = false)
 	death_window_previous = {"player": 0, "enemy": 0}
 	pending_discard_count = {"player": 0, "enemy": 0}
 	pending_discard_source = {"player": "", "enemy": ""}
-turn_activity_current = {"player": {}, "enemy": {}}
-turn_activity_previous = {"player": {}, "enemy": {}}
+	turn_activity_current = {"player": {}, "enemy": {}}
+	turn_activity_previous = {"player": {}, "enemy": {}}
 	for card_id in deck_ids:
 		if not Catalog.find_by_id(card_id).is_empty():
 			draw_pile.append(card_id)
