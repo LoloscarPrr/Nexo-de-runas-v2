@@ -470,6 +470,8 @@ func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed"
 			cpu_gain_essence(1)
 	lanes[lane] = null
 	_trigger_last_breath(unit, player_side, lane)
+	if not player_side and has_pending_discard("enemy"):
+		auto_resolve_pending_discards("enemy")
 	var dead_side := "player" if player_side else "enemy"
 	_record_death(dead_side)
 	_recalculate_auras(dead_side)
