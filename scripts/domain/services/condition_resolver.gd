@@ -71,6 +71,16 @@ static func is_met(condition: Dictionary, target: Dictionary, context: Dictionar
 			var source_side := str(context.get("source_side", "player"))
 			var source_lane := int(context.get("source_lane", -1))
 			return str(target.get("side", "")) == source_side and int(target.get("lane", -1)) != source_lane
+		ConditionScript.PREVIOUS_TURN_PLAYED_CARD_TYPE:
+			return battle.played_card_type_previous_turn(str(context.get("source_side", "player")), str(params.get("card_type", "")))
+		ConditionScript.HAS_CREATURE_IN_DISCARD:
+			var source_side := str(context.get("source_side", "player"))
+			var discard: Array = battle.enemy_discard if source_side == "enemy" else battle.discard_pile
+			for card_id in discard:
+				var card := battle.Catalog.find_by_id(str(card_id))
+				if str(card.get("type", "")) == battle.Catalog.TYPE_CREATURE:
+					return true
+			return false
 		ConditionScript.OTHER_ALLY_HAS_TAG:
 			var source_side := str(context.get("source_side", "player"))
 			var source_lane := int(context.get("source_lane", -1))
