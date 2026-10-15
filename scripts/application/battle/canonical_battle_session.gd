@@ -72,7 +72,7 @@ func execute(command: Object) -> Dictionary:
 		CommandScript.PLAY_CARD:
 			return _execute_play_card(command)
 		CommandScript.END_ROUND:
-			return _execute_end_round()
+			return _execute_end_round(command)
 		CommandScript.USE_IMPULSE:
 			return _execute_use_impulse()
 		CommandScript.DISCARD_CARD:
@@ -112,9 +112,10 @@ func can_target_player_lane(hand_index: int, lane: int) -> bool:
 	if card_type != TYPE_RITE:
 		return false
 	var spec := _engine.ability_target_spec(str(card.get("id", "")), AbilityDefinitionScript.ON_PLAY)
-	if str(spec.get("type", TargetSpecScript.NONE)) != TargetSpecScript.PLAYER_LANE:
+	var target_type := str(spec.get("type", TargetSpecScript.NONE))
+	if target_type != TargetSpecScript.PLAYER_LANE and target_type != TargetSpecScript.ANY_UNIT_LANE:
 		return false
-	return _can_resolve_rite(card, lane)
+	return _can_resolve_rite(card, lane, "player")
 
 func can_target_enemy_lane(hand_index: int, lane: int) -> bool:
 	if _engine == null or lane < 0 or lane >= _engine.LANE_COUNT:
@@ -123,15 +124,19 @@ func can_target_enemy_lane(hand_index: int, lane: int) -> bool:
 	if card.is_empty() or str(card.get("type", "")) != TYPE_RITE:
 		return false
 	var spec := _engine.ability_target_spec(str(card.get("id", "")), AbilityDefinitionScript.ON_PLAY)
-	if str(spec.get("type", TargetSpecScript.NONE)) != TargetSpecScript.ENEMY_LANE:
+	var target_type := str(spec.get("type", TargetSpecScript.NONE))
+	if target_type != TargetSpecScript.ENEMY_LANE and target_type != TargetSpecScript.ANY_UNIT_LANE:
 		return false
-	return _can_resolve_rite(card, lane)
+	return _can_resolve_rite(card, lane, "enemy")
 
 func play_hand_card(hand_index: int, lane: int = -1) -> Dictionary:
 	return execute(CommandScript.play_card(hand_index, lane))
 
-func end_round() -> Dictionary:
-	return execute(CommandScript.end_round())
+func play_hand_card_targeted(hand_index: int, target_side: String, target_lane: int, destination_lane: int = -1) -> Dictionary:
+	return execute(CommandScript.play_card(hand_index, -1, target_lane, -1, [], destination_lane, target_side))
+
+func end_round(target_lane: int = -1) -> Dictionary:
+	return execute(CommandScript.end_round(target_lane))
 
 func discard_hand_card(hand_index: int) -> Dictionary:
 	return execute(CommandScript.discard_card(hand_index))
@@ -139,7 +144,7 @@ func discard_hand_card(hand_index: int) -> Dictionary:
 func use_impulse() -> Dictionary:
 	return execute(CommandScript.use_impulse())
 
-func _can_resolve_rite(card: Dictionary, target_lane: int) -> bool:
+func _can_resolve_rite(card: Dictionary, target_lane: int, target_side: String = "") -> bool:
 	var effect_id := str(card.get("effect_id", ""))
 	if effect_id.is_empty():
 		return false
@@ -147,7 +152,8 @@ func _can_resolve_rite(card: Dictionary, target_lane: int) -> bool:
 		"source_card_id": str(card.get("id", "")),
 		"source_side": "player",
 		"source_lane": -1,
-		"target_lane": target_lane
+		"target_lane": target_lane,
+		"target_side": target_side
 	}, _engine)
 
 func _execute_play_card(command: Object) -> Dictionary:
@@ -159,6 +165,7 @@ func _execute_play_card(command: Object) -> Dictionary:
 	var replace_index := int(command.replace_index)
 	var target_lanes: Array = Array(command.target_lanes)
 	var destination_lane := int(command.destination_lane)
+	var target_side := str(command.target_side)
 	var card := hand_card_definition(hand_index)
 	if card.is_empty():
 		return _result(false, "La carta seleccionada no existe.")
@@ -168,14 +175,14 @@ func _execute_play_card(command: Object) -> Dictionary:
 		ok = _engine.play_card(hand_index, lane)
 	elif card_type == TYPE_RITE:
 		var resolved_target := target_lane if target_lane >= 0 else lane
-		ok = _engine.play_card(hand_index, -1, resolved_target, -1, target_lanes, destination_lane)
+		ok = _engine.play_card(hand_index, -1, resolved_target, -1, target_lanes, destination_lane, target_side)
 	elif card_type == TYPE_RELIC or card_type == TYPE_SEAL:
 		ok = _engine.play_card(hand_index, -1, -1, replace_index)
 	if ok:
 		_engine.last_message = "%s responde al Nexo." % str(card.get("name", "La carta"))
 	return _result(ok, _engine.last_message)
 
-func _execute_end_round() -> Dictionary:
+func _execute_end_round(command: Object) -> Dictionary:
 	if _engine == null:
 		return _result(false, "No hay una batalla activa.")
 	if _engine.has_pending_discard("player"):
@@ -185,7 +192,11 @@ func _execute_end_round() -> Dictionary:
 		return _result(false, "La batalla ya terminó.")
 	var before_player := _engine.player_integrity
 	var before_enemy := _engine.enemy_integrity
-	_engine.advance_round()
+	_engine.end_player_turn(int(command.target_lane))
+	if _engine.result == "ongoing":
+		_engine.run_cpu_turn()
+	if _engine.result == "ongoing":
+		_engine.begin_new_turn()
 	if _engine.result == "ongoing":
 		var player_damage := before_player - _engine.player_integrity
 		var enemy_damage := before_enemy - _engine.enemy_integrity

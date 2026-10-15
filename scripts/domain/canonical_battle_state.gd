@@ -52,6 +52,7 @@ var pending_discard_count: Dictionary = {"player": 0, "enemy": 0}
 var pending_discard_source: Dictionary = {"player": "", "enemy": ""}
 var turn_activity_current: Dictionary = {"player": {}, "enemy": {}}
 var turn_activity_previous: Dictionary = {"player": {}, "enemy": {}}
+var profanation_ready: Dictionary = {"player": false, "enemy": false}
 
 func setup(domain: String, deck_ids: Array[String], second_player: bool = false) -> void:
 	player_domain = domain
@@ -84,6 +85,7 @@ func setup(domain: String, deck_ids: Array[String], second_player: bool = false)
 	pending_discard_source = {"player": "", "enemy": ""}
 	turn_activity_current = {"player": {}, "enemy": {}}
 	turn_activity_previous = {"player": {}, "enemy": {}}
+	profanation_ready = {"player": false, "enemy": false}
 	for card_id in deck_ids:
 		if not Catalog.find_by_id(card_id).is_empty():
 			draw_pile.append(card_id)
@@ -315,7 +317,7 @@ func ability_target_spec(card_id: String, trigger: String = AbilityDefinitionScr
 		return {}
 	return AbilityCatalogScript.target_spec_for(str(card.get("effect_id", "")), trigger)
 
-func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_index: int = -1, target_lanes: Array = [], destination_lane: int = -1) -> bool:
+func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_index: int = -1, target_lanes: Array = [], destination_lane: int = -1, target_side: String = "") -> bool:
 	if has_pending_discard("player"):
 		last_message = "Debes descartar una carta antes de continuar."
 		return false
@@ -330,12 +332,13 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 		last_message = "Energía Rúnica insuficiente."
 		return false
 	var card_type := str(card.get("type", ""))
+	var used_profanation := card_type == Catalog.TYPE_CREATURE and bool(profanation_ready.get("player", false))
 	var success := false
 	match card_type:
 		Catalog.TYPE_CREATURE:
 			success = _play_creature(card, lane, target_lane, destination_lane)
 		Catalog.TYPE_RITE:
-			success = _play_rite(card, target_lane, target_lanes, destination_lane)
+			success = _play_rite(card, target_lane, target_lanes, destination_lane, target_side)
 		Catalog.TYPE_RELIC:
 			success = _play_persistent(card_id, active_relics, MAX_RELICS, replace_index)
 		Catalog.TYPE_SEAL:
@@ -362,12 +365,19 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 	elif card_type == Catalog.TYPE_SEAL:
 		event_queue.push(GameEventScript.create("SEAL_PLAYED", card_id, [], {"side":"player"}))
 	_record_card_played("player", card_type)
+	if used_profanation:
+		_consume_profanation("player", lane)
+	if card_type == Catalog.TYPE_RITE and cards_played_current_turn("player") > 1:
+		_trigger_active_relics("player", AbilityDefinitionScript.FIRST_SEQUENCED_SPELL_PER_TURN, {"source_side":"player","played_card_id":card_id})
+	if has_pending_discard("player"):
+		last_message = "Elige %d carta(s) para descartar." % pending_discard_remaining("player")
 	event_queue.push(GameEventScript.create("CARD_PLAYED", card_id, [], {
 		"card_type": card_type,
 		"lane": lane,
 		"target_lane": target_lane,
 		"target_lanes": target_lanes.duplicate(),
-		"destination_lane": destination_lane
+		"destination_lane": destination_lane,
+		"target_side": target_side
 	}))
 	return true
 
@@ -398,7 +408,7 @@ func _play_persistent(card_id: String, slots: Array[String], limit: int, replace
 	slots[replace_index] = card_id
 	return true
 
-func _play_rite(card: Dictionary, target_lane: int, target_lanes: Array = [], destination_lane: int = -1) -> bool:
+func _play_rite(card: Dictionary, target_lane: int, target_lanes: Array = [], destination_lane: int = -1, target_side: String = "") -> bool:
 	var effect_id := str(card.get("effect_id", ""))
 	if effect_id.is_empty():
 		return false
@@ -408,7 +418,8 @@ func _play_rite(card: Dictionary, target_lane: int, target_lanes: Array = [], de
 		"source_lane": -1,
 		"target_lane": target_lane,
 		"target_lanes": target_lanes.duplicate(),
-		"destination_lane": destination_lane
+		"destination_lane": destination_lane,
+		"target_side": target_side
 	}, self)
 
 func _on_creature_entered(card: Dictionary, lane: int, target_lane: int = -1, destination_lane: int = -1) -> void:
@@ -480,9 +491,10 @@ func _resolve_creature_combat(player_lane: int, enemy_lane: int) -> void:
 		_deal_damage_to_unit(false, enemy_lane, attacker_damage, str(attacker.get("id", "")), "player")
 		_deal_damage_to_unit(true, player_lane, defender_damage, str(defender.get("id", "")), "enemy")
 
-func end_player_turn() -> void:
+func end_player_turn(end_target_lane: int = -1) -> void:
 	if result != "ongoing":
 		return
+	_trigger_active_relics("player", AbilityDefinitionScript.TURN_END, {"source_side":"player","target_lane":end_target_lane})
 	resolve_player_attacks()
 	_expire_temporary_bonuses()
 	if player_domain == Catalog.DOMAIN_FORGE and essence_current >= 6 and result == "ongoing":
@@ -723,6 +735,8 @@ func effective_card_cost(card_id: String, side: String = "player") -> int:
 		return 0
 	var base_cost := int(card.get("cost", 0))
 	var result_cost := base_cost
+	if str(card.get("type", "")) == Catalog.TYPE_CREATURE and bool(profanation_ready.get(side, false)):
+		result_cost = maxi(1, result_cost - 1)
 	var intrinsic: Dictionary = Dictionary(card.get("cost_rule", {}))
 	if str(intrinsic.get("type", "")) == "deaths_since_last_turn":
 		var reduction_per_death := maxi(0, int(intrinsic.get("reduction_per_death", 1)))
@@ -739,6 +753,29 @@ func effective_card_cost(card_id: String, side: String = "player") -> int:
 		result_cost += int(modifier.get("delta", 0))
 		result_cost = maxi(int(modifier.get("floor", 0)), result_cost)
 	return maxi(0, result_cost)
+
+func _domain_for_side(side: String) -> String:
+	return enemy_domain if side == "enemy" else player_domain
+
+func _grant_profanation(side: String) -> void:
+	if _domain_for_side(side) != Catalog.DOMAIN_CRYPT:
+		return
+	profanation_ready[side] = true
+	event_queue.push(GameEventScript.create("PROFANATION_GAINED", "", [], {"side":side}))
+
+func _consume_profanation(side: String, target_lane: int) -> void:
+	if not bool(profanation_ready.get(side, false)):
+		return
+	profanation_ready[side] = false
+	_trigger_active_relics(side, AbilityDefinitionScript.UNIT_PLAYED_AFTER_PROFANATION, {"source_side":side,"target_lane":target_lane})
+	event_queue.push(GameEventScript.create("PROFANATION_CONSUMED", "", [], {"side":side,"target_lane":target_lane}))
+
+func cards_played_current_turn(side: String) -> int:
+	var activity: Dictionary = Dictionary(turn_activity_current.get(side, {}))
+	var total := 0
+	for value in activity.values():
+		total += int(value)
+	return total
 
 func _record_card_played(side: String, card_type: String) -> void:
 	if not turn_activity_current.has(side):
@@ -895,6 +932,7 @@ func _trigger_first_relic_units(side: String) -> void:
 func _trigger_first_ally_death_units(side: String, context: Dictionary = {}) -> void:
 	if not consume_first_turn_gate(side, "first_ally_death_between_turns_event"):
 		return
+	_grant_profanation(side)
 	_trigger_board_units(side, AbilityDefinitionScript.FIRST_ALLY_DEATH_BETWEEN_TURNS, context)
 
 func _active_relics_for_side(side: String) -> Array:

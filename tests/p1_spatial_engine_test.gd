@@ -34,13 +34,13 @@ func _test_move_and_forced_move() -> void:
 	check(battle._move_unit("player", 1, 2, false, "p1_move", "player"), "Normal move succeeds into empty lane")
 	check(battle.player_lanes[1] == null and battle.player_lanes[2] != null, "Move mutates exactly source and destination")
 	check(_has_event(battle.drain_events(), "UNIT_MOVED"), "Move emits UNIT_MOVED")
-	battle.enemy_lanes[3] = battle.create_unit("lobo_joven", true)
+	battle.enemy_lanes[3] = battle.create_unit("bs_003_lobo_joven", true)
 	check(battle._move_unit("enemy", 3, 4, true, "p1_push", "player"), "Forced move uses same spatial engine")
 	check(battle.enemy_lanes[4] != null and battle.enemy_lanes[3] == null, "Forced move changes enemy lane")
 
 func _test_rooted_blocks_and_expires() -> void:
 	var battle = _battle()
-	battle.enemy_lanes[2] = battle.create_unit("lobo_joven", true)
+	battle.enemy_lanes[2] = battle.create_unit("bs_003_lobo_joven", true)
 	var target := {"valid":true,"side":"enemy","lane":2,"unit":battle.enemy_lanes[2]}
 	check(EffectResolver.apply(Effect.rooted(), target, {"source_card_id":"p1_root","source_side":"player"}, battle), "ROOTED applies through EffectResolver")
 	check(not battle._move_unit("enemy", 2, 1, true, "p1_push", "player"), "ROOTED blocks forced movement")
@@ -66,7 +66,7 @@ func _test_atomic_swap() -> void:
 
 func _test_multi_target_damage() -> void:
 	var battle = _battle()
-	battle.enemy_lanes[1] = battle.create_unit("lobo_joven", true)
+	battle.enemy_lanes[1] = battle.create_unit("bs_003_lobo_joven", true)
 	battle.enemy_lanes[3] = battle.create_unit("bs_004_cierva_guardabosques", true)
 	var spec := Target.enemy_lanes(2, 1)
 	var target := TargetResolver.resolve(spec, {"source_side":"player","target_lanes":[3,1]}, battle)

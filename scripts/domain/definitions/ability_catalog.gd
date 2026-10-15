@@ -163,6 +163,25 @@ static func abilities_for(effect_id: String) -> Array:
 			return [Ability.create("forge_master_armorer_invocation", Ability.ON_SUMMON, Target.player_lane(false), [Effect.permanent_stats(1, 1)], [Condition.target_exists()])]
 		"forge_tool_bench":
 			return [Ability.create("forge_tool_bench_first_heal", Ability.FIRST_UNIT_HEAL_PER_TURN, Target.player_lane(false), [Effect.temp_stats(1, 0)], [Condition.target_exists()])]
+		"forest_canopy_stalker":
+			return [Ability.create("forest_canopy_stalker_move", Ability.ON_SUMMON, Target.adjacent_ally_lane(false), [Effect.move(false, 1)])]
+		"forest_green_moon_alpha":
+			return [Ability.create("forest_green_moon_alpha_attack", Ability.ON_ATTACK, Target.adjacent_ally_units(), [Effect.temp_stats(1, 0)])]
+		"crypt_ossuary_executioner":
+			return [Ability.create("crypt_ossuary_executioner_sacrifice", Ability.ON_SUMMON, Target.player_lane(false), [Effect.create(Effect.KILL_UNIT, {"reason":"sacrifice"}), Effect.source_permanent_stats(2, 2)], [Condition.target_exists(), Condition.target_is_other_ally()])]
+		"crypt_vertebrae_throne":
+			return [Ability.create("crypt_vertebrae_throne_profanation", Ability.UNIT_PLAYED_AFTER_PROFANATION, Target.player_lane(false), [Effect.permanent_stats(1, 1)], [Condition.target_exists()])]
+		"tower_vector_impulse":
+			return [Ability.create("tower_vector_impulse_push", Ability.ON_PLAY, Target.any_unit_lane(), [Effect.move(true, 1)], [Condition.target_exists()])]
+		"tower_resonance_lectern":
+			return [Ability.create("tower_resonance_lectern_sequence", Ability.FIRST_SEQUENCED_SPELL_PER_TURN, Target.none(), [Effect.draw_then_discard(1, 1)])]
+		"forge_slag_rain":
+			return [
+				Ability.create("forge_slag_rain_base", Ability.ON_PLAY, Target.all_enemy_units(), [Effect.damage(1)]),
+				Ability.create("forge_slag_rain_invested", Ability.ON_PLAY, Target.all_enemy_units(), [Effect.damage(1)], [Condition.controls_relic()])
+			]
+		"forge_first_fire_anvil":
+			return [Ability.create("forge_first_fire_anvil_end", Ability.TURN_END, Target.damaged_ally_lane_or_first(), [Effect.heal(1)], [Condition.target_exists()])]
 	return []
 
 static func target_spec_for(effect_id: String, trigger: String) -> Dictionary:

@@ -15,7 +15,7 @@ func _initialize() -> void:
 	_test_cpu_policy_plays_targeted_rite()
 	_test_cpu_relative_ally_targeting()
 	_test_cpu_relative_token_summon()
-	_test_cpu_last_breath_and_crypt_resource()
+	_test_cpu_crypt_death_resource()
 	_test_cpu_reveal_uses_own_deck()
 	_test_cpu_exhumation_uses_own_discard()
 	_test_invalid_cpu_target_spends_nothing()
@@ -55,7 +55,7 @@ func _test_cpu_policy_plays_targeted_rite() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_TOWER)
 	battle.cpu_energy_current = 1
 	battle.cpu_hand = ["ta_013_chispa_dirigida"]
-	battle.player_lanes[4] = battle.create_unit("esqueleto_roto", true)
+	battle.player_lanes[4] = battle.create_unit("ch_001_rata_de_osario", true)
 	var legal := battle.cpu_legal_actions_for_card(0)
 	check(not legal.is_empty() and int(Dictionary(legal[0]).get("target_lane", -1)) == 4, "CPU policy sees legal opposing target on lane five")
 	battle.cpu_take_actions()
@@ -83,12 +83,12 @@ func _test_cpu_relative_token_summon() -> void:
 	check(battle.enemy_lanes[0] != null and str(battle.enemy_lanes[0].id) == "brote", "Empty ally target resolves on CPU board")
 	check(battle.player_lanes[0] == null, "CPU token never appears on player board")
 
-func _test_cpu_last_breath_and_crypt_resource() -> void:
+func _test_cpu_crypt_death_resource() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT)
-	battle.enemy_lanes[2] = battle.create_unit("esqueleto_roto", true)
+	battle.enemy_lanes[2] = battle.create_unit("ch_001_rata_de_osario", true)
 	battle._deal_damage_to_unit(false, 2, 99)
 	check(battle.enemy_lanes[2] == null, "CPU creature can die through shared damage path")
-	check(battle.cpu_essence_current == 2, "CPU Broken Skeleton grants base Restos plus Last Breath Restos")
+	check(battle.cpu_essence_current == 1, "CPU allied death grants base Restos")
 	check(battle.essence_current == 0, "CPU death resources remain isolated from player")
 
 
@@ -108,11 +108,11 @@ func _test_cpu_exhumation_uses_own_discard() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT)
 	battle.cpu_hand = ["ch_014_exhumar"]
 	battle.enemy_discard = ["ch_001_rata_de_osario"]
-	battle.discard_pile = ["lobo_joven"]
+	battle.discard_pile = ["bs_003_lobo_joven"]
 	check(battle.cpu_play_card(0), "CPU resolves foundational Exhumar")
 	check(battle.cpu_hand.has("ch_001_rata_de_osario"), "CPU Exhumar returns cost-one creature from enemy discard")
 	check(not battle.enemy_discard.has("ch_001_rata_de_osario"), "Returned CPU creature leaves enemy discard")
-	check(battle.discard_pile.has("lobo_joven"), "CPU Exhumar never consumes player discard")
+	check(battle.discard_pile.has("bs_003_lobo_joven"), "CPU Exhumar never consumes player discard")
 
 func _test_invalid_cpu_target_spends_nothing() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_FORGE)

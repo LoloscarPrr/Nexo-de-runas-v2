@@ -74,6 +74,7 @@ func run_cpu_turn() -> void:
 	if has_pending_discard("enemy"):
 		auto_resolve_pending_discards("enemy")
 	cpu_take_actions()
+	_trigger_active_relics("enemy", AbilityDefinitionScriptCpu.TURN_END, {"source_side":"enemy","target_lane":-1})
 	resolve_cpu_attacks()
 	_expire_cpu_temporary_bonuses()
 	_resolve_cpu_overload()
@@ -95,7 +96,8 @@ func cpu_take_actions() -> void:
 			int(action.get("target_lane", -1)),
 			int(action.get("replace_index", -1)),
 			Array(action.get("target_lanes", [])),
-			int(action.get("destination_lane", -1))
+			int(action.get("destination_lane", -1)),
+			str(action.get("target_side", ""))
 		)
 		if not ok:
 			return
@@ -188,6 +190,15 @@ func cpu_legal_actions_for_card(hand_index: int) -> Array:
 				for lanes_choice in _lane_combinations(occupied_allies, 2):
 					if _cpu_can_resolve_rite(card, -1, lanes_choice):
 						actions.append({"lane":-1,"target_lane":-1,"target_lanes":lanes_choice,"destination_lane":-1,"replace_index":-1})
+			elif target_type == TargetSpecScriptCpu.ANY_UNIT_LANE:
+				for target_lane in range(LANE_COUNT):
+					if player_lanes[target_lane] == null:
+						continue
+					for destination_lane in [target_lane - 1, target_lane + 1]:
+						if destination_lane < 0 or destination_lane >= LANE_COUNT or player_lanes[destination_lane] != null:
+							continue
+						if _cpu_can_resolve_rite(card, target_lane, [], destination_lane, "player"):
+							actions.append({"lane":-1,"target_lane":target_lane,"target_lanes":[],"destination_lane":destination_lane,"replace_index":-1,"target_side":"player"})
 			else:
 				if _cpu_can_resolve_rite(card, -1):
 					actions.append({"lane": -1, "target_lane": -1, "replace_index": -1})
@@ -199,7 +210,7 @@ func cpu_legal_actions_for_card(hand_index: int) -> Array:
 			actions.append({"lane": -1, "target_lane": -1, "replace_index": seal_replace})
 	return actions
 
-func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_index: int = -1, target_lanes: Array = [], destination_lane: int = -1) -> bool:
+func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_index: int = -1, target_lanes: Array = [], destination_lane: int = -1, target_side: String = "") -> bool:
 	if has_pending_discard("enemy"):
 		auto_resolve_pending_discards("enemy")
 	if result != "ongoing" or hand_index < 0 or hand_index >= cpu_hand.size():
@@ -212,12 +223,13 @@ func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, repla
 	if not cpu_can_pay_energy(cost):
 		return false
 	var card_type := str(card.get("type", ""))
+	var used_profanation := card_type == CatalogScript.TYPE_CREATURE and bool(profanation_ready.get("enemy", false))
 	var success := false
 	match card_type:
 		CatalogScript.TYPE_CREATURE:
 			success = _cpu_play_creature(card, lane, target_lane, destination_lane)
 		CatalogScript.TYPE_RITE:
-			success = _cpu_play_rite(card, target_lane, target_lanes, destination_lane)
+			success = _cpu_play_rite(card, target_lane, target_lanes, destination_lane, target_side)
 		CatalogScript.TYPE_RELIC:
 			success = _cpu_play_persistent(card_id, cpu_active_relics, MAX_RELICS, replace_index)
 		CatalogScript.TYPE_SEAL:
@@ -242,13 +254,20 @@ func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, repla
 	elif card_type == CatalogScript.TYPE_SEAL:
 		event_queue.push(GameEventScriptCpu.create("SEAL_PLAYED", card_id, [], {"side":"enemy"}))
 	_record_card_played("enemy", card_type)
+	if used_profanation:
+		_consume_profanation("enemy", lane)
+	if card_type == CatalogScript.TYPE_RITE and cards_played_current_turn("enemy") > 1:
+		_trigger_active_relics("enemy", AbilityDefinitionScriptCpu.FIRST_SEQUENCED_SPELL_PER_TURN, {"source_side":"enemy","played_card_id":card_id})
+	if has_pending_discard("enemy"):
+		auto_resolve_pending_discards("enemy")
 	event_queue.push(GameEventScriptCpu.create("CARD_PLAYED", card_id, [], {
 		"side": "enemy",
 		"card_type": card_type,
 		"lane": lane,
 		"target_lane": target_lane,
 		"target_lanes": target_lanes.duplicate(),
-		"destination_lane": destination_lane
+		"destination_lane": destination_lane,
+		"target_side": target_side
 	}))
 	return true
 
@@ -275,7 +294,7 @@ func _cpu_play_creature(card: Dictionary, lane: int, target_lane: int = -1, dest
 		}, self)
 	return true
 
-func _cpu_play_rite(card: Dictionary, target_lane: int, target_lanes: Array = [], destination_lane: int = -1) -> bool:
+func _cpu_play_rite(card: Dictionary, target_lane: int, target_lanes: Array = [], destination_lane: int = -1, target_side: String = "") -> bool:
 	var effect_id := str(card.get("effect_id", ""))
 	if effect_id.is_empty():
 		return false
@@ -285,10 +304,11 @@ func _cpu_play_rite(card: Dictionary, target_lane: int, target_lanes: Array = []
 		"source_lane": -1,
 		"target_lane": target_lane,
 		"target_lanes": target_lanes.duplicate(),
-		"destination_lane": destination_lane
+		"destination_lane": destination_lane,
+		"target_side": target_side
 	}, self)
 
-func _cpu_can_resolve_rite(card: Dictionary, target_lane: int, target_lanes: Array = [], destination_lane: int = -1) -> bool:
+func _cpu_can_resolve_rite(card: Dictionary, target_lane: int, target_lanes: Array = [], destination_lane: int = -1, target_side: String = "") -> bool:
 	var effect_id := str(card.get("effect_id", ""))
 	if effect_id.is_empty():
 		return false
@@ -298,7 +318,8 @@ func _cpu_can_resolve_rite(card: Dictionary, target_lane: int, target_lanes: Arr
 		"source_lane": -1,
 		"target_lane": target_lane,
 		"target_lanes": target_lanes.duplicate(),
-		"destination_lane": destination_lane
+		"destination_lane": destination_lane,
+		"target_side": target_side
 	}, self)
 
 func _cpu_play_persistent(card_id: String, slots: Array[String], limit: int, replace_index: int) -> bool:

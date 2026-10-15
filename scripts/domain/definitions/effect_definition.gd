@@ -23,6 +23,7 @@ const HEAL_NEXUS := "heal_nexus"
 const DAMAGE_NEXUS := "damage_nexus"
 const HEAL_NEXUS_IF_TARGET_GONE := "heal_nexus_if_target_gone"
 const MODIFY_STATS_TEMP_FOR_TAG := "modify_stats_temp_for_tag"
+const MODIFY_SOURCE_STATS_PERMANENT := "modify_source_stats_permanent"
 
 static func create(effect_type: String, params: Dictionary = {}) -> Dictionary:
 	return {
@@ -80,3 +81,6 @@ static func heal_nexus_if_target_gone(amount: int) -> Dictionary:
 
 static func temp_stats_for_tag(tag: String, attack: int, health: int = 0) -> Dictionary:
 	return create(MODIFY_STATS_TEMP_FOR_TAG, {"tag": tag, "attack": attack, "health": health})
+
+static func source_permanent_stats(attack: int, health: int = 0) -> Dictionary:
+	return create(MODIFY_SOURCE_STATS_PERMANENT, {"attack": attack, "health": health})

@@ -46,7 +46,7 @@ func _test_catalog_batch() -> void:
 func _test_forest_batch() -> void:
 	var avatar := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT)
 	avatar.player_integrity = 15
-	avatar.player_lanes[0] = avatar.create_unit("lobo_joven", true)
+	avatar.player_lanes[0] = avatar.create_unit("bs_003_lobo_joven", true)
 	avatar.player_lanes[0]["hp"] = 1
 	avatar.hand = ["bs_013_avatar_del_bosque"]
 	check(avatar.play_card(0, 2), "Avatar del Bosque can be summoned")
@@ -54,7 +54,7 @@ func _test_forest_batch() -> void:
 	check(avatar.player_integrity == 17, "Avatar heals own Nexus by 2")
 
 	var call := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT)
-	call.player_lanes[1] = call.create_unit("lobo_joven", true)
+	call.player_lanes[1] = call.create_unit("bs_003_lobo_joven", true)
 	call.hand = ["bs_016_llamado_de_la_manada"]
 	check(call.play_card(0, -1, 2), "Llamado de la Manada chooses an empty allied lane")
 	check(call.player_lanes[2] != null and str(call.player_lanes[2].get("id", "")) == "brote", "Llamado summons Brote")
@@ -63,7 +63,7 @@ func _test_forest_batch() -> void:
 	var sanctuary := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT)
 	sanctuary.hand = ["bs_020_santuario_de_la_manada"]
 	check(sanctuary.play_card(0), "Santuario de la Manada enters play")
-	sanctuary.player_lanes[1] = sanctuary.create_unit("lobo_joven", true)
+	sanctuary.player_lanes[1] = sanctuary.create_unit("bs_003_lobo_joven", true)
 	sanctuary.hand = ["bs_005_enredadera_vigilante"]
 	check(sanctuary.play_card(0, 2), "First summon after Santuario succeeds")
 	check(int(sanctuary.player_lanes[2].get("attack", 0)) == 2 and int(sanctuary.player_lanes[2].get("max_hp", 0)) == 6, "Santuario permanently grants +1/+1 to first adjacent summon")
@@ -87,8 +87,8 @@ func _test_crypt_batch() -> void:
 	ossuary.player_integrity = 15
 	ossuary.hand = ["ch_019_osario_ritual"]
 	check(ossuary.play_card(0), "Osario Ritual enters play")
-	ossuary.player_lanes[0] = ossuary.create_unit("guardian_oseo", true)
-	ossuary.player_lanes[1] = ossuary.create_unit("guardian_oseo", true)
+	ossuary.player_lanes[0] = ossuary.create_unit("ch_003_guardia_esqueletico", true)
+	ossuary.player_lanes[1] = ossuary.create_unit("ch_003_guardia_esqueletico", true)
 	ossuary.cpu_turn_active = true
 	ossuary._kill_unit(true, 0, "damage", "test", "enemy")
 	check(ossuary.player_integrity == 16, "Osario heals Nexus on first allied death between turns")
@@ -104,7 +104,7 @@ func _test_tower_batch() -> void:
 	check(adept.player_lanes[0] != null and str(adept.player_lanes[0].get("id", "")) == "ta_004_custodio_de_pergaminos" and adept.player_lanes[1] == null, "Adepta moves the selected adjacent ally")
 
 	var kinetic := _battle(Catalog.DOMAIN_TOWER, Catalog.DOMAIN_CRYPT)
-	kinetic.enemy_lanes[2] = kinetic.create_unit("guardian_oseo", true)
+	kinetic.enemy_lanes[2] = kinetic.create_unit("ch_003_guardia_esqueletico", true)
 	kinetic.hand = ["ta_008_manipulador_cinetico"]
 	check(kinetic.play_card(0, 2, -1, -1, [], 3), "Manipulador Cinético can push opposing enemy one lane")
 	check(kinetic.enemy_lanes[3] != null and kinetic.enemy_lanes[2] == null, "Manipulador performs bounded forced movement")
@@ -121,7 +121,7 @@ func _test_forge_batch() -> void:
 	check(colossus.enemy_integrity == 19, "Blocked Coloso deals 1 additional Nexus damage")
 
 	var overload := _battle(Catalog.DOMAIN_FORGE, Catalog.DOMAIN_FOREST)
-	overload.player_lanes[2] = overload.create_unit("golem_de_hierro", true)
+	overload.player_lanes[2] = overload.create_unit("fa_010_automata_de_engranajes", true)
 	var base_attack := int(overload.player_lanes[2].get("attack", 0))
 	overload.hand = ["fa_016_sobrecarga"]
 	check(overload.play_card(0, -1, 2), "Sobrecarga resolves without Relic")
@@ -130,7 +130,7 @@ func _test_forge_batch() -> void:
 	var overload_relic := _battle(Catalog.DOMAIN_FORGE, Catalog.DOMAIN_FOREST)
 	overload_relic.hand = ["fa_019_horno_runico"]
 	check(overload_relic.play_card(0), "Horno Rúnico enters play")
-	overload_relic.player_lanes[2] = overload_relic.create_unit("golem_de_hierro", true)
+	overload_relic.player_lanes[2] = overload_relic.create_unit("fa_010_automata_de_engranajes", true)
 	var relic_base := int(overload_relic.player_lanes[2].get("attack", 0))
 	overload_relic.hand = ["fa_016_sobrecarga"]
 	check(overload_relic.play_card(0, -1, 2), "Sobrecarga resolves with Relic")
@@ -139,12 +139,12 @@ func _test_forge_batch() -> void:
 	var furnace := _battle(Catalog.DOMAIN_FORGE, Catalog.DOMAIN_FOREST)
 	furnace.hand = ["fa_019_horno_runico"]
 	check(furnace.play_card(0), "Horno Rúnico can be played for trigger test")
-	furnace.hand = ["golem_de_hierro"]
+	furnace.hand = ["fa_010_automata_de_engranajes"]
 	check(furnace.play_card(0, 1), "First cost-4 unit can be summoned")
-	check(int(furnace.player_lanes[1].get("max_hp", 0)) == 7, "Horno gives first cost-4+ unit +0/+1 permanently")
-	furnace.hand = ["golem_de_hierro"]
+	check(int(furnace.player_lanes[1].get("max_hp", 0)) == 6, "Horno gives first cost-4+ unit +0/+1 permanently")
+	furnace.hand = ["fa_010_automata_de_engranajes"]
 	check(furnace.play_card(0, 3), "Second cost-4 unit can be summoned")
-	check(int(furnace.player_lanes[3].get("max_hp", 0)) == 6, "Horno triggers only once per turn")
+	check(int(furnace.player_lanes[3].get("max_hp", 0)) == 5, "Horno triggers only once per turn")
 
 func _test_cpu_batch2_actions() -> void:
 	var call := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT)
@@ -159,7 +159,7 @@ func _test_cpu_batch2_actions() -> void:
 
 	var push := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_TOWER)
 	push.cpu_hand = ["ta_008_manipulador_cinetico"]
-	push.player_lanes[2] = push.create_unit("lobo_joven", true)
+	push.player_lanes[2] = push.create_unit("bs_003_lobo_joven", true)
 	var push_actions := push.cpu_legal_actions_for_card(0)
 	var found_push := false
 	for action in push_actions:

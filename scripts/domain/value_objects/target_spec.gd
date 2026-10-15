@@ -19,6 +19,9 @@ const EMPTY_ALLY_LANE := "empty_ally_lane"
 const SELECTED_EMPTY_ALLY_LANES := "selected_empty_ally_lanes"
 const FIRST_DAMAGED_ALLY_UNIT := "first_damaged_ally_unit"
 const FIRST_ALLY_UNIT := "first_ally_unit"
+const ADJACENT_ALLY_UNITS := "adjacent_ally_units"
+const ANY_UNIT_LANE := "any_unit_lane"
+const DAMAGED_ALLY_LANE_OR_FIRST := "damaged_ally_lane_or_first"
 
 static func create(target_type: String, required: bool = false) -> Dictionary:
 	return {"type": target_type, "required": required}
@@ -84,3 +87,12 @@ static func first_damaged_ally_unit() -> Dictionary:
 
 static func first_ally_unit() -> Dictionary:
 	return create(FIRST_ALLY_UNIT, false)
+
+static func adjacent_ally_units() -> Dictionary:
+	return create(ADJACENT_ALLY_UNITS, false)
+
+static func any_unit_lane() -> Dictionary:
+	return create(ANY_UNIT_LANE, true)
+
+static func damaged_ally_lane_or_first() -> Dictionary:
+	return create(DAMAGED_ALLY_LANE_OR_FIRST, false)

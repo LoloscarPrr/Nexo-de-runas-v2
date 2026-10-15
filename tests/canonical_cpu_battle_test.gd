@@ -37,15 +37,15 @@ func _test_cpu_round() -> void:
 func _test_cpu_direct_damage() -> void:
 	var battle := Battle.new()
 	battle.setup_cpu_starter(Catalog.DOMAIN_FOREST)
-	battle.enemy_lanes = [battle.create_unit("zorro_acechante", true), null, null, null, null]
+	battle.enemy_lanes = [battle.create_unit("bs_003_lobo_joven", true), null, null, null, null]
 	battle.player_lanes = [null, null, null, null, null]
 	battle.resolve_cpu_attacks()
-	check(battle.player_integrity == 18, "CPU open lane deals direct Nexus damage")
+	check(battle.player_integrity == 17, "CPU open lane uses current attacker Attack for direct Nexus damage")
 
 func _test_cpu_does_not_fill_left_to_right() -> void:
 	var battle := Battle.new()
 	battle.setup_cpu_starter(Catalog.DOMAIN_FOREST)
-	battle.cpu_hand = ["zorro_acechante"]
+	battle.cpu_hand = ["bs_003_lobo_joven"]
 	battle.cpu_energy_current = 2
 	battle.cpu_energy_capacity = 2
 	battle.enemy_lanes = [null, null, null, null, null]
@@ -57,11 +57,11 @@ func _test_cpu_does_not_fill_left_to_right() -> void:
 func _test_cpu_answers_lane_threats() -> void:
 	var battle := Battle.new()
 	battle.setup_cpu_starter(Catalog.DOMAIN_FOREST)
-	battle.cpu_hand = ["zorro_acechante"]
+	battle.cpu_hand = ["bs_003_lobo_joven"]
 	battle.cpu_energy_current = 2
 	battle.cpu_energy_capacity = 2
 	battle.enemy_lanes = [null, null, null, null, null]
-	battle.player_lanes = [null, null, null, battle.create_unit("oso_ancestral", true), null]
+	battle.player_lanes = [null, null, null, battle.create_unit("bs_010_oso_musgoso", true), null]
 	battle.turn = 2
 	var action: Dictionary = CpuPolicy.choose_action(battle)
 	check(int(action.get("lane", -1)) == 3, "CPU chooses the threatened lane instead of the first empty lane")
