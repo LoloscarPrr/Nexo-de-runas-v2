@@ -15,6 +15,8 @@ const FIRST_SPELL_PER_TURN := "first_spell_per_turn"
 const ON_ALLY_SACRIFICED := "on_ally_sacrificed"
 const FIRST_DISCARD_PER_TURN := "first_discard_per_turn"
 const FIRST_RELIC_PER_TURN := "first_relic_per_turn"
+const FIRST_UNIT_HEAL_PER_TURN := "first_unit_heal_per_turn"
+const FIRST_DRAW_OUTSIDE_DRAW_PHASE_PER_TURN := "first_draw_outside_draw_phase_per_turn"
 
 static func create(ability_id: String, trigger: String, target: Dictionary, effects: Array, conditions: Array = []) -> Dictionary:
 	return {
