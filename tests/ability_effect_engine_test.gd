@@ -50,7 +50,15 @@ func _test_catalog_coverage() -> void:
 		"tower_nexus_chronicler",
 		"tower_veil_observatory",
 		"forge_master_armorer",
-		"forge_tool_bench"
+		"forge_tool_bench",
+		"forest_canopy_stalker",
+		"forest_green_moon_alpha",
+		"crypt_ossuary_executioner",
+		"crypt_vertebrae_throne",
+		"tower_vector_impulse",
+		"tower_resonance_lectern",
+		"forge_slag_rain",
+		"forge_first_fire_anvil"
 	]
 	for effect_id in effect_ids:
 		var abilities := AbilityCatalog.abilities_for(effect_id)
