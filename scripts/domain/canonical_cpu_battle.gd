@@ -96,7 +96,8 @@ func cpu_take_actions() -> void:
 			int(action.get("target_lane", -1)),
 			int(action.get("replace_index", -1)),
 			Array(action.get("target_lanes", [])),
-			int(action.get("destination_lane", -1))
+			int(action.get("destination_lane", -1)),
+			str(action.get("target_side", ""))
 		)
 		if not ok:
 			return
@@ -298,15 +299,6 @@ func _cpu_play_rite(card: Dictionary, target_lane: int, target_lanes: Array = []
 		"target_side": target_side
 	}, self)
 
-func _cpu_can_resolve_rite(card: Dictionary, target_lane: int, target_lanes: Array = [], destination_lane: int = -1, target_side: String = "") -> bool:
-	var effect_id := str(card.get("effect_id", ""))
-	if effect_id.is_empty():
-		return false
-	return AbilityResolverScriptCpu.can_resolve(effect_id, AbilityDefinitionScriptCpu.ON_PLAY, {
-		"source_card_id": str(card.get("id", "")),
-		"source_side": "enemy",
-		"source_lane": -1,
-		"target_lane": target_lane,
 func _cpu_can_resolve_rite(card: Dictionary, target_lane: int, target_lanes: Array = [], destination_lane: int = -1, target_side: String = "") -> bool:
 	var effect_id := str(card.get("effect_id", ""))
 	if effect_id.is_empty():
