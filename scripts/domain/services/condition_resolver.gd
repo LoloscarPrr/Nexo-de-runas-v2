@@ -2,6 +2,7 @@ class_name ConditionResolver
 extends RefCounted
 
 const ConditionScript = preload("res://scripts/domain/definitions/condition_definition.gd")
+const Catalog = preload("res://scripts/domain/canonical_card_catalog.gd")
 
 static func all_met(conditions: Array, target: Dictionary, context: Dictionary, battle) -> bool:
 	for condition in conditions:
@@ -77,8 +78,8 @@ static func is_met(condition: Dictionary, target: Dictionary, context: Dictionar
 			var source_side := str(context.get("source_side", "player"))
 			var discard: Array = battle.enemy_discard if source_side == "enemy" else battle.discard_pile
 			for card_id in discard:
-				var card := battle.Catalog.find_by_id(str(card_id))
-				if str(card.get("type", "")) == battle.Catalog.TYPE_CREATURE:
+				var card := Catalog.find_by_id(str(card_id))
+				if str(card.get("type", "")) == Catalog.TYPE_CREATURE:
 					return true
 			return false
 		ConditionScript.OTHER_ALLY_HAS_TAG:
