@@ -64,11 +64,15 @@ func run_cpu_turn() -> void:
 	cpu_turn_active = true
 	reset_turn_gates("enemy")
 	_roll_death_window("enemy")
+	_roll_turn_activity("enemy")
 	_expire_cost_modifiers("enemy", "turn")
 	_expire_statuses_for_turn("enemy")
 	cpu_energy_capacity = mini(maxi(1, turn), STANDARD_ENERGY_CAP)
 	cpu_energy_current = cpu_energy_capacity
-	cpu_draw_card()
+	cpu_draw_card(true)
+	_trigger_board_units("enemy", AbilityDefinitionScriptCpu.TURN_START, {"turn":turn})
+	if has_pending_discard("enemy"):
+		auto_resolve_pending_discards("enemy")
 	cpu_take_actions()
 	resolve_cpu_attacks()
 	_expire_cpu_temporary_bonuses()
@@ -237,6 +241,7 @@ func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, repla
 		_trigger_first_relic_units("enemy")
 	elif card_type == CatalogScript.TYPE_SEAL:
 		event_queue.push(GameEventScriptCpu.create("SEAL_PLAYED", card_id, [], {"side":"enemy"}))
+	_record_card_played("enemy", card_type)
 	event_queue.push(GameEventScriptCpu.create("CARD_PLAYED", card_id, [], {
 		"side": "enemy",
 		"card_type": card_type,
@@ -381,7 +386,7 @@ func cpu_spend_energy(amount: int) -> bool:
 	var payer = BattleSidePayerScript.new(self, "enemy")
 	return CostResolverScriptCpu.pay(CostDefinitionScriptCpu.energy(amount), payer)
 
-func cpu_draw_card() -> bool:
+func cpu_draw_card(draw_phase: bool = false) -> bool:
 	if cpu_hand.size() >= MAX_HAND:
 		return false
 	if cpu_draw_pile.is_empty():
@@ -391,7 +396,9 @@ func cpu_draw_card() -> bool:
 		return false
 	var card_id := str(cpu_draw_pile.pop_front())
 	cpu_hand.append(card_id)
-	event_queue.push(GameEventScriptCpu.create("CARD_DRAWN", card_id, [], {"side":"enemy","turn":turn}))
+	event_queue.push(GameEventScriptCpu.create("CARD_DRAWN", card_id, [], {"side":"enemy","turn":turn,"draw_phase":draw_phase}))
+	if not draw_phase:
+		_trigger_active_relics("enemy", AbilityDefinitionScriptCpu.FIRST_DRAW_OUTSIDE_DRAW_PHASE_PER_TURN, {"source_side":"enemy","drawn_card_id":card_id})
 	return true
 
 func _cpu_draw_card() -> bool:
