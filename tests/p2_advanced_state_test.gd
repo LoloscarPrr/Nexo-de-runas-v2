@@ -87,7 +87,7 @@ func _test_permanent_stats() -> void:
 func _test_aura_recalculation_preserves_damage() -> void:
 	var battle = _battle()
 	var source_id := _first_creature(Catalog.DOMAIN_FOREST)
-	var target_id := _first_creature(Catalog.DOMAIN_TOWER)
+	var target_id := "ta_004_custodio_de_pergaminos"
 	battle.player_lanes[2] = battle.create_unit(source_id, true)
 	battle.player_lanes[1] = battle.create_unit(target_id, true)
 	var base_max := int(battle.player_lanes[1].get("max_hp", 0))

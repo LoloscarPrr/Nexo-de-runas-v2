@@ -56,12 +56,12 @@ func _test_sacrifice_reason() -> void:
 	battle.player_domain = Catalog.DOMAIN_CRYPT
 	battle.player_lanes[0] = battle.create_unit("esqueleto_roto", true)
 	battle.hand.clear()
-	battle.hand.append("ofrenda_de_ceniza")
+	battle.hand.append("ch_016_pacto_de_sangre")
 	battle.draw_pile.clear()
 	battle.draw_pile.append("ch_003_guardia_esqueletico")
 	battle.draw_pile.append("guardian_oseo")
 	battle.energy_current = 12
-	check(battle.play_card(0, -1, 0), "Ash Offering resolves")
+	check(battle.play_card(0, -1, 0), "Pacto de Sangre resolves")
 	var events := battle.drain_events()
 	check(_has_event(events, "UNIT_SACRIFICED"), "Sacrifice emits UNIT_SACRIFICED")
 	check(_has_death_reason(events, "sacrifice"), "UNIT_DIED carries death_reason=sacrifice")

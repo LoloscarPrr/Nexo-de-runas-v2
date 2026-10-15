@@ -74,7 +74,7 @@ func _test_crypt_cards() -> void:
 
 	battle.player_lanes[4] = battle.create_unit("guardian_oseo", true)
 	battle.hand = ["ch_016_pacto_de_sangre"]
-	battle.draw_pile = ["ch_003_guardia_esqueletico", "lamentadora"]
+	battle.draw_pile = ["ch_003_guardia_esqueletico", "ch_004_recolector_de_huesos"]
 	check(battle.play_card(0, -1, 4), "Pacto de Sangre resolves")
 	check(battle.player_lanes[4] == null, "Pacto sacrifices allied unit")
 	check(battle.hand.size() == 2, "Pacto draws two cards")
@@ -86,7 +86,7 @@ func _test_tower_cards() -> void:
 	check(battle.play_card(0, -1, 0), "Descarga Rúnica resolves")
 	check(int(battle.enemy_lanes[0].get("hp", 0)) == 2, "Descarga Rúnica deals 2 damage")
 
-	battle.player_lanes[0] = battle.create_unit("aprendiz_runico", true)
+	battle.player_lanes[0] = battle.create_unit("ta_004_custodio_de_pergaminos", true)
 	battle.player_lanes[4] = battle.create_unit("adepta_runica", true)
 	var left_id := str(battle.player_lanes[0].get("id", ""))
 	var right_id := str(battle.player_lanes[4].get("id", ""))
@@ -95,7 +95,7 @@ func _test_tower_cards() -> void:
 	check(str(battle.player_lanes[0].get("id", "")) == right_id and str(battle.player_lanes[4].get("id", "")) == left_id, "Geometría swaps units atomically")
 
 	battle.enemy_lanes[1] = battle.create_unit("lobo_joven", true)
-	battle.enemy_lanes[3] = battle.create_unit("cierva_lunar", true)
+	battle.enemy_lanes[3] = battle.create_unit("bs_004_cierva_guardabosques", true)
 	var hp1 := int(battle.enemy_lanes[1].get("hp", 0))
 	var hp3 := int(battle.enemy_lanes[3].get("hp", 0))
 	battle.hand = ["ta_018_tormenta_de_glifos"]
@@ -109,7 +109,7 @@ func _test_forge_cards() -> void:
 	battle.player_lanes[0] = battle.create_unit("fa_009_bastion_rodante", true)
 	check(not battle._move_unit("player", 0, 1, true, "test", "enemy"), "Bastión Rodante Enraizado blocks forced movement")
 
-	battle.player_lanes[2] = battle.create_unit("reparador_mecanico", true)
+	battle.player_lanes[2] = battle.create_unit("fa_010_automata_de_engranajes", true)
 	battle._deal_damage_to_unit(true, 2, 2, "test", "enemy")
 	var damaged := int(battle.player_lanes[2].get("hp", 0))
 	battle.hand = ["fa_014_reparacion_de_emergencia"]
@@ -119,7 +119,7 @@ func _test_forge_cards() -> void:
 func _test_cpu_foundational_parity() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_TOWER)
 	battle.player_lanes[0] = battle.create_unit("lobo_joven", true)
-	battle.player_lanes[1] = battle.create_unit("cierva_lunar", true)
+	battle.player_lanes[1] = battle.create_unit("bs_004_cierva_guardabosques", true)
 	battle.cpu_hand = ["ta_018_tormenta_de_glifos"]
 	var hp0 := int(battle.player_lanes[0].get("hp", 0))
 	var hp1 := int(battle.player_lanes[1].get("hp", 0))

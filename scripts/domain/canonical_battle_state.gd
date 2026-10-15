@@ -162,6 +162,7 @@ func resolve_pending_discard(side: String, hand_index: int) -> bool:
 	pending_discard_count[side] = maxi(0, pending_discard_remaining(side) - 1)
 	var source_id := str(pending_discard_source.get(side, ""))
 	event_queue.push(GameEventScript.create("CARD_DISCARDED", source_id, [card_id], {"side":side,"remaining":pending_discard_remaining(side)}))
+	_trigger_first_discard_units(side)
 	if not has_pending_discard(side):
 		pending_discard_source[side] = ""
 	return true
@@ -349,6 +350,7 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 		gain_essence(1)
 	if card_type == Catalog.TYPE_RELIC:
 		event_queue.push(GameEventScript.create("RELIC_PLAYED", card_id, [], {"side":"player"}))
+		_trigger_first_relic_units("player")
 	elif card_type == Catalog.TYPE_SEAL:
 		event_queue.push(GameEventScript.create("SEAL_PLAYED", card_id, [], {"side":"player"}))
 	event_queue.push(GameEventScript.create("CARD_PLAYED", card_id, [], {
@@ -540,6 +542,7 @@ func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed"
 	_recalculate_auras(dead_side)
 	if dead_side != _current_turn_side():
 		_trigger_active_relics(dead_side, AbilityDefinitionScript.FIRST_ALLY_DEATH_BETWEEN_TURNS, {"source_side":dead_side,"target_lane":lane,"source_lane":lane,"dead_card_id":card_id})
+		_trigger_first_ally_death_units(dead_side, {"dead_card_id":card_id,"dead_lane":lane})
 	if death_reason == "sacrifice":
 		event_queue.push(GameEventScript.create("UNIT_SACRIFICED", card_id, [], {
 			"side": "player" if player_side else "enemy",
@@ -547,6 +550,7 @@ func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed"
 			"source_id": source_id,
 			"source_side": source_side
 		}))
+		_trigger_board_units(dead_side, AbilityDefinitionScript.ON_ALLY_SACRIFICED, {"sacrificed_card_id":card_id,"sacrificed_lane":lane})
 	event_queue.push(GameEventScript.create("UNIT_DIED", card_id, [], {
 		"side": "player" if player_side else "enemy",
 		"lane": lane,
@@ -851,6 +855,21 @@ func _trigger_first_spell_units(side: String) -> void:
 	if not consume_first_turn_gate(side, "first_spell_event"):
 		return
 	_trigger_board_units(side, AbilityDefinitionScript.FIRST_SPELL_PER_TURN, {"triggered_by_spell": true})
+
+func _trigger_first_discard_units(side: String) -> void:
+	if not consume_first_turn_gate(side, "first_discard_event"):
+		return
+	_trigger_board_units(side, AbilityDefinitionScript.FIRST_DISCARD_PER_TURN, {"triggered_by_discard": true})
+
+func _trigger_first_relic_units(side: String) -> void:
+	if not consume_first_turn_gate(side, "first_relic_event"):
+		return
+	_trigger_board_units(side, AbilityDefinitionScript.FIRST_RELIC_PER_TURN, {"triggered_by_relic": true})
+
+func _trigger_first_ally_death_units(side: String, context: Dictionary = {}) -> void:
+	if not consume_first_turn_gate(side, "first_ally_death_between_turns_event"):
+		return
+	_trigger_board_units(side, AbilityDefinitionScript.FIRST_ALLY_DEATH_BETWEEN_TURNS, context)
 
 func _active_relics_for_side(side: String) -> Array:
 	if side == "enemy" and has_method("cpu_relics_reference"):

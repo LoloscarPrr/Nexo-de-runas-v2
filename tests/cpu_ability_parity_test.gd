@@ -99,14 +99,15 @@ func _test_cpu_last_breath_and_crypt_resource() -> void:
 
 func _test_cpu_reveal_uses_own_deck() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_TOWER)
-	battle.cpu_hand = ["familiar_arcano"]
-	battle.cpu_draw_pile = ["ta_001_aprendiz_de_sigilos", "aprendiz_runico", "adepta_runica"]
+	battle.enemy_lanes[4] = battle.create_unit("ta_002_familiar_prismatico", true)
+	battle.cpu_hand.clear()
+	battle.cpu_draw_pile = ["ta_001_aprendiz_de_sigilos"]
 	battle.draw_pile = ["ardilla_vigilante"]
-	check(battle.cpu_play_card(0, 4), "CPU summons Arcane Familiar")
-	check(battle.cpu_last_revealed.size() == 1 and battle.cpu_last_revealed[0] == "ta_001_aprendiz_de_sigilos", "CPU reveal records its own top card")
-	check(battle.cpu_draw_pile.size() == 3 and battle.cpu_draw_pile[0] == "ta_001_aprendiz_de_sigilos", "Reveal without draw leaves CPU deck intact")
-	check(battle.draw_pile.size() == 1 and battle.draw_pile[0] == "ardilla_vigilante", "CPU reveal does not touch player deck")
-	check(battle.last_revealed.is_empty(), "CPU reveal does not overwrite player reveal state")
+	battle._deal_damage_to_unit(false, 4, 9)
+	check(battle.enemy_lanes[4] == null, "CPU Familiar Prismático can die through shared damage path")
+	check(not battle.has_pending_discard("enemy"), "CPU auto-resolves Familiar Prismático discard choice")
+	check(battle.enemy_discard.has("ta_001_aprendiz_de_sigilos"), "CPU draw-then-discard stays inside enemy zones")
+	check(battle.draw_pile.size() == 1 and battle.draw_pile[0] == "ardilla_vigilante", "CPU death effect does not touch player deck")
 
 func _test_cpu_exhumation_uses_own_discard() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT)

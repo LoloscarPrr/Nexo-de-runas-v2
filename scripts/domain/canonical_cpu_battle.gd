@@ -116,7 +116,13 @@ func cpu_legal_actions_for_card(hand_index: int) -> Array:
 				if enemy_lanes[lane] != null:
 					continue
 				var added_special := false
-				if summon_target_type == TargetSpecScriptCpu.ADJACENT_ALLY_LANE:
+				if summon_target_type == TargetSpecScriptCpu.PLAYER_LANE:
+					for target_lane in range(LANE_COUNT):
+						if enemy_lanes[target_lane] == null:
+							continue
+						actions.append({"lane":lane,"target_lane":target_lane,"target_lanes":[],"destination_lane":-1,"replace_index":-1})
+						added_special = true
+				elif summon_target_type == TargetSpecScriptCpu.ADJACENT_ALLY_LANE:
 					for target_lane in [lane - 1, lane + 1]:
 						if target_lane < 0 or target_lane >= LANE_COUNT or enemy_lanes[target_lane] == null:
 							continue
@@ -228,6 +234,7 @@ func cpu_play_card(hand_index: int, lane: int = -1, target_lane: int = -1, repla
 		cpu_gain_essence(1)
 	if card_type == CatalogScript.TYPE_RELIC:
 		event_queue.push(GameEventScriptCpu.create("RELIC_PLAYED", card_id, [], {"side":"enemy"}))
+		_trigger_first_relic_units("enemy")
 	elif card_type == CatalogScript.TYPE_SEAL:
 		event_queue.push(GameEventScriptCpu.create("SEAL_PLAYED", card_id, [], {"side":"enemy"}))
 	event_queue.push(GameEventScriptCpu.create("CARD_PLAYED", card_id, [], {
@@ -463,13 +470,17 @@ func _kill_unit(player_side: bool, lane: int, death_reason: String = "destroyed"
 			cpu_gain_essence(1)
 	lanes[lane] = null
 	_trigger_last_breath(unit, player_side, lane)
+	if not player_side and has_pending_discard("enemy"):
+		auto_resolve_pending_discards("enemy")
 	var dead_side := "player" if player_side else "enemy"
 	_record_death(dead_side)
 	_recalculate_auras(dead_side)
 	if dead_side != _current_turn_side():
 		_trigger_active_relics(dead_side, AbilityDefinitionScriptCpu.FIRST_ALLY_DEATH_BETWEEN_TURNS, {"source_side":dead_side,"target_lane":lane,"source_lane":lane,"dead_card_id":card_id})
+		_trigger_first_ally_death_units(dead_side, {"dead_card_id":card_id,"dead_lane":lane})
 	if death_reason == "sacrifice":
 		event_queue.push(GameEventScriptCpu.create("UNIT_SACRIFICED", card_id, [], {"side":"player" if player_side else "enemy","lane":lane,"source_id":source_id,"source_side":source_side}))
+		_trigger_board_units(dead_side, AbilityDefinitionScriptCpu.ON_ALLY_SACRIFICED, {"sacrificed_card_id":card_id,"sacrificed_lane":lane})
 	event_queue.push(GameEventScriptCpu.create("UNIT_DIED", card_id, [], {
 		"side":"player" if player_side else "enemy",
 		"lane":lane,
