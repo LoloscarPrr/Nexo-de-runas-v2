@@ -85,6 +85,32 @@ static func resolve(target_spec: Dictionary, context: Dictionary, battle) -> Dic
 				if ally_lanes[lane] != null:
 					return {"valid": true, "side": ally_side, "lane": lane, "unit": ally_lanes[lane]}
 			return {"valid": false, "side": ally_side, "lane": -1, "unit": null}
+		TargetSpecScript.ADJACENT_ALLY_UNITS:
+			var adjacent_targets: Array = []
+			var source_lane := int(context.get("source_lane", -1))
+			for offset in [-1, 1]:
+				var lane := source_lane + int(offset)
+				if lane >= 0 and lane < ally_lanes.size() and ally_lanes[lane] != null:
+					adjacent_targets.append({"valid":true,"side":ally_side,"lane":lane,"unit":ally_lanes[lane]})
+			return {"valid": true, "side": ally_side, "lane": -1, "unit": null, "targets": adjacent_targets}
+		TargetSpecScript.ANY_UNIT_LANE:
+			var requested_side := str(context.get("target_side", opponent_side))
+			if requested_side == ally_side:
+				return _lane_target(ally_side, int(context.get("target_lane", -1)), ally_lanes)
+			if requested_side == opponent_side:
+				return _lane_target(opponent_side, int(context.get("target_lane", -1)), opponent_lanes)
+			return {"valid": false, "side": requested_side, "lane": int(context.get("target_lane", -1)), "unit": null}
+		TargetSpecScript.DAMAGED_ALLY_LANE_OR_FIRST:
+			var requested_lane := int(context.get("target_lane", -1))
+			if requested_lane >= 0 and requested_lane < ally_lanes.size():
+				var requested_unit = ally_lanes[requested_lane]
+				if requested_unit != null and int(requested_unit.get("hp", 0)) < int(requested_unit.get("max_hp", 0)):
+					return {"valid":true,"side":ally_side,"lane":requested_lane,"unit":requested_unit}
+			for lane in range(ally_lanes.size()):
+				var unit = ally_lanes[lane]
+				if unit != null and int(unit.get("hp", 0)) < int(unit.get("max_hp", 0)):
+					return {"valid":true,"side":ally_side,"lane":lane,"unit":unit}
+			return {"valid": false, "side": ally_side, "lane": -1, "unit": null}
 	return {"valid": false, "side": "none", "lane": -1, "unit": null}
 
 static func _lane_target(side: String, lane: int, lanes: Array) -> Dictionary:
