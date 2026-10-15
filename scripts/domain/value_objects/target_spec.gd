@@ -17,6 +17,8 @@ const EMPTY_ADJACENT_ALLY_LANES := "empty_adjacent_ally_lanes"
 const EMPTY_ALLY_LANES := "empty_ally_lanes"
 const EMPTY_ALLY_LANE := "empty_ally_lane"
 const SELECTED_EMPTY_ALLY_LANES := "selected_empty_ally_lanes"
+const FIRST_DAMAGED_ALLY_UNIT := "first_damaged_ally_unit"
+const FIRST_ALLY_UNIT := "first_ally_unit"
 
 static func create(target_type: String, required: bool = false) -> Dictionary:
 	return {"type": target_type, "required": required}
@@ -76,3 +78,9 @@ static func selected_empty_ally_lanes(max_targets: int = 2, min_targets: int = 1
 	spec["max_targets"] = maxi(1, max_targets)
 	spec["min_targets"] = clampi(min_targets, 1, int(spec["max_targets"]))
 	return spec
+
+static func first_damaged_ally_unit() -> Dictionary:
+	return create(FIRST_DAMAGED_ALLY_UNIT, false)
+
+static func first_ally_unit() -> Dictionary:
+	return create(FIRST_ALLY_UNIT, false)
