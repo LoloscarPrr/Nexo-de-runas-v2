@@ -23,10 +23,10 @@ func _initialize() -> void:
 	quit(1 if failures else 0)
 
 func _test_card_definition_and_instances() -> void:
-	var raw := Catalog.find_by_id("lobo_joven")
+	var raw := Catalog.find_by_id("bs_003_lobo_joven")
 	var definition = CardDefinitionScript.from_dictionary(raw)
 	check(definition.validate().is_empty(), "CardDefinition accepts canonical catalog data")
-	check(definition.id == "lobo_joven", "CardDefinition preserves definition id")
+	check(definition.id == "bs_003_lobo_joven", "CardDefinition preserves definition id")
 	check(definition.base_attack == 2 and definition.base_health == 3, "CardDefinition exposes base stats")
 
 	var first = CardInstanceScript.from_definition(definition, "card-instance-a", "player")
