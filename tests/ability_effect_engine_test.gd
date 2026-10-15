@@ -22,7 +22,6 @@ func _initialize() -> void:
 
 func _test_catalog_coverage() -> void:
 	var effect_ids := [
-		"crypt_broken_skeleton",
 		"crypt_pit_necromancer",
 		"forest_rune_squirrel",
 		"tower_sigils_apprentice",
@@ -85,17 +84,6 @@ func _test_forest_abilities() -> void:
 	check(int(grown.get("hp", 0)) == 3, "Crecimiento Repentino also heals one when target was damaged")
 
 func _test_crypt_abilities() -> void:
-	var skeleton := Battle.new()
-	skeleton.setup_starter(Catalog.DOMAIN_CRYPT)
-	skeleton.player_lanes[0] = skeleton.create_unit("esqueleto_roto", true)
-	skeleton.essence_current = 0
-	skeleton._deal_damage_to_unit(true, 0, 9)
-	check(skeleton.player_lanes[0] == null, "Broken Skeleton dies normally")
-	check(skeleton.essence_current == 2, "Broken Skeleton grants base Remains plus Last Breath Remains")
-	var skeleton_events := skeleton.drain_events()
-	check(_has_event(skeleton_events, "ABILITY_TRIGGERED"), "Broken Skeleton Last Breath emits ability event")
-	check(_has_event(skeleton_events, "EFFECT_APPLIED"), "Broken Skeleton Last Breath emits effect event")
-
 	var necromancer := Battle.new()
 	necromancer.setup_starter(Catalog.DOMAIN_CRYPT)
 	necromancer.hand = ["ch_007_nigromante_de_fosa"]
@@ -107,14 +95,14 @@ func _test_crypt_abilities() -> void:
 
 	var offering := Battle.new()
 	offering.setup_starter(Catalog.DOMAIN_CRYPT)
-	offering.player_lanes[4] = offering.create_unit("lobo_joven", true)
+	offering.player_lanes[4] = offering.create_unit("bs_003_lobo_joven", true)
 	offering.hand = ["ch_016_pacto_de_sangre"]
-	offering.draw_pile = ["esqueleto_roto", "ch_003_guardia_esqueletico", "guardian_oseo"]
+	offering.draw_pile = ["ch_001_rata_de_osario", "ch_003_guardia_esqueletico", "ch_003_guardia_esqueletico"]
 	offering.energy_current = 12
 	check(offering.play_card(0, -1, 4), "Pacto de Sangre sacrifices selected allied unit")
 	check(offering.player_lanes[4] == null, "Pacto de Sangre clears sacrificed lane")
 	check(offering.hand.size() == 2, "Pacto de Sangre draws two cards")
-	check(offering.discard_pile.has("lobo_joven") and offering.discard_pile.has("ch_016_pacto_de_sangre"), "Pacto de Sangre sends unit and rite to discard")
+	check(offering.discard_pile.has("bs_003_lobo_joven") and offering.discard_pile.has("ch_016_pacto_de_sangre"), "Pacto de Sangre sends unit and rite to discard")
 
 	var exhumation := Battle.new()
 	exhumation.setup_starter(Catalog.DOMAIN_CRYPT)
