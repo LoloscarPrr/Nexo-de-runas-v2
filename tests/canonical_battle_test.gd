@@ -64,7 +64,7 @@ func _test_combat_rules() -> void:
 	direct.player_lanes = [direct.create_unit("bs_003_lobo_joven", true), null, null, null, null]
 	direct.enemy_lanes = [null, null, null, null, null]
 	direct.resolve_player_attacks()
-	check(direct.enemy_integrity == 18, "Open lane deals direct Nexus damage")
+	check(direct.enemy_integrity == 17, "Open lane uses the attacker current Attack for direct Nexus damage")
 	check(direct.essence_current == 1, "Forest gains Instinct from direct damage")
 
 func _test_fatigue_and_slots() -> void:
