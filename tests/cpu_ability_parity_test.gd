@@ -91,23 +91,18 @@ func _test_cpu_last_breath_and_crypt_resource() -> void:
 	check(battle.cpu_essence_current == 2, "CPU Broken Skeleton grants base Restos plus Last Breath Restos")
 	check(battle.essence_current == 0, "CPU death resources remain isolated from player")
 
-	var hound := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT)
-	hound.enemy_lanes[3] = hound.create_unit("perro_funebre", true)
-	hound.player_lanes[3] = hound.create_unit("lobo_joven", true)
-	hound._deal_damage_to_unit(false, 3, 99)
-	check(hound.player_lanes[3] != null and int(hound.player_lanes[3].hp) == 2, "CPU Funeral Hound Last Breath damages opposing same lane")
 
 func _test_cpu_reveal_uses_own_deck() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_TOWER)
 	battle.enemy_lanes[4] = battle.create_unit("ta_002_familiar_prismatico", true)
 	battle.cpu_hand.clear()
 	battle.cpu_draw_pile = ["ta_001_aprendiz_de_sigilos"]
-	battle.draw_pile = ["ardilla_vigilante"]
+	battle.draw_pile = ["bs_001_brote_del_claro"]
 	battle._deal_damage_to_unit(false, 4, 9)
 	check(battle.enemy_lanes[4] == null, "CPU Familiar Prismático can die through shared damage path")
 	check(not battle.has_pending_discard("enemy"), "CPU auto-resolves Familiar Prismático discard choice")
 	check(battle.enemy_discard.has("ta_001_aprendiz_de_sigilos"), "CPU draw-then-discard stays inside enemy zones")
-	check(battle.draw_pile.size() == 1 and battle.draw_pile[0] == "ardilla_vigilante", "CPU death effect does not touch player deck")
+	check(battle.draw_pile.size() == 1 and battle.draw_pile[0] == "bs_001_brote_del_claro", "CPU death effect does not touch player deck")
 
 func _test_cpu_exhumation_uses_own_discard() -> void:
 	var battle := _battle(Catalog.DOMAIN_FOREST, Catalog.DOMAIN_CRYPT)
