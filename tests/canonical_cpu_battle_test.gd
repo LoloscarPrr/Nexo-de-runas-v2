@@ -40,7 +40,7 @@ func _test_cpu_direct_damage() -> void:
 	battle.enemy_lanes = [battle.create_unit("bs_003_lobo_joven", true), null, null, null, null]
 	battle.player_lanes = [null, null, null, null, null]
 	battle.resolve_cpu_attacks()
-	check(battle.player_integrity == 18, "CPU open lane deals direct Nexus damage")
+	check(battle.player_integrity == 17, "CPU open lane uses current attacker Attack for direct Nexus damage")
 
 func _test_cpu_does_not_fill_left_to_right() -> void:
 	var battle := Battle.new()
