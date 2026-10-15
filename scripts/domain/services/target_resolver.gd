@@ -95,6 +95,8 @@ static func resolve(target_spec: Dictionary, context: Dictionary, battle) -> Dic
 			return {"valid": true, "side": ally_side, "lane": -1, "unit": null, "targets": adjacent_targets}
 		TargetSpecScript.ANY_UNIT_LANE:
 			var requested_side := str(context.get("target_side", opponent_side))
+			if requested_side.is_empty():
+				requested_side = opponent_side
 			if requested_side == ally_side:
 				return _lane_target(ally_side, int(context.get("target_lane", -1)), ally_lanes)
 			if requested_side == opponent_side:
