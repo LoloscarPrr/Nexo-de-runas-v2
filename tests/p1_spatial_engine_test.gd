@@ -30,7 +30,7 @@ func _battle():
 
 func _test_move_and_forced_move() -> void:
 	var battle = _battle()
-	battle.player_lanes[1] = battle.create_unit("aprendiz_runico", true)
+	battle.player_lanes[1] = battle.create_unit("ta_004_custodio_de_pergaminos", true)
 	check(battle._move_unit("player", 1, 2, false, "p1_move", "player"), "Normal move succeeds into empty lane")
 	check(battle.player_lanes[1] == null and battle.player_lanes[2] != null, "Move mutates exactly source and destination")
 	check(_has_event(battle.drain_events(), "UNIT_MOVED"), "Move emits UNIT_MOVED")
@@ -52,7 +52,7 @@ func _test_rooted_blocks_and_expires() -> void:
 
 func _test_atomic_swap() -> void:
 	var battle = _battle()
-	battle.player_lanes[0] = battle.create_unit("aprendiz_runico", true)
+	battle.player_lanes[0] = battle.create_unit("ta_004_custodio_de_pergaminos", true)
 	battle.player_lanes[4] = battle.create_unit("adepta_runica", true)
 	var a := str(battle.player_lanes[0].get("id", ""))
 	var b := str(battle.player_lanes[4].get("id", ""))
@@ -67,7 +67,7 @@ func _test_atomic_swap() -> void:
 func _test_multi_target_damage() -> void:
 	var battle = _battle()
 	battle.enemy_lanes[1] = battle.create_unit("lobo_joven", true)
-	battle.enemy_lanes[3] = battle.create_unit("cierva_lunar", true)
+	battle.enemy_lanes[3] = battle.create_unit("bs_004_cierva_guardabosques", true)
 	var spec := Target.enemy_lanes(2, 1)
 	var target := TargetResolver.resolve(spec, {"source_side":"player","target_lanes":[3,1]}, battle)
 	check(bool(target.get("valid", false)), "Multi-target selector accepts two distinct occupied enemy lanes")
