@@ -103,8 +103,8 @@ const CARDS = [
 
 const STARTER_DECKS = {
 	DOMAIN_FOREST: [
-		"bs_007_chaman_del_roble","bs_007_chaman_del_roble","zorro_acechante","zorro_acechante",
-		"lobo_joven","lobo_joven","bs_004_cierva_guardabosques","bs_004_cierva_guardabosques","bs_002_ardilla_runica",
+		"bs_002_ardilla_runica","bs_007_chaman_del_roble","zorro_acechante","zorro_acechante",
+		"lobo_joven","lobo_joven","bs_004_cierva_guardabosques","bs_004_cierva_guardabosques","bs_007_chaman_del_roble",
 		"bs_008_jabali_de_corteza","bs_008_jabali_de_corteza","bs_003_lobo_joven","bs_018_rugido_del_claro",
 		"bs_006_lobo_de_manada","bs_006_lobo_de_manada","bs_015_crecimiento_repentino",
 		"bs_015_crecimiento_repentino","bs_010_oso_musgoso","bs_019_totem_de_savia","bs_019_totem_de_savia"
