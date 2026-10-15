@@ -41,7 +41,7 @@ func _run_checks() -> void:
 	root.add_child(lane)
 	lane.size = Vector2(220, 150)
 	lane.set_lane(0, true)
-	lane.set_unit({"id":"zorro_acechante","attack":2,"hp":2,"ready":true})
+	lane.set_unit({"id":"bs_003_lobo_joven","attack":2,"hp":2,"ready":true})
 	await process_frame
 	var played_card = lane.get_child(0) if lane.get_child_count() > 0 else null
 	check(played_card != null, "Played card renderer exists inside a lane")
