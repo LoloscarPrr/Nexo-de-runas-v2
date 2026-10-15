@@ -317,7 +317,7 @@ func ability_target_spec(card_id: String, trigger: String = AbilityDefinitionScr
 		return {}
 	return AbilityCatalogScript.target_spec_for(str(card.get("effect_id", "")), trigger)
 
-func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_index: int = -1, target_lanes: Array = [], destination_lane: int = -1) -> bool:
+func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_index: int = -1, target_lanes: Array = [], destination_lane: int = -1, target_side: String = "") -> bool:
 	if has_pending_discard("player"):
 		last_message = "Debes descartar una carta antes de continuar."
 		return false
@@ -332,12 +332,13 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 		last_message = "Energía Rúnica insuficiente."
 		return false
 	var card_type := str(card.get("type", ""))
+	var used_profanation := card_type == Catalog.TYPE_CREATURE and bool(profanation_ready.get("player", false))
 	var success := false
 	match card_type:
 		Catalog.TYPE_CREATURE:
 			success = _play_creature(card, lane, target_lane, destination_lane)
 		Catalog.TYPE_RITE:
-			success = _play_rite(card, target_lane, target_lanes, destination_lane)
+			success = _play_rite(card, target_lane, target_lanes, destination_lane, target_side)
 		Catalog.TYPE_RELIC:
 			success = _play_persistent(card_id, active_relics, MAX_RELICS, replace_index)
 		Catalog.TYPE_SEAL:
@@ -364,12 +365,19 @@ func play_card(hand_index: int, lane: int = -1, target_lane: int = -1, replace_i
 	elif card_type == Catalog.TYPE_SEAL:
 		event_queue.push(GameEventScript.create("SEAL_PLAYED", card_id, [], {"side":"player"}))
 	_record_card_played("player", card_type)
+	if used_profanation:
+		_consume_profanation("player", lane)
+	if card_type == Catalog.TYPE_RITE and cards_played_current_turn("player") > 1:
+		_trigger_active_relics("player", AbilityDefinitionScript.FIRST_SEQUENCED_SPELL_PER_TURN, {"source_side":"player","played_card_id":card_id})
+	if has_pending_discard("player"):
+		last_message = "Elige %d carta(s) para descartar." % pending_discard_remaining("player")
 	event_queue.push(GameEventScript.create("CARD_PLAYED", card_id, [], {
 		"card_type": card_type,
 		"lane": lane,
 		"target_lane": target_lane,
 		"target_lanes": target_lanes.duplicate(),
-		"destination_lane": destination_lane
+		"destination_lane": destination_lane,
+		"target_side": target_side
 	}))
 	return true
 
@@ -400,7 +408,7 @@ func _play_persistent(card_id: String, slots: Array[String], limit: int, replace
 	slots[replace_index] = card_id
 	return true
 
-func _play_rite(card: Dictionary, target_lane: int, target_lanes: Array = [], destination_lane: int = -1) -> bool:
+func _play_rite(card: Dictionary, target_lane: int, target_lanes: Array = [], destination_lane: int = -1, target_side: String = "") -> bool:
 	var effect_id := str(card.get("effect_id", ""))
 	if effect_id.is_empty():
 		return false
@@ -410,7 +418,8 @@ func _play_rite(card: Dictionary, target_lane: int, target_lanes: Array = [], de
 		"source_lane": -1,
 		"target_lane": target_lane,
 		"target_lanes": target_lanes.duplicate(),
-		"destination_lane": destination_lane
+		"destination_lane": destination_lane,
+		"target_side": target_side
 	}, self)
 
 func _on_creature_entered(card: Dictionary, lane: int, target_lane: int = -1, destination_lane: int = -1) -> void:
@@ -482,9 +491,10 @@ func _resolve_creature_combat(player_lane: int, enemy_lane: int) -> void:
 		_deal_damage_to_unit(false, enemy_lane, attacker_damage, str(attacker.get("id", "")), "player")
 		_deal_damage_to_unit(true, player_lane, defender_damage, str(defender.get("id", "")), "enemy")
 
-func end_player_turn() -> void:
+func end_player_turn(end_target_lane: int = -1) -> void:
 	if result != "ongoing":
 		return
+	_trigger_active_relics("player", AbilityDefinitionScript.TURN_END, {"source_side":"player","target_lane":end_target_lane})
 	resolve_player_attacks()
 	_expire_temporary_bonuses()
 	if player_domain == Catalog.DOMAIN_FORGE and essence_current >= 6 and result == "ongoing":
