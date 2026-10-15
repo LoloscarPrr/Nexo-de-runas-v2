@@ -87,7 +87,7 @@ func _test_crypt_replacements() -> void:
 
 	var lethal := _battle(Catalog.DOMAIN_CRYPT, Catalog.DOMAIN_FOREST)
 	lethal.player_integrity = 15
-	lethal.enemy_lanes[2] = lethal.create_unit("esqueleto_roto", true)
+	lethal.enemy_lanes[2] = lethal.create_unit("ch_001_rata_de_osario", true)
 	lethal.hand.append("ch_015_toque_funebre")
 	check(lethal.play_card(0, -1, 2), "CH-015 resolves lethally")
 	check(lethal.enemy_lanes[2] == null, "CH-015 kills a one-health target")
