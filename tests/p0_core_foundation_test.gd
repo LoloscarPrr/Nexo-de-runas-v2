@@ -33,7 +33,7 @@ func _battle():
 
 func _test_heal_and_event() -> void:
 	var battle = _battle()
-	battle.player_lanes[2] = battle.create_unit("lobo_joven", true)
+	battle.player_lanes[2] = battle.create_unit("bs_003_lobo_joven", true)
 	battle.player_lanes[2]["hp"] = 1
 	var target := {"valid":true,"side":"player","lane":2,"unit":battle.player_lanes[2]}
 	check(EffectResolver.apply(Effect.heal(2), target, {"source_card_id":"p0_heal","source_side":"player"}, battle), "HEAL resolves")
@@ -43,7 +43,7 @@ func _test_heal_and_event() -> void:
 
 func _test_adjacency() -> void:
 	var battle = _battle()
-	battle.player_lanes[2] = battle.create_unit("lobo_joven", true)
+	battle.player_lanes[2] = battle.create_unit("bs_003_lobo_joven", true)
 	battle.player_lanes[1] = battle.create_unit("bs_001_brote_del_claro", true)
 	var adjacent := TargetResolver.resolve(Target.adjacent_ally_lane(), {"source_side":"player","source_lane":2,"target_lane":1}, battle)
 	check(bool(adjacent.get("valid", false)) and int(adjacent.get("lane", -1)) == 1, "Adjacent ally target resolves")
@@ -54,12 +54,12 @@ func _test_adjacency() -> void:
 func _test_sacrifice_reason() -> void:
 	var battle = _battle()
 	battle.player_domain = Catalog.DOMAIN_CRYPT
-	battle.player_lanes[0] = battle.create_unit("esqueleto_roto", true)
+	battle.player_lanes[0] = battle.create_unit("ch_001_rata_de_osario", true)
 	battle.hand.clear()
 	battle.hand.append("ch_016_pacto_de_sangre")
 	battle.draw_pile.clear()
 	battle.draw_pile.append("ch_003_guardia_esqueletico")
-	battle.draw_pile.append("guardian_oseo")
+	battle.draw_pile.append("ch_003_guardia_esqueletico")
 	battle.energy_current = 12
 	check(battle.play_card(0, -1, 0), "Pacto de Sangre resolves")
 	var events := battle.drain_events()
@@ -78,7 +78,7 @@ func _test_structured_draw_and_summon_events() -> void:
 	var battle = _battle()
 	battle.hand.clear()
 	battle.draw_pile.clear()
-	battle.draw_pile.append("lobo_joven")
+	battle.draw_pile.append("bs_003_lobo_joven")
 	check(battle.draw_card(), "Player draws card")
 	check(_has_event(battle.drain_events(), "CARD_DRAWN"), "Draw emits CARD_DRAWN")
 	battle.hand.clear()
