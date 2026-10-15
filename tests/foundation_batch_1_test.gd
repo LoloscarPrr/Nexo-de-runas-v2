@@ -66,7 +66,7 @@ func _test_crypt_cards() -> void:
 	check(battle.hand.has("esqueleto_roto"), "Nigromante returns a cost-1 creature from discard")
 
 	battle.player_lanes[0] = battle.create_unit("esqueleto_roto", true)
-	battle.player_lanes[1] = battle.create_unit("perro_funebre", true)
+	battle.player_lanes[1] = battle.create_unit("ch_003_guardia_esqueletico", true)
 	battle._kill_unit(true, 0, "damage", "test", "enemy")
 	battle._kill_unit(true, 1, "damage", "test", "enemy")
 	battle._roll_death_window("player")
@@ -87,7 +87,7 @@ func _test_tower_cards() -> void:
 	check(int(battle.enemy_lanes[0].get("hp", 0)) == 2, "Descarga Rúnica deals 2 damage")
 
 	battle.player_lanes[0] = battle.create_unit("ta_004_custodio_de_pergaminos", true)
-	battle.player_lanes[4] = battle.create_unit("adepta_runica", true)
+	battle.player_lanes[4] = battle.create_unit("ta_009_cronista_del_nexo", true)
 	var left_id := str(battle.player_lanes[0].get("id", ""))
 	var right_id := str(battle.player_lanes[4].get("id", ""))
 	battle.hand = ["ta_017_geometria_imposible"]
