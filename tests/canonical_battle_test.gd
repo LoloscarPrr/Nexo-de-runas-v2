@@ -54,7 +54,7 @@ func _test_combat_rules() -> void:
 	var battle := Battle.new()
 	battle.setup_starter(Catalog.DOMAIN_FOREST)
 	battle.player_lanes = [battle.create_unit("lobo_joven", true), null, null, null, null]
-	battle.enemy_lanes = [battle.create_unit("perro_funebre", true), null, null, null, null]
+	battle.enemy_lanes = [battle.create_unit("zorro_acechante", true), null, null, null, null]
 	battle.resolve_player_attacks()
 	check(battle.enemy_lanes[0] == null, "Simultaneous combat can kill defender")
 	check(battle.player_lanes[0] != null and int(battle.player_lanes[0].hp) == 1, "Defender retaliates simultaneously")
@@ -102,9 +102,9 @@ func _test_fatigue_and_slots() -> void:
 	check(fatigue.player_integrity == 17, "Second failed draw deals two Instability damage")
 
 	var slots := Battle.new()
-	slots.setup_starter(Catalog.DOMAIN_FOREST)
+	slots.setup_starter(Catalog.DOMAIN_TOWER)
 	slots.energy_current = 12
-	slots.hand = ["sello_del_rastro", "sello_del_rastro", "sello_del_rastro", "sello_del_rastro"]
+	slots.hand = ["sello_del_circulo", "sello_del_circulo", "sello_del_circulo", "sello_del_circulo"]
 	check(slots.play_card(0), "First Seal can be played")
 	check(slots.play_card(0), "Second Seal can be played")
 	check(slots.play_card(0), "Third Seal can be played")
@@ -129,10 +129,10 @@ func _test_ability_system() -> void:
 	var forest := Battle.new()
 	forest.setup_starter(Catalog.DOMAIN_FOREST)
 	forest.energy_current = 12
-	forest.player_lanes[0] = forest.create_unit("lobo_joven", true)
-	forest.hand = ["ardilla_vigilante"]
-	check(forest.play_card(0, 4), "Summon ability resolves through generic system")
-	check(forest.essence_current == 1, "Conditional summon ability sees another Beast and grants Instinct")
+	forest.player_lanes[0] = forest.create_unit("bs_003_lobo_joven", true)
+	forest.hand = ["bs_006_lobo_de_manada"]
+	check(forest.play_card(0, 1), "Summon ability resolves through generic system")
+	check(int(forest.player_lanes[1].get("attack", 0)) == 4, "Conditional summon ability sees adjacent ally and grants permanent Attack")
 
 	forest.energy_current = 12
 	forest.hand = ["bs_015_crecimiento_repentino"]
