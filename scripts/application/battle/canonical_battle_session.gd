@@ -72,7 +72,7 @@ func execute(command: Object) -> Dictionary:
 		CommandScript.PLAY_CARD:
 			return _execute_play_card(command)
 		CommandScript.END_ROUND:
-			return _execute_end_round()
+			return _execute_end_round(command)
 		CommandScript.USE_IMPULSE:
 			return _execute_use_impulse()
 		CommandScript.DISCARD_CARD:
@@ -179,7 +179,7 @@ func _execute_play_card(command: Object) -> Dictionary:
 		_engine.last_message = "%s responde al Nexo." % str(card.get("name", "La carta"))
 	return _result(ok, _engine.last_message)
 
-func _execute_end_round() -> Dictionary:
+func _execute_end_round(command: Object) -> Dictionary:
 	if _engine == null:
 		return _result(false, "No hay una batalla activa.")
 	if _engine.has_pending_discard("player"):
