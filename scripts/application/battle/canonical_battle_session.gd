@@ -130,8 +130,11 @@ func can_target_enemy_lane(hand_index: int, lane: int) -> bool:
 func play_hand_card(hand_index: int, lane: int = -1) -> Dictionary:
 	return execute(CommandScript.play_card(hand_index, lane))
 
-func end_round() -> Dictionary:
-	return execute(CommandScript.end_round())
+func play_hand_card_targeted(hand_index: int, target_side: String, target_lane: int, destination_lane: int = -1) -> Dictionary:
+	return execute(CommandScript.play_card(hand_index, -1, target_lane, -1, [], destination_lane, target_side))
+
+func end_round(target_lane: int = -1) -> Dictionary:
+	return execute(CommandScript.end_round(target_lane))
 
 func discard_hand_card(hand_index: int) -> Dictionary:
 	return execute(CommandScript.discard_card(hand_index))
@@ -159,6 +162,7 @@ func _execute_play_card(command: Object) -> Dictionary:
 	var replace_index := int(command.replace_index)
 	var target_lanes: Array = Array(command.target_lanes)
 	var destination_lane := int(command.destination_lane)
+	var target_side := str(command.target_side)
 	var card := hand_card_definition(hand_index)
 	if card.is_empty():
 		return _result(false, "La carta seleccionada no existe.")
@@ -168,7 +172,7 @@ func _execute_play_card(command: Object) -> Dictionary:
 		ok = _engine.play_card(hand_index, lane)
 	elif card_type == TYPE_RITE:
 		var resolved_target := target_lane if target_lane >= 0 else lane
-		ok = _engine.play_card(hand_index, -1, resolved_target, -1, target_lanes, destination_lane)
+		ok = _engine.play_card(hand_index, -1, resolved_target, -1, target_lanes, destination_lane, target_side)
 	elif card_type == TYPE_RELIC or card_type == TYPE_SEAL:
 		ok = _engine.play_card(hand_index, -1, -1, replace_index)
 	if ok:
@@ -185,7 +189,11 @@ func _execute_end_round() -> Dictionary:
 		return _result(false, "La batalla ya terminó.")
 	var before_player := _engine.player_integrity
 	var before_enemy := _engine.enemy_integrity
-	_engine.advance_round()
+	_engine.end_player_turn(int(command.target_lane))
+	if _engine.result == "ongoing":
+		_engine.run_cpu_turn()
+	if _engine.result == "ongoing":
+		_engine.begin_new_turn()
 	if _engine.result == "ongoing":
 		var player_damage := before_player - _engine.player_integrity
 		var enemy_damage := before_enemy - _engine.enemy_integrity
