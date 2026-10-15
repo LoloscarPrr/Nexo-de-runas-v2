@@ -12,6 +12,8 @@ const TARGET_DAMAGED := "target_damaged"
 const TARGET_ATTACK_LOWER_THAN_SOURCE := "target_attack_lower_than_source"
 const OPPOSING_ENEMY_ATTACK_LOWER_THAN_SOURCE := "opposing_enemy_attack_lower_than_source"
 const TARGET_IS_OTHER_ALLY := "target_is_other_ally"
+const PREVIOUS_TURN_PLAYED_CARD_TYPE := "previous_turn_played_card_type"
+const HAS_CREATURE_IN_DISCARD := "has_creature_in_discard"
 
 static func create(condition_type: String, params: Dictionary = {}) -> Dictionary:
 	return {"type": condition_type, "params": params.duplicate(true)}
@@ -48,3 +50,9 @@ static func opposing_enemy_attack_lower_than_source() -> Dictionary:
 
 static func target_is_other_ally() -> Dictionary:
 	return create(TARGET_IS_OTHER_ALLY)
+
+static func previous_turn_played_card_type(card_type: String) -> Dictionary:
+	return create(PREVIOUS_TURN_PLAYED_CARD_TYPE, {"card_type": card_type})
+
+static func has_creature_in_discard() -> Dictionary:
+	return create(HAS_CREATURE_IN_DISCARD)
