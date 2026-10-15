@@ -190,6 +190,15 @@ func cpu_legal_actions_for_card(hand_index: int) -> Array:
 				for lanes_choice in _lane_combinations(occupied_allies, 2):
 					if _cpu_can_resolve_rite(card, -1, lanes_choice):
 						actions.append({"lane":-1,"target_lane":-1,"target_lanes":lanes_choice,"destination_lane":-1,"replace_index":-1})
+			elif target_type == TargetSpecScriptCpu.ANY_UNIT_LANE:
+				for target_lane in range(LANE_COUNT):
+					if player_lanes[target_lane] == null:
+						continue
+					for destination_lane in [target_lane - 1, target_lane + 1]:
+						if destination_lane < 0 or destination_lane >= LANE_COUNT or player_lanes[destination_lane] != null:
+							continue
+						if _cpu_can_resolve_rite(card, target_lane, [], destination_lane, "player"):
+							actions.append({"lane":-1,"target_lane":target_lane,"target_lanes":[],"destination_lane":destination_lane,"replace_index":-1,"target_side":"player"})
 			else:
 				if _cpu_can_resolve_rite(card, -1):
 					actions.append({"lane": -1, "target_lane": -1, "replace_index": -1})
