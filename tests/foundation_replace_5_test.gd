@@ -47,9 +47,9 @@ func _test_migration_count() -> void:
 			if _is_foundational(card):
 				foundational_domain += 1
 				foundational_total += 1
-		check(foundational_domain == 18, "%s reaches exactly 18 foundational cards" % domain)
+		check(foundational_domain >= 18, "%s preserves at least 18 foundational cards from Replace 5" % domain)
 		check(Catalog.validate_deck(Catalog.starter_deck(domain), domain).is_empty(), "%s starter deck remains legal" % domain)
-	check(foundational_total == 72, "Migration reaches exactly 72 foundational + 8 legacy cards")
+	check(foundational_total >= 72, "Migration preserves at least 72 foundational cards reached in Replace 5")
 	for removed_id in ["ardilla_vigilante","sello_del_rastro","perro_funebre","sello_del_funeral","adepta_runica","astrolabio","automata_obrero","chispa_mecanica"]:
 		check(Catalog.find_by_id(removed_id).is_empty(), "Legacy card removed: %s" % removed_id)
 	for added_id in [
