@@ -22,6 +22,7 @@ const ADD_AURA := "add_aura"
 const HEAL_NEXUS := "heal_nexus"
 const DAMAGE_NEXUS := "damage_nexus"
 const HEAL_NEXUS_IF_TARGET_GONE := "heal_nexus_if_target_gone"
+const MODIFY_STATS_TEMP_FOR_TAG := "modify_stats_temp_for_tag"
 
 static func create(effect_type: String, params: Dictionary = {}) -> Dictionary:
 	return {
@@ -76,3 +77,6 @@ static func damage_nexus(amount: int) -> Dictionary:
 
 static func heal_nexus_if_target_gone(amount: int) -> Dictionary:
 	return create(HEAL_NEXUS_IF_TARGET_GONE, {"amount": amount})
+
+static func temp_stats_for_tag(tag: String, attack: int, health: int = 0) -> Dictionary:
+	return create(MODIFY_STATS_TEMP_FOR_TAG, {"tag": tag, "attack": attack, "health": health})
