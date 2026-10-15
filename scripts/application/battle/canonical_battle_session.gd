@@ -112,9 +112,10 @@ func can_target_player_lane(hand_index: int, lane: int) -> bool:
 	if card_type != TYPE_RITE:
 		return false
 	var spec := _engine.ability_target_spec(str(card.get("id", "")), AbilityDefinitionScript.ON_PLAY)
-	if str(spec.get("type", TargetSpecScript.NONE)) != TargetSpecScript.PLAYER_LANE:
+	var target_type := str(spec.get("type", TargetSpecScript.NONE))
+	if target_type != TargetSpecScript.PLAYER_LANE and target_type != TargetSpecScript.ANY_UNIT_LANE:
 		return false
-	return _can_resolve_rite(card, lane)
+	return _can_resolve_rite(card, lane, "player")
 
 func can_target_enemy_lane(hand_index: int, lane: int) -> bool:
 	if _engine == null or lane < 0 or lane >= _engine.LANE_COUNT:
@@ -123,9 +124,10 @@ func can_target_enemy_lane(hand_index: int, lane: int) -> bool:
 	if card.is_empty() or str(card.get("type", "")) != TYPE_RITE:
 		return false
 	var spec := _engine.ability_target_spec(str(card.get("id", "")), AbilityDefinitionScript.ON_PLAY)
-	if str(spec.get("type", TargetSpecScript.NONE)) != TargetSpecScript.ENEMY_LANE:
+	var target_type := str(spec.get("type", TargetSpecScript.NONE))
+	if target_type != TargetSpecScript.ENEMY_LANE and target_type != TargetSpecScript.ANY_UNIT_LANE:
 		return false
-	return _can_resolve_rite(card, lane)
+	return _can_resolve_rite(card, lane, "enemy")
 
 func play_hand_card(hand_index: int, lane: int = -1) -> Dictionary:
 	return execute(CommandScript.play_card(hand_index, lane))
@@ -142,7 +144,7 @@ func discard_hand_card(hand_index: int) -> Dictionary:
 func use_impulse() -> Dictionary:
 	return execute(CommandScript.use_impulse())
 
-func _can_resolve_rite(card: Dictionary, target_lane: int) -> bool:
+func _can_resolve_rite(card: Dictionary, target_lane: int, target_side: String = "") -> bool:
 	var effect_id := str(card.get("effect_id", ""))
 	if effect_id.is_empty():
 		return false
@@ -150,7 +152,8 @@ func _can_resolve_rite(card: Dictionary, target_lane: int) -> bool:
 		"source_card_id": str(card.get("id", "")),
 		"source_side": "player",
 		"source_lane": -1,
-		"target_lane": target_lane
+		"target_lane": target_lane,
+		"target_side": target_side
 	}, _engine)
 
 func _execute_play_card(command: Object) -> Dictionary:
