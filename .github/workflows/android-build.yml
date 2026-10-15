@@ -92,6 +92,7 @@ jobs:
           run_godot_test tests/foundation_replace_2_test.gd
           run_godot_test tests/foundation_replace_3_test.gd
           run_godot_test tests/foundation_replace_4_test.gd
+          run_godot_test tests/foundation_replace_5_test.gd
           run_godot_test tests/application_battle_session_test.gd
           run_godot_test tests/infrastructure_save_repository_test.gd
           run_godot_test tests/battle_test.gd
