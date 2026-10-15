@@ -53,7 +53,7 @@ func _test_rooted_blocks_and_expires() -> void:
 func _test_atomic_swap() -> void:
 	var battle = _battle()
 	battle.player_lanes[0] = battle.create_unit("ta_004_custodio_de_pergaminos", true)
-	battle.player_lanes[4] = battle.create_unit("adepta_runica", true)
+	battle.player_lanes[4] = battle.create_unit("ta_009_cronista_del_nexo", true)
 	var a := str(battle.player_lanes[0].get("id", ""))
 	var b := str(battle.player_lanes[4].get("id", ""))
 	check(battle._swap_units("player", 0, 4, "p1_swap", "player"), "Swap succeeds with two movable units")
