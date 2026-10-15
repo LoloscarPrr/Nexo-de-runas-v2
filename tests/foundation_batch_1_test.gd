@@ -109,7 +109,7 @@ func _test_forge_cards() -> void:
 	battle.player_lanes[0] = battle.create_unit("fa_009_bastion_rodante", true)
 	check(not battle._move_unit("player", 0, 1, true, "test", "enemy"), "Bastión Rodante Enraizado blocks forced movement")
 
-	battle.player_lanes[2] = battle.create_unit("fa_004_mecanica_de_campo", true)
+	battle.player_lanes[2] = battle.create_unit("fa_010_automata_de_engranajes", true)
 	battle._deal_damage_to_unit(true, 2, 2, "test", "enemy")
 	var damaged := int(battle.player_lanes[2].get("hp", 0))
 	battle.hand = ["fa_014_reparacion_de_emergencia"]
