@@ -61,9 +61,9 @@ static func abilities_for(effect_id: String) -> Array:
 		"forest_pack_sanctuary":
 			return [Ability.create("forest_pack_sanctuary_first_summon", Ability.FIRST_SUMMON_PER_TURN, Target.player_lane(), [Effect.permanent_stats(1, 1)], [Condition.adjacent_ally_exists()])]
 		"crypt_unburied_king":
-			return [Ability.create("crypt_unburied_king_adjacent_skeletons", Ability.ON_SUMMON, Target.empty_adjacent_ally_lanes(), [Effect.create(Effect.SUMMON_TOKEN, {"id":"esqueleto_token","name":"ESQUELETO","attack":1,"health":1,"tags":["TOKEN","NO_MUERTO"]})])]
+			return [Ability.create("crypt_unburied_king_adjacent_skeletons", Ability.ON_SUMMON, Target.empty_adjacent_ally_lanes(), [Effect.create(Effect.SUMMON_TOKEN, {"id":"esqueleto_token","name":"ESQUELETO","attack":1,"health":1,"tags":["TOKEN","NO_MUERTO","ESQUELETO"]})])]
 		"crypt_call_fallen":
-			return [Ability.create("crypt_call_fallen", Ability.ON_PLAY, Target.selected_empty_ally_lanes(2, 1), [Effect.create(Effect.SUMMON_TOKEN, {"id":"esqueleto_token","name":"ESQUELETO","attack":1,"health":1,"tags":["TOKEN","NO_MUERTO"]})])]
+			return [Ability.create("crypt_call_fallen", Ability.ON_PLAY, Target.selected_empty_ally_lanes(2, 1), [Effect.create(Effect.SUMMON_TOKEN, {"id":"esqueleto_token","name":"ESQUELETO","attack":1,"health":1,"tags":["TOKEN","NO_MUERTO","ESQUELETO"]})])]
 		"crypt_ritual_ossuary":
 			return [Ability.create("crypt_ritual_ossuary_death", Ability.FIRST_ALLY_DEATH_BETWEEN_TURNS, Target.none(), [Effect.heal_nexus(1)])]
 		"tower_vector_adept":
@@ -102,7 +102,7 @@ static func abilities_for(effect_id: String) -> Array:
 		"forest_young_wolf_foundational":
 			return [Ability.create("forest_young_wolf_attack", Ability.ON_ATTACK, Target.source_unit(), [Effect.temp_stats(1, 0)])]
 		"crypt_coffin_bearer":
-			return [Ability.create("crypt_coffin_bearer_death", Ability.ON_DEATH, Target.empty_ally_lane(), [Effect.create(Effect.SUMMON_TOKEN, {"id":"esqueleto_token","name":"ESQUELETO","attack":1,"health":1,"tags":["TOKEN","NO_MUERTO"]})])]
+			return [Ability.create("crypt_coffin_bearer_death", Ability.ON_DEATH, Target.empty_ally_lane(), [Effect.create(Effect.SUMMON_TOKEN, {"id":"esqueleto_token","name":"ESQUELETO","attack":1,"health":1,"tags":["TOKEN","NO_MUERTO","ESQUELETO"]})])]
 		"tower_refraction_mage":
 			return [Ability.create("tower_refraction_mage_sift", Ability.ON_SUMMON, Target.none(), [Effect.draw_then_discard(1, 1)])]
 		"tower_reorder_foundational":
@@ -144,6 +144,25 @@ static func abilities_for(effect_id: String) -> Array:
 			return [Ability.create("forge_field_mechanic_heal", Ability.ON_SUMMON, Target.player_lane(false), [Effect.heal(2)], [Condition.target_exists(), Condition.target_is_other_ally()])]
 		"forge_core_smith":
 			return [Ability.create("forge_core_smith_first_relic", Ability.FIRST_RELIC_PER_TURN, Target.source_unit(), [Effect.permanent_stats(1, 1)])]
+		"forest_oak_shaman":
+			return [Ability.create("forest_oak_shaman_turn_start", Ability.TURN_START, Target.first_damaged_ally_unit(), [Effect.heal(1)])]
+		"forest_sap_totem":
+			return [Ability.create("forest_sap_totem_first_heal", Ability.FIRST_UNIT_HEAL_PER_TURN, Target.none(), [Effect.heal_nexus(1)])]
+		"crypt_remains_devourer":
+			return [Ability.create("crypt_remains_devourer_invocation", Ability.ON_SUMMON, Target.source_unit(), [Effect.move_discard_to_deck_bottom(), Effect.permanent_stats(2, 1)], [Condition.has_creature_in_discard()])]
+		"crypt_march":
+			return [
+				Ability.create("crypt_march_all", Ability.ON_PLAY, Target.all_ally_units(), [Effect.temp_stats(1, 0)]),
+				Ability.create("crypt_march_skeletons", Ability.ON_PLAY, Target.all_ally_units(), [Effect.temp_stats_for_tag("ESQUELETO", 1, 0)])
+			]
+		"tower_nexus_chronicler":
+			return [Ability.create("tower_nexus_chronicler_turn_start", Ability.TURN_START, Target.none(), [Effect.draw_then_discard(1, 1)], [Condition.previous_turn_played_card_type("rite")])]
+		"tower_veil_observatory":
+			return [Ability.create("tower_veil_observatory_outside_draw", Ability.FIRST_DRAW_OUTSIDE_DRAW_PHASE_PER_TURN, Target.first_ally_unit(), [Effect.temp_stats(1, 0)])]
+		"forge_master_armorer":
+			return [Ability.create("forge_master_armorer_invocation", Ability.ON_SUMMON, Target.player_lane(false), [Effect.permanent_stats(1, 1)], [Condition.target_exists()])]
+		"forge_tool_bench":
+			return [Ability.create("forge_tool_bench_first_heal", Ability.FIRST_UNIT_HEAL_PER_TURN, Target.player_lane(false), [Effect.temp_stats(1, 0)], [Condition.target_exists()])]
 	return []
 
 static func target_spec_for(effect_id: String, trigger: String) -> Dictionary:
