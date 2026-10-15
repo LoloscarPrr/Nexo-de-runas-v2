@@ -59,6 +59,8 @@ static func apply(effect: Dictionary, target: Dictionary, context: Dictionary, b
 			for item in permanent_targets:
 				if battle._modify_unit_stats_permanent(str(item.get("side", "")), int(item.get("lane", -1)), int(params.get("attack", 0)), int(params.get("health", 0)), str(context.get("source_card_id", "")), source_side):
 					ok = true
+		EffectScript.MODIFY_SOURCE_STATS_PERMANENT:
+			ok = battle._modify_unit_stats_permanent(source_side, int(context.get("source_lane", -1)), int(params.get("attack", 0)), int(params.get("health", 0)), str(context.get("source_card_id", "")), source_side)
 		EffectScript.MODIFY_STATS_TEMP:
 			var temp_targets := _targets(target)
 			var attack_bonus := int(params.get("attack", 0))
