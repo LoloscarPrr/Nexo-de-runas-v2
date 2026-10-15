@@ -66,7 +66,7 @@ func _test_declarative_targeting() -> void:
 	var deck: Array[String] = ["ta_013_chispa_dirigida", "ta_002_familiar_prismatico", "ta_001_aprendiz_de_sigilos", "ta_004_custodio_de_pergaminos"]
 	session.start_vs_cpu(SessionScript.DOMAIN_TOWER, deck)
 	session._engine.energy_current = 12
-	session._engine.enemy_lanes[4] = session._engine.create_unit("ch_001_rata_de_osario", true)
+	session._engine.enemy_lanes[4] = session._engine.create_unit("fa_002_chispero_de_cobre", true)
 	check(session.can_target_enemy_lane(0, 4), "Application learns enemy target from TargetSpec")
 	check(not session.can_target_player_lane(0, 4), "Enemy-targeted rite is not offered on player lanes")
 	var result := session.play_hand_card(0, 4)
