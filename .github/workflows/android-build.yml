@@ -101,6 +101,7 @@ jobs:
           run_godot_test tests/canonical_cpu_battle_test.gd
           run_godot_test tests/cpu_ability_parity_test.gd
           run_godot_test tests/vertical_battle_presentation_test.gd
+          run_godot_test tests/visual_pilot_three_cards_test.gd
           run_godot_test tests/portrait_main_menu_test.gd
           run_godot_test tests/canonical_forest_ui_test.gd
           run_godot_test tests/campaign_progression_test.gd
