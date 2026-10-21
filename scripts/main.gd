@@ -139,6 +139,12 @@ func _build_menu() -> void:
 	play.pressed.connect(_start_canonical_battle)
 	root.add_child(play)
 
+	var pilot := _menu_button("PILOTO BOSQUE", "Brote · Lobo · Avatar")
+	pilot.name = "MainVisualPilotButton"
+	pilot.custom_minimum_size = Vector2(0, 72)
+	pilot.pressed.connect(_start_visual_pilot_battle)
+	root.add_child(pilot)
+
 	var grid := GridContainer.new()
 	grid.name = "MainMenuGrid"
 	grid.columns = 2
@@ -188,6 +194,11 @@ func _build_menu() -> void:
 func _start_canonical_battle() -> void:
 	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_PORTRAIT)
 	battle_screen.start_battle()
+	_show(battle_screen)
+
+func _start_visual_pilot_battle() -> void:
+	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_PORTRAIT)
+	battle_screen.start_visual_pilot_battle()
 	_show(battle_screen)
 
 func _return_to_menu() -> void:

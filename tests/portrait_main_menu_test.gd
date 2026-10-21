@@ -57,6 +57,18 @@ func _run_checks() -> void:
 	check(settings != null and settings.text == "⚙" and settings.custom_minimum_size.x <= 80.0, "Settings is a compact gear action in the top bar")
 	check(status != null and status.text.is_empty() and status.modulate.a <= 0.01, "Navigation feedback is transient instead of a permanent bottom panel")
 	check(app.battle_screen != null and not app.battle_screen.visible, "Battle stays hidden until JUGAR is pressed")
+	var pilot: Button = app.find_child("MainVisualPilotButton", true, false) as Button
+	check(pilot != null, "Pilot battle is reachable from the APK main menu")
+	if pilot != null:
+		pilot.pressed.emit()
+		await process_frame
+		var opening: Dictionary = app.battle_screen.current_snapshot()
+		check(app.battle_screen.visible and not menu.visible, "Pilot button opens the actual battle screen")
+		check(Array(opening.get("hand", [])).slice(0, 3) == ["bs_001_brote_del_claro", "bs_006_lobo_de_manada", "bs_013_avatar_del_bosque"], "All three pilot cards are accessible in the opening hand")
+		check(opening.get("energy_capacity") == 1 and opening.get("player_integrity") == 20, "Pilot mode keeps ordinary starting resources and Integrity")
+		app._return_to_menu()
+		app._start_canonical_battle()
+		check(app.battle_screen.current_snapshot().get("hand") == ["bs_001_brote_del_claro", "bs_001_brote_del_claro", "bs_003_lobo_joven", "bs_003_lobo_joven"], "JUGAR still opens the existing starter deck")
 
 	print("Portrait main menu checks: %d failures" % failures)
 	quit(1 if failures else 0)

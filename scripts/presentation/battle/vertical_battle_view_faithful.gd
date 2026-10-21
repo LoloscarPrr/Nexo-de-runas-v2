@@ -7,11 +7,56 @@ extends "res://scripts/presentation/battle/vertical_battle_view_polished.gd"
 const FaithfulCardScript = preload("res://scripts/presentation/battle/vertical_battle_card_faithful.gd")
 const OrnamentScript = preload("res://scripts/presentation/battle/vertical_battle_ornament.gd")
 const FaithfulLaneScript = preload("res://scripts/presentation/battle/vertical_lane_slot.gd")
+const DetailScript = preload("res://scripts/presentation/battle/vertical_card_detail.gd")
 
 const PARCHMENT_F := Color("ead7a3")
 const GREEN_F := Color("62df58")
 const ORANGE_F := Color("ec762d")
 const PANEL_DARK_F := Color(0.025, 0.022, 0.016, 0.92)
+
+## Optional review deck. Uses existing canonical IDs and ordinary battle rules.
+const VISUAL_PILOT_DECK: Array[String] = [
+	"bs_001_brote_del_claro", "bs_006_lobo_de_manada", "bs_013_avatar_del_bosque", "bs_001_brote_del_claro",
+	"bs_003_lobo_joven", "bs_003_lobo_joven", "bs_004_cierva_guardabosques", "bs_004_cierva_guardabosques",
+	"bs_006_lobo_de_manada", "bs_007_chaman_del_roble", "bs_007_chaman_del_roble",
+	"bs_008_jabali_de_corteza", "bs_008_jabali_de_corteza", "bs_010_oso_musgoso", "bs_010_oso_musgoso",
+	"bs_014_savia_vital", "bs_014_savia_vital", "bs_015_crecimiento_repentino", "bs_015_crecimiento_repentino",
+	"bs_019_totem_de_savia"
+]
+
+var card_detail
+
+func _build_view() -> void:
+	super._build_view()
+	card_detail = DetailScript.new()
+	add_child(card_detail)
+
+func start_battle(domain: String = "forest") -> void:
+	card_detail.hide_detail()
+	super.start_battle(domain)
+
+func start_visual_pilot_battle() -> void:
+	card_detail.hide_detail()
+	if session == null:
+		session = SessionScript.new()
+	selected_hand_index = -1
+	_snapshot = session.start_vs_cpu("forest", VISUAL_PILOT_DECK)
+	_render()
+	status_label.text = "Mantén pulsada una carta para ampliarla."
+	visible = true
+
+func _inspect_hand_card(index: int) -> void:
+	if session != null:
+		card_detail.show_card(session.hand_card_definition(index))
+
+func _on_lane_pressed(side: String, lane: int) -> void:
+	if selected_hand_index < 0 and session != null:
+		var info: Dictionary = session.inspect_unit(side, lane)
+		if not info.is_empty():
+			var unit: Dictionary = info.get("unit", {})
+			card_detail.show_card(info.get("card", {}), int(unit.get("attack", 0)), int(unit.get("hp", 0)), bool(unit.get("ready", true)))
+			return
+	super._on_lane_pressed(side, lane)
 
 func _build_top_bar() -> Control:
 	var scene := Control.new()
@@ -240,7 +285,11 @@ func _rebuild_hand() -> void:
 		visual.name = "HandCard%d" % index
 		visual.configure(card, -1, -1, index == selected_hand_index, false, true)
 		var hand_index := index
-		visual.pressed.connect(func(): _on_hand_card_pressed(hand_index))
+		visual.inspection_requested.connect(func(): _inspect_hand_card(hand_index))
+		visual.pressed.connect(func():
+			if not visual.consume_inspection_press() and not card_detail.visible:
+				_on_hand_card_pressed(hand_index)
+		)
 		hand_strip.add_child(visual)
 
 func _set_lane_state(button: Button, lane: int, side: String, unit, valid_target: bool) -> void:

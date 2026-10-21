@@ -173,7 +173,8 @@ func _draw_art(rect: Rect2) -> void:
 	var card_id := str(card.get("id", ""))
 	if not CardArtRegistryScript.art_path(card_id).is_empty():
 		var src := CardArtRegistryScript.art_crop(card_id, source_size, dst.size)
-		draw_texture_rect_region(texture, dst, src, Color(0.94, 0.96, 0.88, 1.0), false, true)
+		var fitted := CardArtRegistryScript.art_destination(src.size, dst)
+		draw_texture_rect_region(texture, fitted, src, Color(0.94, 0.96, 0.88, 1.0), false, true)
 	else:
 		var src := Rect2(source_size.x * 0.055, source_size.y * 0.185, source_size.x * 0.89, source_size.y * 0.565)
 		var src_aspect := src.size.x / src.size.y

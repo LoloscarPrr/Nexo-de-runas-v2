@@ -1,6 +1,8 @@
 class_name VerticalBattleCard
 extends Button
 
+signal inspection_requested
+
 ## Renderer físico de cartas para la Presentation vertical.
 ## Sólo consume datos ya resueltos por Application; no conoce reglas del Domain.
 
@@ -44,6 +46,8 @@ var ready_for_action := true
 var _cached_art_id := ""
 var _cached_texture: Texture2D
 var _frame_texture: Texture2D
+var _inspection_timer: Timer
+var _inspection_consumed := false
 
 func _ready() -> void:
 	focus_mode = Control.FOCUS_NONE
@@ -56,6 +60,11 @@ func _ready() -> void:
 	button_up.connect(_restore_pose)
 	mouse_entered.connect(_hover_pose)
 	mouse_exited.connect(_restore_pose)
+	_inspection_timer = Timer.new()
+	_inspection_timer.wait_time = 0.45
+	_inspection_timer.one_shot = true
+	_inspection_timer.timeout.connect(_request_inspection)
+	add_child(_inspection_timer)
 	_restore_pose()
 
 func configure(data: Dictionary, atk: int = -1, hp: int = -1, is_selected: bool = false, is_compact: bool = false, is_ready: bool = true) -> void:
@@ -95,14 +104,29 @@ func _hover_pose() -> void:
 func _press_pose() -> void:
 	if disabled or compact:
 		return
+	_inspection_consumed = false
+	_inspection_timer.start()
 	pivot_offset = size * 0.5
 	create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).tween_property(self, "scale", Vector2(0.965, 0.965), 0.05)
 
 func _restore_pose() -> void:
+	if _inspection_timer != null:
+		_inspection_timer.stop()
 	pivot_offset = size * 0.5
 	var target := Vector2(1.055, 1.055) if selected and not compact else Vector2.ONE
 	create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).tween_property(self, "scale", target, 0.08)
 	queue_redraw()
+
+func _request_inspection() -> void:
+	if not button_pressed or compact or disabled:
+		return
+	_inspection_consumed = true
+	inspection_requested.emit()
+
+func consume_inspection_press() -> bool:
+	var consumed := _inspection_consumed
+	_inspection_consumed = false
+	return consumed
 
 func _draw() -> void:
 	if card.is_empty() or size.x < 58.0 or size.y < 80.0:
@@ -121,17 +145,17 @@ func _draw() -> void:
 	var stats_h := 30.0 if compact else 42.0
 	var art_rect := Rect2(11, header_h + 5, w - 22, h - header_h - stats_h - 13)
 
+	_draw_art(art_rect)
+	_draw_canonical_frame(Rect2(0, 0, w, h))
+	# Ornamentation stays behind dynamic labels and values.
 	_draw_cost_badge(Vector2(20, 19) if compact else Vector2(26, 25), 11.0 if compact else 15.0)
 	_draw_title(Rect2(37 if compact else 48, 6, w - (47 if compact else 61), header_h - 3))
-	_draw_art(art_rect)
 
 	var card_type := str(card.get("type", ""))
 	if card_type == "creature":
 		_draw_creature_stats(Rect2(10, h - stats_h - 5, w - 20, stats_h))
 	else:
 		_draw_non_creature_footer(Rect2(10, h - stats_h - 5, w - 20, stats_h), card_type)
-
-	_draw_canonical_frame(Rect2(0, 0, w, h))
 
 	if not ready_for_action and card_type == "creature":
 		draw_rect(art_rect, Color(0.02, 0.03, 0.02, 0.35))
@@ -152,7 +176,7 @@ func _draw_cost_badge(center: Vector2, radius: float) -> void:
 
 func _draw_title(rect: Rect2) -> void:
 	var name := str(card.get("name", "CARTA"))
-	var font_size := 7 if compact else 11
+	var font_size := 9 if compact else 13
 	if name.length() > 17:
 		font_size -= 1
 	if name.length() > 23:
@@ -169,10 +193,10 @@ func _draw_art(rect: Rect2) -> void:
 		var source_size := texture.get_size()
 		var dst := rect.grow(-1)
 		if not CardArtRegistryScript.art_path(str(card.get("id", ""))).is_empty():
-			# Canonical art uses the whole illustration, focal-cropped to the actual
-			# compact/hand slot. No baked-in rules, stats or card borders.
+			# Keep the protected portrait subject visible even in a wide hand slot.
 			var src := CardArtRegistryScript.art_crop(str(card.get("id", "")), source_size, dst.size)
-			draw_texture_rect_region(texture, dst, src, Color(0.96, 1.0, 0.92, 1.0), false, true)
+			var fitted := CardArtRegistryScript.art_destination(src.size, dst)
+			draw_texture_rect_region(texture, fitted, src, Color(0.96, 1.0, 0.92, 1.0), false, true)
 		else:
 			# Migration-only: old card sheets contain baked borders and statistics.
 			var src := Rect2(source_size.x * 0.055, source_size.y * 0.185, source_size.x * 0.89, source_size.y * 0.565)

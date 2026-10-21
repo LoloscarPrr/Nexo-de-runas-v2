@@ -12,6 +12,9 @@ const FRAME_GOLD := Color("d7a044")
 const FRAME_DARK := Color("2c1709")
 
 const EFFECT_TEXT := {
+	"forest_clearing_sprout": "Al entrar, con un aliado\nadyacente, obtiene +0/+1.",
+	"forest_pack_wolf": "Al entrar, con un aliado\nadyacente, obtiene +1/+1.",
+	"forest_avatar": "Al entrar, cura 2 a tus\ncriaturas y 2 a tu Nexo.",
 	"forest_watchful_squirrel": "Si controlas otra Bestia,\nganas 1 Instinto.",
 	"forest_call_pack": "Invoca una Cría del Bosque 1/1\ny ganas 1 Instinto.",
 	"forest_growth": "Una criatura aliada obtiene\n+2/+2 este turno.",
@@ -57,10 +60,11 @@ func _draw() -> void:
 	var text_rect := Rect2(11, art_rect.end.y + 3, w - 22, text_h - 4)
 	var stat_rect := Rect2(10, h - stats_h - 5, w - 20, stats_h)
 
-	_draw_cost_badge(Vector2(26, 25), 15.0)
-	_draw_title_plaque(Rect2(46, 7, w - 58, 31))
 	_draw_art(art_rect)
 	_draw_effect_panel(text_rect)
+	_draw_canonical_frame(Rect2(0, 0, w, h))
+	_draw_cost_badge(Vector2(26, 25), 15.0)
+	_draw_title_plaque(Rect2(46, 7, w - 58, 31))
 
 	var card_type := str(card.get("type", ""))
 	if card_type == "creature":
@@ -68,7 +72,6 @@ func _draw() -> void:
 	else:
 		_draw_non_creature_footer(stat_rect, card_type)
 
-	_draw_canonical_frame(Rect2(0, 0, w, h))
 	if selected:
 		draw_rect(Rect2(1, 1, w - 2, h - 2), Color("7df05a"), false, 4.0)
 		draw_rect(Rect2(5, 5, w - 10, h - 10), Color(0.45, 1.0, 0.30, 0.32), false, 2.0)
@@ -77,7 +80,7 @@ func _draw_title_plaque(rect: Rect2) -> void:
 	draw_rect(rect, Color("160f08"))
 	draw_rect(rect, Color("80592a"), false, 1.5)
 	var title := str(card.get("name", "CARTA"))
-	var font_size := 11
+	var font_size := 13
 	if title.length() > 20:
 		font_size = 9
 	if title.length() > 27:

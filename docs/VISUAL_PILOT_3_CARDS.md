@@ -34,5 +34,9 @@ Source artwork in the conversation remains the archive/master; these are cropped
 6. No change to `scripts/domain/`, `scripts/application/`, combat rules, Android signing or saves.
 7. Share the APK directly and a short before/after summary. Never claim APK ready before workflow completion.
 
-## Known limitation
-The current GitHub connector can commit text, but the 3 artwork binary files have **not yet been uploaded to the branch**. A coding session that can upload binary assets must import the supplied ZIP. Until then, the renderer will correctly continue showing its temporary rune fallback.
+## Integrated pilot
+The three supplied WebP files are included unchanged. Protected subject bounds preserve heads, paws and roots; proportional fitting fills the remaining space with the existing art-slot background.
+
+`PILOTO BOSQUE` in the main menu starts a normal CPU battle with all three cards in the opening hand. The Avatar still costs six Energy. `JUGAR` keeps the existing starter deck. Hold a hand card for 0.45 seconds, or tap an occupied lane with no hand card selected, to inspect its art and current stats.
+
+`tests/visual_pilot_render_test.gd` renders the production battle screen and portrait modal under GL/Xvfb, using a deterministic mid-battle fixture and real summon/CPU commands. CI uploads these captures alongside the signed APK. These desktop captures do not establish execution or readability on a physical Android phone; that check remains pending.

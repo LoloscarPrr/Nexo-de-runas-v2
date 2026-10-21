@@ -3,6 +3,8 @@ extends SceneTree
 const Catalog = preload("res://scripts/domain/canonical_card_catalog.gd")
 const Art = preload("res://scripts/presentation/battle/card_art_registry.gd")
 const CardScript = preload("res://scripts/presentation/battle/vertical_battle_card_faithful.gd")
+const BaseCardScript = preload("res://scripts/presentation/battle/vertical_battle_card.gd")
+const LegacyCardScript = preload("res://scripts/ui/canonical_forest_card.gd")
 
 var failures := 0
 
@@ -13,9 +15,9 @@ func check(condition: bool, message: String) -> void:
 
 func _initialize() -> void:
 	var pilot := {
-		"bs_001_brote_del_claro": ["BS-001", 1, 1, 2],
-		"bs_006_lobo_de_manada": ["BS-006", 3, 3, 3],
-		"bs_013_avatar_del_bosque": ["BS-013", 6, 6, 8]
+		"bs_001_brote_del_claro": ["BS-001", 1, 1, 2, "BROTE DEL CLARO"],
+		"bs_006_lobo_de_manada": ["BS-006", 3, 3, 3, "LOBO DE MANADA"],
+		"bs_013_avatar_del_bosque": ["BS-013", 6, 6, 8, "AVATAR DEL BOSQUE"]
 	}
 	for card_id in pilot:
 		var expected: Array = pilot[card_id]
@@ -25,21 +27,41 @@ func _initialize() -> void:
 		check(int(card.get("cost", -1)) == expected[1], "Original cost unchanged for %s" % card_id)
 		check(int(card.get("attack", -1)) == expected[2], "Original attack unchanged for %s" % card_id)
 		check(int(card.get("health", -1)) == expected[3], "Original health unchanged for %s" % card_id)
+		check(str(card.get("name", "")) == expected[4], "Original name unchanged for %s" % card_id)
 		var path := Art.art_path(card_id)
 		check(path.begins_with("res://assets/domains/forest/cards/art/"), "Canonical art root for %s" % card_id)
 		check(path.get_extension() == "webp", "WebP asset format for %s" % card_id)
-		var source_rect := Art.art_crop(card_id, Vector2(384, 512), Vector2(176, 117))
-		check(source_rect.size.x > 0 and source_rect.size.y > 0, "Valid hand art crop for %s" % card_id)
-		check(source_rect.position.x >= 0 and source_rect.position.y >= 0, "Crop stays in illustration for %s" % card_id)
-		check(source_rect.end.x <= 384.001 and source_rect.end.y <= 512.001, "Crop does not overrun image for %s" % card_id)
+		check(ResourceLoader.exists(path), "Actual imported art exists for %s" % card_id)
+		var texture := Art.load_art(card_id)
+		check(texture != null, "Actual illustration loads for %s" % card_id)
+		if texture != null:
+			check(texture.get_size() == Vector2(384, 512), "Supplied portrait resolution preserved for %s" % card_id)
+		for slot in [Vector2(174, 115), Vector2(132, 157), Vector2(246, 298)]:
+			var source_rect := Art.art_crop(card_id, Vector2(384, 512), slot)
+			check(source_rect.size.x > 0 and source_rect.size.y > 0, "Valid art crop for %s" % card_id)
+			check(source_rect.position.x >= 0 and source_rect.position.y >= 0, "Crop stays in illustration for %s" % card_id)
+			check(source_rect.end.x <= 384.001 and source_rect.end.y <= 512.001, "Crop does not overrun image for %s" % card_id)
+			var normalized: Rect2 = Art.PILOT_ART[card_id]["subject"]
+			var subject := Rect2(normalized.position * Vector2(384, 512), normalized.size * Vector2(384, 512))
+			check(source_rect.grow(0.01).encloses(subject), "Head, paws and roots survive crop for %s" % card_id)
+			var fitted := Art.art_destination(source_rect.size, Rect2(Vector2.ZERO, slot))
+			check(absf(fitted.size.aspect() - source_rect.size.aspect()) < 0.001, "No stretching in hand, board or detail for %s" % card_id)
+			check(Rect2(Vector2.ZERO, slot).grow(0.01).encloses(fitted), "Fitted art stays inside its slot for %s" % card_id)
 
-		var renderer = CardScript.new()
-		renderer.configure(card, 99, 77, false, false, true)
-		check(renderer.current_attack == 99 and renderer.current_health == 77, "ATQ/SAL remain dynamic for %s" % card_id)
-		renderer.free()
+		for script in [CardScript, BaseCardScript, LegacyCardScript]:
+			var renderer = script.new()
+			renderer.configure(card, 99, 77, false, false, true)
+			check(renderer._get_art_texture() == texture and texture != null, "Production renderer resolves actual pilot art for %s" % card_id)
+			check(renderer.current_attack == 99 and renderer.current_health == 77, "ATQ/SAL remain dynamic for %s" % card_id)
+			renderer.configure(card, 0, 1, false, true, false)
+			check(renderer.current_attack == 0 and renderer.current_health == 1, "Zero ATQ and damaged SAL remain dynamic for %s" % card_id)
+			renderer.configure(Catalog.find_by_id("bs_003_lobo_joven"))
+			check(renderer._get_art_texture() == null, "Reused renderer returns to rune fallback")
+			renderer.free()
 
 	check(Art.art_path("bs_003_lobo_joven").is_empty(), "Unimplemented Forest art remains unassigned")
 	check(Art.art_path("ch_001_rata_de_osario").is_empty(), "Other domains retain existing fallback")
+	check(Art.load_art("unknown_card") == null, "Unknown artwork safely uses the fallback")
 	check(Art.art_crop("", Vector2(384, 512), Vector2(134, 159)).size.x > 0, "Compact art crop valid")
 	print("Visual pilot three cards: %d failures" % failures)
 	quit(1 if failures else 0)
