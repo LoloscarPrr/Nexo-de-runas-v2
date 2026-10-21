@@ -2,6 +2,7 @@ class_name CanonicalForestCard
 extends Button
 
 const Catalog = preload("res://scripts/domain/canonical_card_catalog.gd")
+const CardArtRegistryScript = preload("res://scripts/presentation/battle/card_art_registry.gd")
 const FRAME_TEXTURE_PATH := "res://assets/domains/forest/cards/card_frame_overlay.svg"
 
 const PARCHMENT := Color("b9a86c")
@@ -168,17 +169,22 @@ func _draw_art(rect: Rect2) -> void:
 		_draw_rune_art(rect)
 		return
 	var source_size := texture.get_size()
-	var src := Rect2(source_size.x * 0.055, source_size.y * 0.185, source_size.x * 0.89, source_size.y * 0.565)
 	var dst := rect.grow(-1)
-	var src_aspect := src.size.x / src.size.y
-	var dst_aspect := dst.size.x / dst.size.y
-	var fit := dst.size
-	if src_aspect > dst_aspect:
-		fit.y = dst.size.x / src_aspect
+	var card_id := str(card.get("id", ""))
+	if not CardArtRegistryScript.art_path(card_id).is_empty():
+		var src := CardArtRegistryScript.art_crop(card_id, source_size, dst.size)
+		draw_texture_rect_region(texture, dst, src, Color(0.94, 0.96, 0.88, 1.0), false, true)
 	else:
-		fit.x = dst.size.y * src_aspect
-	var pos := dst.position + (dst.size - fit) * 0.5
-	draw_texture_rect_region(texture, Rect2(pos, fit), src, Color(0.88, 0.92, 0.78, 1.0), false, true)
+		var src := Rect2(source_size.x * 0.055, source_size.y * 0.185, source_size.x * 0.89, source_size.y * 0.565)
+		var src_aspect := src.size.x / src.size.y
+		var dst_aspect := dst.size.x / dst.size.y
+		var fit := dst.size
+		if src_aspect > dst_aspect:
+			fit.y = dst.size.x / src_aspect
+		else:
+			fit.x = dst.size.y * src_aspect
+		var pos := dst.position + (dst.size - fit) * 0.5
+		draw_texture_rect_region(texture, Rect2(pos, fit), src, Color(0.88, 0.92, 0.78, 1.0), false, true)
 	draw_rect(rect, Color(0.08, 0.14, 0.05, 0.14))
 	for y in range(int(rect.position.y) + 2, int(rect.end.y), 4):
 		draw_line(Vector2(rect.position.x + 1, y), Vector2(rect.end.x - 1, y), Color(0, 0, 0, 0.035), 1)
@@ -226,6 +232,13 @@ func _draw_keyword_rune(rect: Rect2) -> void:
 
 func _get_art_texture() -> Texture2D:
 	var card_id := str(card.get("id", ""))
+	var canonical_path := CardArtRegistryScript.art_path(card_id)
+	if not canonical_path.is_empty():
+		if _cached_art_id == canonical_path:
+			return _cached_texture
+		_cached_art_id = canonical_path
+		_cached_texture = CardArtRegistryScript.load_art(card_id)
+		return _cached_texture
 	var art_id := str(LEGACY_ART.get(card_id, ""))
 	if art_id.is_empty():
 		return null
