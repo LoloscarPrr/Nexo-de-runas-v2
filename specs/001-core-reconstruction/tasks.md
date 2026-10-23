@@ -76,6 +76,7 @@
 - [x] E411 Crear renderer vertical de batalla en Presentation basado en mockup aprobado.
 - [x] E412 Resolver mano de 5–8 cartas con desplazamiento/solapamiento táctil legible.
 - [x] E413 Consumir `ABILITY_TRIGGERED`/`EFFECT_APPLIED` para animaciones sin lógica de reglas en Presentation.
+- [x] E414 Pulir piloto visual de tres cartas: controles completos en 16:9, menú de batalla, navegación Atrás y gestos de mano con ocho cartas; prueba física Android pendiente.
 
 ## Fase F — Flujo principal
 - [ ] F501 Splash cuatro dominios.

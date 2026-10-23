@@ -48,6 +48,7 @@ var _cached_texture: Texture2D
 var _frame_texture: Texture2D
 var _inspection_timer: Timer
 var _inspection_consumed := false
+var _press_origin := Vector2.ZERO
 
 func _ready() -> void:
 	focus_mode = Control.FOCUS_NONE
@@ -121,7 +122,20 @@ func _request_inspection() -> void:
 	if not button_pressed or compact or disabled:
 		return
 	_inspection_consumed = true
+	_restore_pose()
 	inspection_requested.emit()
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		_press_origin = event.position
+	if event is InputEventMouseMotion and _inspection_timer != null and not _inspection_timer.is_stopped():
+		if event.position.distance_to(_press_origin) > 16.0:
+			cancel_pointer_gesture()
+
+func cancel_pointer_gesture() -> void:
+	# Scrolling the hand must not inspect or select the card under the finger.
+	_inspection_consumed = true
+	_restore_pose()
 
 func consume_inspection_press() -> bool:
 	var consumed := _inspection_consumed

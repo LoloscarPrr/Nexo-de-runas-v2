@@ -25,18 +25,27 @@ const VISUAL_PILOT_DECK: Array[String] = [
 ]
 
 var card_detail
+var battle_menu: Control
+var _hand_scroll: ScrollContainer
 
 func _build_view() -> void:
 	super._build_view()
 	card_detail = DetailScript.new()
 	add_child(card_detail)
+	_hand_scroll = hand_strip.get_parent() as ScrollContainer
+	_hand_scroll.scroll_started.connect(_cancel_hand_gestures)
+	_build_battle_menu()
 
 func start_battle(domain: String = "forest") -> void:
 	card_detail.hide_detail()
+	battle_menu.hide()
+	_hand_scroll.scroll_horizontal = 0
 	super.start_battle(domain)
 
 func start_visual_pilot_battle() -> void:
 	card_detail.hide_detail()
+	battle_menu.hide()
+	_hand_scroll.scroll_horizontal = 0
 	if session == null:
 		session = SessionScript.new()
 	selected_hand_index = -1
@@ -44,6 +53,77 @@ func start_visual_pilot_battle() -> void:
 	_render()
 	status_label.text = "Mantén pulsada una carta para ampliarla."
 	visible = true
+
+func _build_battle_menu() -> void:
+	battle_menu = Control.new()
+	battle_menu.name = "BattleMenu"
+	battle_menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(battle_menu)
+	var shade := Button.new()
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.focus_mode = Control.FOCUS_NONE
+	var shade_style := StyleBoxFlat.new()
+	shade_style.bg_color = Color(0.005, 0.008, 0.004, 0.88)
+	for state in ["normal", "hover", "pressed", "focus"]:
+		shade.add_theme_stylebox_override(state, shade_style)
+	shade.pressed.connect(battle_menu.hide)
+	battle_menu.add_child(shade)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	battle_menu.add_child(center)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(550, 0)
+	var frame := _ornate_style(Color("171109"), GOLD, 3, 8)
+	frame.set_content_margin_all(24)
+	panel.add_theme_stylebox_override("panel", frame)
+	center.add_child(panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 20)
+	panel.add_child(column)
+	column.add_child(_label("MENÚ DE BATALLA", 30, PARCHMENT_F, HORIZONTAL_ALIGNMENT_CENTER))
+	for choice in [["ResumeBattle", "CONTINUAR"], ["ReturnToMainMenu", "VOLVER AL MENÚ"]]:
+		var button := Button.new()
+		button.name = choice[0]
+		button.text = choice[1]
+		button.custom_minimum_size.y = 88
+		button.focus_mode = Control.FOCUS_NONE
+		button.add_theme_font_size_override("font_size", 26)
+		button.add_theme_color_override("font_color", PARCHMENT_F)
+		button.add_theme_stylebox_override("normal", _ornate_style(Color("173b1f"), GOLD, 2, 6))
+		button.add_theme_stylebox_override("pressed", _ornate_style(Color("104518"), PARCHMENT_F, 3, 6))
+		if choice[0] == "ResumeBattle":
+			button.pressed.connect(battle_menu.hide)
+		else:
+			button.pressed.connect(func():
+				battle_menu.hide()
+				exit_requested.emit()
+			)
+		column.add_child(button)
+	battle_menu.hide()
+
+func _open_battle_menu() -> void:
+	_cancel_hand_gestures()
+	card_detail.hide_detail()
+	battle_menu.show()
+	battle_menu.move_to_front()
+
+func handle_back() -> void:
+	if card_detail.visible:
+		card_detail.hide_detail()
+	elif battle_menu.visible:
+		battle_menu.hide()
+	else:
+		_open_battle_menu()
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if is_visible_in_tree() and event.is_action_pressed("ui_cancel"):
+		handle_back()
+		get_viewport().set_input_as_handled()
+
+func _cancel_hand_gestures() -> void:
+	for visual in hand_strip.get_children():
+		visual.cancel_pointer_gesture()
 
 func _inspect_hand_card(index: int) -> void:
 	if session != null:
@@ -61,7 +141,7 @@ func _on_lane_pressed(side: String, lane: int) -> void:
 func _build_top_bar() -> Control:
 	var scene := Control.new()
 	scene.name = "ScenicHeader"
-	scene.custom_minimum_size = Vector2(0, 178)
+	scene.custom_minimum_size = Vector2(0, 128)
 
 	var logo := Control.new()
 	logo.name = "MockupLogo"
@@ -82,10 +162,10 @@ func _build_top_bar() -> Control:
 	logo.add_child(logo_text)
 
 	var gear_frame := PanelContainer.new()
-	gear_frame.anchor_left = 0.885
+	gear_frame.anchor_left = 0.845
 	gear_frame.anchor_top = 0.04
-	gear_frame.anchor_right = 0.987
-	gear_frame.anchor_bottom = 0.59
+	gear_frame.anchor_right = 0.995
+	gear_frame.anchor_bottom = 0.98
 	gear_frame.add_theme_stylebox_override("panel", _ornate_style(Color("120b07"), Color("d26c2e"), 4, 48))
 	scene.add_child(gear_frame)
 	var gear := Button.new()
@@ -97,6 +177,7 @@ func _build_top_bar() -> Control:
 	for state_name in ["normal", "hover", "pressed", "focus"]:
 		gear.add_theme_stylebox_override(state_name, StyleBoxEmpty.new())
 	gear_frame.add_child(gear)
+	gear.pressed.connect(_open_battle_menu)
 
 	var encounter := PanelContainer.new()
 	encounter.anchor_left = 0.405
@@ -111,7 +192,7 @@ func _build_top_bar() -> Control:
 func _build_rival_header() -> Control:
 	var wrapper := HBoxContainer.new()
 	wrapper.name = "RivalHeaderWrapper"
-	wrapper.custom_minimum_size = Vector2(0, 138)
+	wrapper.custom_minimum_size = Vector2(0, 120)
 	wrapper.add_theme_constant_override("separation", 4)
 
 	var left := Control.new()
@@ -275,6 +356,7 @@ func _build_footer() -> Control:
 	return footer
 
 func _rebuild_hand() -> void:
+	var scroll_position := _hand_scroll.scroll_horizontal if _hand_scroll != null else 0
 	for child in hand_strip.get_children():
 		hand_strip.remove_child(child)
 		child.queue_free()
@@ -291,6 +373,8 @@ func _rebuild_hand() -> void:
 				_on_hand_card_pressed(hand_index)
 		)
 		hand_strip.add_child(visual)
+	if _hand_scroll != null:
+		_hand_scroll.set_deferred("scroll_horizontal", scroll_position)
 
 func _set_lane_state(button: Button, lane: int, side: String, unit, valid_target: bool) -> void:
 	for child in button.get_children():

@@ -40,3 +40,8 @@ The three supplied WebP files are included unchanged. Protected subject bounds p
 `PILOTO BOSQUE` in the main menu starts a normal CPU battle with all three cards in the opening hand. The Avatar still costs six Energy. `JUGAR` keeps the existing starter deck. Hold a hand card for 0.45 seconds, or tap an occupied lane with no hand card selected, to inspect its art and current stats.
 
 `tests/visual_pilot_render_test.gd` renders the production battle screen and portrait modal under GL/Xvfb, using a deterministic mid-battle fixture and real summon/CPU commands. CI uploads these captures alongside the signed APK. These desktop captures do not establish execution or readability on a physical Android phone; that check remains pending.
+
+## Mobile polish 0.2
+The complete Nexus and end-turn controls fit inside the 864×1536 portrait viewport. The gear opens Continue / Return to menu; Android Back closes inspection first, then toggles the battle menu. Continuing keeps the current battle unchanged. Returning to the main menu retains the existing behavior: starting another match creates a fresh one.
+
+Eight-card hands retain their scroll position after selection. Pointer drags and native touch-scroll signals cancel inspection and selection; a stationary hold still opens detail. The rendered regression covers these inputs, full-hand selection and footer bounds in both 16:9 and tall portrait. Physical Android behavior is still unverified.

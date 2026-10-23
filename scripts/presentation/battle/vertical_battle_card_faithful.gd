@@ -81,10 +81,8 @@ func _draw_title_plaque(rect: Rect2) -> void:
 	draw_rect(rect, Color("80592a"), false, 1.5)
 	var title := str(card.get("name", "CARTA"))
 	var font_size := 13
-	if title.length() > 20:
-		font_size = 9
-	if title.length() > 27:
-		font_size = 8
+	while font_size > 8 and ThemeDB.fallback_font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > rect.size.x - 4:
+		font_size -= 1
 	draw_string(ThemeDB.fallback_font, Vector2(rect.position.x + 2, rect.position.y + rect.size.y * 0.70), title, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x - 4, font_size, Color("f5dfad"))
 
 func _draw_effect_panel(rect: Rect2) -> void:
@@ -116,6 +114,7 @@ func _effect_lines() -> Array[String]:
 		return _wrap_text(label, 28)
 	var card_type := str(card.get("type", "")).to_upper()
 	match card_type:
+		"CREATURE": card_type = "CRIATURA"
 		"RELIC": card_type = "RELIQUIA"
 		"RITE": card_type = "RITO"
 		"SEAL": card_type = "SELLO"

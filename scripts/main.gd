@@ -22,12 +22,23 @@ var menu_status: Label
 var status_tween: Tween
 
 func _ready() -> void:
+	get_tree().quit_on_go_back = false
 	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_PORTRAIT)
 	_build_background()
 	_build_menu()
 	_build_campaign()
 	_build_canonical_battle()
 	_show(menu_screen)
+
+func _notification(what: int) -> void:
+	if what != NOTIFICATION_WM_GO_BACK_REQUEST:
+		return
+	if is_instance_valid(battle_screen) and battle_screen.visible:
+		battle_screen.handle_back()
+	elif is_instance_valid(campaign_screen) and campaign_screen.visible:
+		_return_to_menu()
+	else:
+		get_tree().quit()
 
 func _build_background() -> void:
 	var background := ColorRect.new()
