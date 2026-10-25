@@ -183,9 +183,15 @@ static func essence_name(domain: String) -> String:
 static func essence_max(domain: String) -> int:
 	return int(ESSENCE_MAX.get(domain, 0))
 
-static func validate_deck(deck_ids: Array[String], domain: String) -> Array[String]:
+static func copy_limit(card_id: String) -> int:
+	var card := find_by_id(card_id)
+	return 0 if card.is_empty() else (1 if bool(card.get("unique", false)) else 2)
+
+static func validate_deck(deck_ids: Array[String], domain: String, allow_incomplete: bool = false) -> Array[String]:
+	# Only editor drafts opt into partial validation; saved/playable decks keep
+	# the existing exact-size, domain and copy rules by default.
 	var errors: Array[String] = []
-	if deck_ids.size() != 20:
+	if deck_ids.size() != 20 and (not allow_incomplete or deck_ids.size() > 20):
 		errors.append("El mazo debe contener exactamente 20 cartas.")
 	var counts := {}
 	for card_id in deck_ids:
@@ -196,7 +202,7 @@ static func validate_deck(deck_ids: Array[String], domain: String) -> Array[Stri
 		if str(card.get("domain", "")) != domain:
 			errors.append("%s no pertenece al dominio %s." % [card_id, domain])
 		counts[card_id] = int(counts.get(card_id, 0)) + 1
-		var limit := 1 if bool(card.get("unique", false)) else 2
+		var limit := copy_limit(card_id)
 		if int(counts[card_id]) > limit:
 			errors.append("%s excede el límite de %d copia(s)." % [card_id, limit])
 	return errors

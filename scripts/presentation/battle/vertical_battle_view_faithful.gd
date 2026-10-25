@@ -36,11 +36,11 @@ func _build_view() -> void:
 	_hand_scroll.scroll_started.connect(_cancel_hand_gestures)
 	_build_battle_menu()
 
-func start_battle(domain: String = "forest") -> void:
+func start_battle(domain: String = "forest", player_deck: Array[String] = []) -> void:
 	card_detail.hide_detail()
 	battle_menu.hide()
 	_hand_scroll.scroll_horizontal = 0
-	super.start_battle(domain)
+	super.start_battle(domain, player_deck)
 
 func start_visual_pilot_battle() -> void:
 	card_detail.hide_detail()

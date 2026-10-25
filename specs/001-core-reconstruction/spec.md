@@ -103,6 +103,9 @@ Las mejoras de campaña deben dirigirse a instancias concretas o a modificacione
 ## Colección — primer bloque funcional
 La entrada Colección abre el catálogo consultable de las 20 cartas fundacionales de Bosque Salvaje, ordenadas por ID, con búsqueda por nombre/ID y filtros combinables por tipo y coste. Permite ampliar cualquier carta con sus valores base y texto del contrato de efectos actual; reutiliza las tres ilustraciones del piloto y el respaldo existente para las demás. El contador representa entradas del catálogo, no propiedad ni desbloqueos. Esta etapa no modifica mazos, progresión, guardados ni reglas de combate.
 
+## Constructor — primer mazo de Bosque
+El Constructor permite editar un mazo local de Bosque de 20 cartas con los límites de copias ya vigentes (dos normales y una para cartas únicas). Incluye nombre, cantidades, curva de costes y filtros del catálogo compartido. Sólo se guarda o juega un mazo válido. Guardar activa ese mazo para JUGAR; sin uno guardado se conserva el inicial. Los cambios sin guardar permanecen como borrador durante la sesión. El piloto visual mantiene su entrada independiente. Se usa un slot nuevo versionado mediante el puerto de persistencia, sin modificar archivos de campaña ni inferir propiedad/desbloqueos. Esta etapa no añade Guardianes ni cambia combate, CPU o las 80 definiciones.
+
 ## Requisitos técnicos
 - Godot 4.3 + GDScript.
 - Estado desacoplado de UI.

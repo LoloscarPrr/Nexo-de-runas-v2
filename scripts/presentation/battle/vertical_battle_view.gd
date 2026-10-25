@@ -44,11 +44,11 @@ func _ready() -> void:
 	_build_view()
 	visible = false
 
-func start_battle(domain: String = "forest") -> void:
+func start_battle(domain: String = "forest", player_deck: Array[String] = []) -> void:
 	if session == null:
 		session = SessionScript.new()
 	selected_hand_index = -1
-	var opening: Dictionary = session.start_vs_cpu(domain)
+	var opening: Dictionary = session.start_vs_cpu(domain, player_deck)
 	_snapshot = opening.duplicate(true)
 	_render()
 	visible = true

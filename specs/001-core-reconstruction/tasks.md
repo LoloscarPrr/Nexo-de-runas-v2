@@ -88,6 +88,7 @@
 
 ## Fase G — Metajuego
 - [ ] G601 Constructor de Mazos.
+- [x] G601a Constructor Bosque: editar cantidades/nombre, validar 20 cartas y copias, persistir un mazo activo y usarlo en Vs CPU con pruebas de recarga y renderizado.
 - [ ] G602 Colección y detalle de carta.
 - [x] G602a Conectar catálogo Bosque de 20 cartas con búsqueda, filtros y detalle compartido, sin modificar propiedad ni mazos.
 - [ ] G603 Perfil.

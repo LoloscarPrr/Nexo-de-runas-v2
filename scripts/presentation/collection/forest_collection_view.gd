@@ -49,7 +49,9 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation", 12)
 	margin.add_child(column)
 	column.add_child(_label("✦  NEXO DE RUNAS  ✦", 20, GOLD))
-	column.add_child(_label("COLECCIÓN", 38, INK))
+	var heading := _label("COLECCIÓN", 38, INK)
+	heading.name = "CatalogHeading"
+	column.add_child(heading)
 	var domain := _label("✦  BOSQUE SALVAJE  ✦", 26, Color("91c875"))
 	domain.custom_minimum_size.y = 50
 	column.add_child(domain)
@@ -168,11 +170,14 @@ func reset_filters() -> void:
 	_resetting = false
 	_apply_filters()
 
+func _catalog_definitions() -> Array[Dictionary]:
+	var cost := cost_filter.selected if cost_filter.selected > 0 else -1
+	return Collection.cards_for_domain("forest", search_field.text, CARD_TYPES[type_filter.selected], cost)
+
 func _apply_filters() -> void:
 	if _resetting:
 		return
-	var cost := cost_filter.selected if cost_filter.selected > 0 else -1
-	visible_cards = Collection.cards_for_domain("forest", search_field.text, CARD_TYPES[type_filter.selected], cost)
+	visible_cards = _catalog_definitions()
 	for child in card_grid.get_children():
 		card_grid.remove_child(child)
 		child.queue_free()
@@ -255,6 +260,8 @@ func _style_button(button: Button) -> void:
 	button.add_theme_stylebox_override("normal", _style(Color("19170e")))
 	button.add_theme_stylebox_override("hover", _style(Color("253720")))
 	button.add_theme_stylebox_override("pressed", _style(Color("314b26")))
+	button.add_theme_stylebox_override("disabled", _style(Color("10120c")))
+	button.add_theme_color_override("font_disabled_color", Color("77765d"))
 	if button is OptionButton:
 		button.get_popup().add_theme_font_size_override("font_size", 28)
 		button.get_popup().add_theme_constant_override("v_separation", 22)
