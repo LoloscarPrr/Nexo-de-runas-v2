@@ -191,9 +191,7 @@ func _draw_cost_badge(center: Vector2, radius: float) -> void:
 func _draw_title(rect: Rect2) -> void:
 	var name := str(card.get("name", "CARTA"))
 	var font_size := 9 if compact else 13
-	if name.length() > 17:
-		font_size -= 1
-	if name.length() > 23:
+	while font_size > (6 if compact else 8) and ThemeDB.fallback_font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > rect.size.x - 4:
 		font_size -= 1
 	draw_string(ThemeDB.fallback_font, Vector2(rect.position.x, rect.position.y + rect.size.y * 0.68), name, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, maxi(font_size, 6), Color("f4dfaa"))
 

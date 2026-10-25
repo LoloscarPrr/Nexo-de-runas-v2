@@ -3,11 +3,12 @@ extends Control
 
 ## Modal portrait inspection. Data and live stats come from Application.
 const CardScript = preload("res://scripts/presentation/battle/vertical_battle_card.gd")
-const FaithfulCardScript = preload("res://scripts/presentation/battle/vertical_battle_card_faithful.gd")
+const TextScript = preload("res://scripts/presentation/cards/card_text.gd")
 const CARD_SIZE := Vector2(270, 395)
 
 var card_view
 var title_label: Label
+var metadata_label: Label
 var stats_label: Label
 var effect_label: Label
 var _holder: Control
@@ -46,6 +47,8 @@ func _ready() -> void:
 	column.add_child(_label("DETALLE DE CARTA", 28, Color("d5a94f")))
 	title_label = _label("", 28, Color("f0e0ad"))
 	column.add_child(title_label)
+	metadata_label = _label("", 20, Color("d5a94f"))
+	column.add_child(metadata_label)
 	_holder = Control.new()
 	_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(_holder)
@@ -81,13 +84,13 @@ func show_card(card: Dictionary, attack: int = -1, health: int = -1, ready_state
 	card_view.configure(card, attack, health, false, false, ready_state)
 	card_view.size = CARD_SIZE
 	title_label.text = str(card.get("name", "CARTA"))
+	metadata_label.text = TextScript.metadata(card)
+	metadata_label.visible = not str(card.get("set_id", "")).is_empty()
 	var creature := str(card.get("type", "")) == "creature"
 	stats_label.text = "COSTE %d" % int(card.get("cost", 0))
 	if creature:
 		stats_label.text += "   ·   ATQ %d   ·   SAL %d" % [attack if attack >= 0 else int(card.get("attack", 0)), health if health >= 0 else int(card.get("health", 0))]
-	effect_label.text = str(FaithfulCardScript.EFFECT_TEXT.get(str(card.get("effect_id", "")), "")).replace("\n", " ")
-	if effect_label.text.is_empty():
-		effect_label.text = " · ".join(Array(card.get("keywords", [])))
+	effect_label.text = TextScript.rules_text(card)
 	effect_label.visible = not effect_label.text.is_empty()
 	visible = true
 	move_to_front()

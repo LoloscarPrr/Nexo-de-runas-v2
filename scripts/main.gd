@@ -7,6 +7,7 @@ extends Control
 const CampaignViewScript = preload("res://scripts/ui/mockup_campaign_view.gd")
 const CanonicalBattleViewScript = preload("res://scripts/presentation/battle/vertical_battle_view_faithful.gd")
 const MenuBackdropScript = preload("res://scripts/ui/canonical_main_menu_backdrop.gd")
+const CollectionViewScript = preload("res://scripts/presentation/collection/forest_collection_view.gd")
 
 const INK := Color("eadca8")
 const MUTED := Color("a9a17b")
@@ -18,6 +19,7 @@ const BLOOD := Color("743126")
 var menu_screen: Control
 var campaign_screen
 var battle_screen: Control
+var collection_screen: Control
 var menu_status: Label
 var status_tween: Tween
 
@@ -28,6 +30,7 @@ func _ready() -> void:
 	_build_menu()
 	_build_campaign()
 	_build_canonical_battle()
+	_build_collection()
 	_show(menu_screen)
 
 func _notification(what: int) -> void:
@@ -35,6 +38,8 @@ func _notification(what: int) -> void:
 		return
 	if is_instance_valid(battle_screen) and battle_screen.visible:
 		battle_screen.handle_back()
+	elif is_instance_valid(collection_screen) and collection_screen.visible:
+		collection_screen.handle_back()
 	elif is_instance_valid(campaign_screen) and campaign_screen.visible:
 		_return_to_menu()
 	else:
@@ -58,6 +63,12 @@ func _build_canonical_battle() -> void:
 	battle_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	battle_screen.connect("exit_requested", _return_to_menu)
 	add_child(battle_screen)
+
+func _build_collection() -> void:
+	collection_screen = CollectionViewScript.new()
+	collection_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	collection_screen.connect("exit_requested", _return_to_menu)
+	add_child(collection_screen)
 
 func _build_menu() -> void:
 	menu_screen = Control.new()
@@ -173,7 +184,7 @@ func _build_menu() -> void:
 	var collection := _menu_button("◇  COLECCIÓN", "Cartas")
 	collection.name = "MainCollectionButton"
 	collection.custom_minimum_size = Vector2(0, 72)
-	collection.pressed.connect(func(): _notice("La Colección conservará el mismo lenguaje físico de cartas."))
+	collection.pressed.connect(_open_collection)
 	grid.add_child(collection)
 
 	var profile := _menu_button("◇  PERFIL", "Viajero")
@@ -216,6 +227,10 @@ func _return_to_menu() -> void:
 	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_PORTRAIT)
 	_show(menu_screen)
 
+func _open_collection() -> void:
+	collection_screen.open_collection()
+	_show(collection_screen)
+
 func _notice(text_value: String) -> void:
 	if menu_status == null:
 		return
@@ -231,6 +246,7 @@ func _show(target: Control) -> void:
 	menu_screen.visible = target == menu_screen
 	campaign_screen.visible = target == campaign_screen
 	battle_screen.visible = target == battle_screen
+	collection_screen.visible = target == collection_screen
 
 func _menu_button(title_text: String, subtitle_text: String, primary: bool = false) -> Button:
 	var button := Button.new()

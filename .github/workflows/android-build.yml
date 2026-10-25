@@ -103,11 +103,12 @@ jobs:
           run_godot_test tests/vertical_battle_presentation_test.gd
           run_godot_test tests/visual_pilot_three_cards_test.gd
           run_godot_test tests/portrait_main_menu_test.gd
+          run_godot_test tests/forest_collection_test.gd
           run_godot_test tests/canonical_forest_ui_test.gd
           run_godot_test tests/campaign_progression_test.gd
           run_godot_test tests/battle_ui_test.gd
 
-      - name: Render pilot hand, board and portrait details
+      - name: Render pilot battle and Forest collection
         shell: bash
         env:
           LIBGL_ALWAYS_SOFTWARE: "1"
@@ -120,12 +121,22 @@ jobs:
           GODOT_CHECK="$RUNNER_TEMP/godot-check/Godot_v4.3-stable_linux.x86_64"
           xvfb-run -a -s "-screen 0 1080x2200x24" "$GODOT_CHECK" --path . --rendering-method gl_compatibility --audio-driver Dummy --script tests/visual_pilot_render_test.gd -- --output="$RUNNER_TEMP/visual-pilot" 2>&1 | tee "$RUNNER_TEMP/visual-pilot-render.log"
           if grep -E 'SCRIPT ERROR|Parse Error|Compile Error|^ERROR:' "$RUNNER_TEMP/visual-pilot-render.log"; then exit 1; fi
+          xvfb-run -a -s "-screen 0 1080x2200x24" "$GODOT_CHECK" --path . --rendering-method gl_compatibility --audio-driver Dummy --script tests/forest_collection_render_test.gd -- --output="$RUNNER_TEMP/forest-collection" 2>&1 | tee "$RUNNER_TEMP/forest-collection-render.log"
+          if grep -E 'SCRIPT ERROR|Parse Error|Compile Error|^ERROR:' "$RUNNER_TEMP/forest-collection-render.log"; then exit 1; fi
 
       - name: Upload real Godot pilot captures
         uses: actions/upload-artifact@v4
         with:
           name: Nexo-visual-pilot-captures
           path: ${{ runner.temp }}/visual-pilot/*.png
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload real Godot collection captures
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexo-forest-collection-captures
+          path: ${{ runner.temp }}/forest-collection/*.png
           if-no-files-found: error
           retention-days: 30
 

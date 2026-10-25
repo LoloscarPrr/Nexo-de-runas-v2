@@ -100,6 +100,9 @@ Elegir dominio → mazo/Guardián/dificultad → mapa → nodos. Nodos canónico
 
 Las mejoras de campaña deben dirigirse a instancias concretas o a modificaciones persistibles explícitas; no se deben aplicar accidentalmente a todas las copias que compartan `card_id`.
 
+## Colección — primer bloque funcional
+La entrada Colección abre el catálogo consultable de las 20 cartas fundacionales de Bosque Salvaje, ordenadas por ID, con búsqueda por nombre/ID y filtros combinables por tipo y coste. Permite ampliar cualquier carta con sus valores base y texto del contrato de efectos actual; reutiliza las tres ilustraciones del piloto y el respaldo existente para las demás. El contador representa entradas del catálogo, no propiedad ni desbloqueos. Esta etapa no modifica mazos, progresión, guardados ni reglas de combate.
+
 ## Requisitos técnicos
 - Godot 4.3 + GDScript.
 - Estado desacoplado de UI.

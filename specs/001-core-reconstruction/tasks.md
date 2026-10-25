@@ -76,7 +76,7 @@
 - [x] E411 Crear renderer vertical de batalla en Presentation basado en mockup aprobado.
 - [x] E412 Resolver mano de 5–8 cartas con desplazamiento/solapamiento táctil legible.
 - [x] E413 Consumir `ABILITY_TRIGGERED`/`EFFECT_APPLIED` para animaciones sin lógica de reglas en Presentation.
-- [x] E414 Pulir piloto visual de tres cartas: controles completos en 16:9, menú de batalla, navegación Atrás y gestos de mano con ocho cartas; prueba física Android pendiente.
+- [x] E414 Pulir piloto visual de tres cartas: controles completos en 16:9, menú de batalla, navegación Atrás y gestos de mano con ocho cartas; usuario confirma funcionamiento de build 622 en Android.
 
 ## Fase F — Flujo principal
 - [ ] F501 Splash cuatro dominios.
@@ -89,6 +89,7 @@
 ## Fase G — Metajuego
 - [ ] G601 Constructor de Mazos.
 - [ ] G602 Colección y detalle de carta.
+- [x] G602a Conectar catálogo Bosque de 20 cartas con búsqueda, filtros y detalle compartido, sin modificar propiedad ni mazos.
 - [ ] G603 Perfil.
 - [ ] G604 Logros.
 - [ ] G605 Ajustes y Reducir movimiento.
