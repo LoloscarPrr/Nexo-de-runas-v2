@@ -22,15 +22,30 @@ const TYPE_RELIC := "relic"
 const TYPE_SEAL := "seal"
 
 var _engine: CanonicalCpuBattle
+var _restart_domain := DOMAIN_FOREST
+var _restart_player_deck: Array[String] = []
+var _restart_enemy_domain := DOMAIN_FOREST
+var _restart_enemy_deck: Array[String] = []
 
 func start_vs_cpu(domain: String = DOMAIN_FOREST, player_deck: Array[String] = [], enemy_domain: String = "", enemy_deck: Array[String] = []) -> Dictionary:
 	_engine = EngineScript.new()
-	var deck := player_deck
+	var deck := player_deck.duplicate()
 	if deck.is_empty():
 		deck = Catalog.starter_deck(domain)
 	var opponent_domain := domain if enemy_domain.is_empty() else enemy_domain
-	_engine.setup_cpu(domain, deck, opponent_domain, enemy_deck)
+	_restart_domain = domain
+	_restart_player_deck = deck.duplicate()
+	_restart_enemy_domain = opponent_domain
+	_restart_enemy_deck = enemy_deck.duplicate()
+	_engine.setup_cpu(domain, deck, opponent_domain, enemy_deck.duplicate())
 	return snapshot()
+
+func restart_vs_cpu() -> Dictionary:
+	# A rematch is a fresh session with the actual match's setup, not whichever
+	# deck a caller might have edited since it started. Ongoing games are safe.
+	if _engine == null or not ["victory", "defeat"].has(_engine.result):
+		return snapshot()
+	return start_vs_cpu(_restart_domain, _restart_player_deck, _restart_enemy_domain, _restart_enemy_deck)
 
 func is_started() -> bool:
 	return _engine != null

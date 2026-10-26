@@ -106,6 +106,9 @@ La entrada Colección abre el catálogo consultable de las 20 cartas fundacional
 ## Constructor — primer mazo de Bosque
 El Constructor permite editar un mazo local de Bosque de 20 cartas con los límites de copias ya vigentes (dos normales y una para cartas únicas). Incluye nombre, cantidades, curva de costes y filtros del catálogo compartido. Sólo se guarda o juega un mazo válido. Guardar activa ese mazo para JUGAR; sin uno guardado se conserva el inicial. Los cambios sin guardar permanecen como borrador durante la sesión. El piloto visual mantiene su entrada independiente. Se usa un slot nuevo versionado mediante el puerto de persistencia, sin modificar archivos de campaña ni inferir propiedad/desbloqueos. Esta etapa no añade Guardianes ni cambia combate, CPU o las 80 definiciones.
 
+## Cierre de partida Vs CPU
+El resultado real del motor abre una pantalla vertical de victoria o derrota con turno final e Integridad de ambos Nexos. Ofrece revancha con los mismos mazos/dominios de esa partida, revisión del tablero final y regreso al menú. Revisar cartas no reactiva acciones de combate. La revancha comienza con los recursos iniciales normales y limpia estados transitorios. No concede recompensas ni modifica mazos guardados, progresión o reglas de resolución.
+
 ## Requisitos técnicos
 - Godot 4.3 + GDScript.
 - Estado desacoplado de UI.

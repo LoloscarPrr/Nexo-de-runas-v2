@@ -85,6 +85,7 @@
 - [ ] F504 Elegir dominio.
 - [x] F505 Vs CPU funcional como vertical slice legado.
 - [x] F506 Vs CPU vertical de cinco carriles conectado únicamente a Application.
+- [x] F507 Cierre Vs CPU con victoria/derrota reales, revisión del tablero y revancha que conserva los mazos sin tocar guardados.
 
 ## Fase G — Metajuego
 - [ ] G601 Constructor de Mazos.

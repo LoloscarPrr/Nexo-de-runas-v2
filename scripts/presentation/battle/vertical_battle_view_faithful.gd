@@ -8,6 +8,7 @@ const FaithfulCardScript = preload("res://scripts/presentation/battle/vertical_b
 const OrnamentScript = preload("res://scripts/presentation/battle/vertical_battle_ornament.gd")
 const FaithfulLaneScript = preload("res://scripts/presentation/battle/vertical_lane_slot.gd")
 const DetailScript = preload("res://scripts/presentation/battle/vertical_card_detail.gd")
+const ResultScript = preload("res://scripts/presentation/battle/vertical_battle_result.gd")
 
 const PARCHMENT_F := Color("ead7a3")
 const GREEN_F := Color("62df58")
@@ -26,6 +27,8 @@ const VISUAL_PILOT_DECK: Array[String] = [
 
 var card_detail
 var battle_menu: Control
+var result_screen
+var _result_presented := false
 var _hand_scroll: ScrollContainer
 
 func _build_view() -> void:
@@ -35,14 +38,23 @@ func _build_view() -> void:
 	_hand_scroll = hand_strip.get_parent() as ScrollContainer
 	_hand_scroll.scroll_started.connect(_cancel_hand_gestures)
 	_build_battle_menu()
+	result_screen = ResultScript.new()
+	add_child(result_screen)
+	result_screen.rematch_requested.connect(_on_rematch_requested)
+	result_screen.board_requested.connect(func(): result_screen.hide())
+	result_screen.exit_requested.connect(func():
+		result_screen.hide()
+		exit_requested.emit())
 
 func start_battle(domain: String = "forest", player_deck: Array[String] = []) -> void:
+	_reset_result_navigation()
 	card_detail.hide_detail()
 	battle_menu.hide()
 	_hand_scroll.scroll_horizontal = 0
 	super.start_battle(domain, player_deck)
 
 func start_visual_pilot_battle() -> void:
+	_reset_result_navigation()
 	card_detail.hide_detail()
 	battle_menu.hide()
 	_hand_scroll.scroll_horizontal = 0
@@ -53,6 +65,62 @@ func start_visual_pilot_battle() -> void:
 	_render()
 	status_label.text = "Mantén pulsada una carta para ampliarla."
 	visible = true
+
+func _reset_result_navigation() -> void:
+	_result_presented = false
+	result_screen.hide()
+	event_label.text = ""
+	status_label.text = "Elige una carta de tu mano."
+
+func _is_finished() -> bool:
+	return ["victory", "defeat"].has(str(_snapshot.get("result", "ongoing")))
+
+func _render() -> void:
+	if _is_finished():
+		selected_hand_index = -1
+	super._render()
+	if _is_finished():
+		impulse_button.hide()
+		end_turn_button.disabled = false
+		end_turn_button.text = "VER\nRESULTADO"
+		if not _result_presented:
+			_result_presented = true
+			_show_result()
+	else:
+		end_turn_button.text = "FINALIZAR\nTURNO"
+
+func _show_result() -> void:
+	_cancel_hand_gestures()
+	card_detail.hide_detail()
+	battle_menu.hide()
+	result_screen.show_result(_snapshot)
+
+func _on_rematch_requested() -> void:
+	if session == null or not _is_finished():
+		return
+	_snapshot = session.restart_vs_cpu()
+	selected_hand_index = -1
+	card_detail.hide_detail()
+	battle_menu.hide()
+	_hand_scroll.scroll_horizontal = 0
+	_reset_result_navigation()
+	_render()
+
+func _on_end_turn_pressed() -> void:
+	if _is_finished():
+		_show_result()
+		return
+	super._on_end_turn_pressed()
+
+func _on_hand_card_pressed(index: int) -> void:
+	if _is_finished():
+		_inspect_hand_card(index)
+		return
+	super._on_hand_card_pressed(index)
+
+func _on_impulse_pressed() -> void:
+	if not _is_finished():
+		super._on_impulse_pressed()
 
 func _build_battle_menu() -> void:
 	battle_menu = Control.new()
@@ -103,6 +171,9 @@ func _build_battle_menu() -> void:
 	battle_menu.hide()
 
 func _open_battle_menu() -> void:
+	if _is_finished():
+		_show_result()
+		return
 	_cancel_hand_gestures()
 	card_detail.hide_detail()
 	battle_menu.show()
@@ -111,6 +182,10 @@ func _open_battle_menu() -> void:
 func handle_back() -> void:
 	if card_detail.visible:
 		card_detail.hide_detail()
+	elif result_screen.visible:
+		result_screen.hide()
+	elif _is_finished():
+		_show_result()
 	elif battle_menu.visible:
 		battle_menu.hide()
 	else:
@@ -130,6 +205,8 @@ func _inspect_hand_card(index: int) -> void:
 		card_detail.show_card(session.hand_card_definition(index))
 
 func _on_lane_pressed(side: String, lane: int) -> void:
+	if _is_finished():
+		selected_hand_index = -1
 	if selected_hand_index < 0 and session != null:
 		var info: Dictionary = session.inspect_unit(side, lane)
 		if not info.is_empty():

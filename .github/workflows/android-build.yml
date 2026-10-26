@@ -105,11 +105,12 @@ jobs:
           run_godot_test tests/portrait_main_menu_test.gd
           run_godot_test tests/forest_collection_test.gd
           run_godot_test tests/forest_deck_editor_test.gd
+          run_godot_test tests/battle_result_loop_test.gd
           run_godot_test tests/canonical_forest_ui_test.gd
           run_godot_test tests/campaign_progression_test.gd
           run_godot_test tests/battle_ui_test.gd
 
-      - name: Render pilot battle, Forest collection and deckbuilder
+      - name: Render battle, collection, deckbuilder and results
         shell: bash
         env:
           LIBGL_ALWAYS_SOFTWARE: "1"
@@ -126,6 +127,8 @@ jobs:
           if grep -E 'SCRIPT ERROR|Parse Error|Compile Error|^ERROR:' "$RUNNER_TEMP/forest-collection-render.log"; then exit 1; fi
           xvfb-run -a -s "-screen 0 1080x2200x24" "$GODOT_CHECK" --path . --rendering-method gl_compatibility --audio-driver Dummy --script tests/forest_deckbuilder_render_test.gd -- --output="$RUNNER_TEMP/forest-deckbuilder" 2>&1 | tee "$RUNNER_TEMP/forest-deckbuilder-render.log"
           if grep -E 'SCRIPT ERROR|Parse Error|Compile Error|^ERROR:' "$RUNNER_TEMP/forest-deckbuilder-render.log"; then exit 1; fi
+          xvfb-run -a -s "-screen 0 1080x2200x24" "$GODOT_CHECK" --path . --rendering-method gl_compatibility --audio-driver Dummy --script tests/battle_result_render_test.gd -- --output="$RUNNER_TEMP/battle-result" 2>&1 | tee "$RUNNER_TEMP/battle-result-render.log"
+          if grep -E 'SCRIPT ERROR|Parse Error|Compile Error|^ERROR:' "$RUNNER_TEMP/battle-result-render.log"; then exit 1; fi
 
       - name: Upload real Godot pilot captures
         uses: actions/upload-artifact@v4
@@ -148,6 +151,14 @@ jobs:
         with:
           name: Nexo-forest-deckbuilder-captures
           path: ${{ runner.temp }}/forest-deckbuilder/*.png
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload real Godot result captures
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexo-battle-result-captures
+          path: ${{ runner.temp }}/battle-result/*.png
           if-no-files-found: error
           retention-days: 30
 

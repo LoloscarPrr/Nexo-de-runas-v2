@@ -17,6 +17,7 @@
 ### 2. Application — casos de uso
 - `application/battle/canonical_battle_session.gd` encapsula iniciar batalla, jugar carta, finalizar ronda, inspeccionar unidades y obtener snapshots.
 - `BattleCommand` representa acciones serializables; los métodos públicos de conveniencia delegan en comandos.
+- La sesión conserva una copia de la configuración inicial para una revancha después de un resultado terminal, sin exponer el orden oculto del mazo a Presentation.
 - Los resultados de acciones incluyen snapshot y eventos lógicos drenados del Domain.
 - La legalidad de objetivos de Ritos se consulta al motor declarativo mediante `TargetSpec`/resolvers; Application no mantiene listas de IDs de cartas.
 - `application/ports/` declara contratos hacia persistencia/red.
@@ -37,6 +38,7 @@
 - UI sin hover obligatorio.
 - Primera Colección en Presentation: Bosque, búsqueda/filtros, selección y detalle compartido con batalla; sin inferir propiedad desde el catálogo.
 - Constructor Bosque reutiliza el catálogo visual y añade cantidades, curva, guardado y salida a la batalla existente. No duplica reglas de copias en UI.
+- El cierre Vs CPU consume el resultado del snapshot y ofrece revancha, tablero final de sólo lectura y menú; conserva los ornamentos actuales sin simular recompensas.
 - Presentation consume snapshots y `GameEvent`; `ABILITY_TRIGGERED` y `EFFECT_APPLIED` serán la base para animaciones de habilidad.
 - `presentation/themes/domain_theme_registry.gd` desacopla identidad visual de reglas.
 - Nuevos assets canónicos se integran aquí, no en Domain.
