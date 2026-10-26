@@ -110,6 +110,7 @@ El Constructor permite editar un mazo local de Bosque de 20 cartas con los lími
 El resultado real del motor abre una pantalla vertical de victoria o derrota con turno final e Integridad de ambos Nexos. Ofrece revancha con los mismos mazos/dominios de esa partida, revisión del tablero final y regreso al menú. Revisar cartas no reactiva acciones de combate. La revancha comienza con los recursos iniciales normales y limpia estados transitorios. No concede recompensas ni modifica mazos guardados, progresión o reglas de resolución.
 
 ## Requisitos técnicos
+- Legibilidad de batalla: valores del HUD separados de sus rótulos, contadores de Sellos y Reliquias y de mazo/descarte visibles; habilidades de la mano comparten el texto del detalle, con ajuste por ancho real y elipsis cuando exceden el pergamino. La pulsación larga conserva el texto completo y las estadísticas actuales.
 - Godot 4.3 + GDScript.
 - Estado desacoplado de UI.
 - Datos serializables.

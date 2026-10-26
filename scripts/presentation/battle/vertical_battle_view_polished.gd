@@ -281,7 +281,7 @@ func _build_hand() -> Control:
 	stack.add_theme_constant_override("separation", 2)
 	frame.add_child(stack)
 
-	var title := _label("MANO", 14, Color("e0ab50"), HORIZONTAL_ALIGNMENT_CENTER)
+	var title := _label("MANO · MANTÉN PULSADO PARA AMPLIAR", 16, Color("e0ab50"), HORIZONTAL_ALIGNMENT_CENTER)
 	title.custom_minimum_size = Vector2(0, 20)
 	stack.add_child(title)
 

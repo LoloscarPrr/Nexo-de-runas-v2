@@ -3,7 +3,23 @@ extends RefCounted
 
 ## Display copy for the current Forest definitions/effect contracts.
 ## This never grants abilities or changes battle data.
-const LegacyText = preload("res://scripts/presentation/battle/vertical_battle_card_faithful.gd")
+const LEGACY_EFFECTS := {
+	"forest_watchful_squirrel": "Si controlas otra Bestia, ganas 1 Instinto.",
+	"forest_call_pack": "Invoca una Cría del Bosque 1/1 y ganas 1 Instinto.",
+	"forest_growth": "Una criatura aliada obtiene +2/+2 este turno.",
+	"crypt_gravedigger": "Al entrar, ganas 1 Resto.",
+	"crypt_broken_skeleton": "Último Aliento: ganas 1 Resto.",
+	"crypt_funeral_hound": "Último Aliento: inflige 1 daño a la criatura enfrentada.",
+	"crypt_mourner": "Último Aliento: roba 1 carta.",
+	"crypt_ash_offering": "Destruye una criatura aliada. Roba 2 cartas.",
+	"crypt_exhumation": "Devuelve una criatura de coste 3 o menos desde tu descarte.",
+	"tower_familiar": "Al entrar, revela la carta superior de tu mazo.",
+	"tower_rune_bolt": "Inflige 1 daño a una criatura enemiga.",
+	"tower_forbidden_vision": "Revela las 3 cartas superiores y roba la primera.",
+	"forge_worker": "Al entrar, ganas 1 Calor.",
+	"forge_spark": "Inflige 1 daño y ganas 1 Calor.",
+	"forge_overload": "Un Constructo aliado obtiene +3 ATQ y ganas 2 Calor."
+}
 const TYPES := {"creature": "Criatura", "rite": "Rito", "relic": "Reliquia", "seal": "Sello"}
 const RARITIES := {"common": "Común", "uncommon": "Poco común", "rare": "Rara", "legendary": "Legendaria"}
 const FOREST_EFFECTS := {
@@ -37,7 +53,7 @@ static func metadata(card: Dictionary) -> String:
 
 static func rules_text(card: Dictionary) -> String:
 	var effect_id := str(card.get("effect_id", ""))
-	var effect := str(FOREST_EFFECTS.get(effect_id, LegacyText.EFFECT_TEXT.get(effect_id, ""))).replace("\n", " ")
+	var effect := str(FOREST_EFFECTS.get(effect_id, LEGACY_EFFECTS.get(effect_id, "")))
 	var keywords: Array[String] = []
 	for keyword in Array(card.get("keywords", [])):
 		if str(keyword) == "ENRAIZADO":

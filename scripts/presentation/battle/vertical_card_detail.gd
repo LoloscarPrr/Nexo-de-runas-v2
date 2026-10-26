@@ -45,9 +45,9 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation", 16)
 	frame.add_child(column)
 	column.add_child(_label("DETALLE DE CARTA", 28, Color("d5a94f")))
-	title_label = _label("", 28, Color("f0e0ad"))
+	title_label = _label("", 30, Color("f0e0ad"))
 	column.add_child(title_label)
-	metadata_label = _label("", 20, Color("d5a94f"))
+	metadata_label = _label("", 22, Color("d5a94f"))
 	column.add_child(metadata_label)
 	_holder = Control.new()
 	_holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -58,9 +58,9 @@ func _ready() -> void:
 	card_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_card_stage.add_child(card_view)
 	_holder.resized.connect(_layout_card)
-	stats_label = _label("", 24, Color("f0e0ad"))
+	stats_label = _label("", 28, Color("f0e0ad"))
 	column.add_child(stats_label)
-	effect_label = _label("", 24, Color("dfc88f"))
+	effect_label = _label("", 28, Color("dfc88f"))
 	column.add_child(effect_label)
 	var close := Button.new()
 	close.name = "CloseDetail"

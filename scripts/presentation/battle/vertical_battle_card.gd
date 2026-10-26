@@ -185,7 +185,7 @@ func _draw_cost_badge(center: Vector2, radius: float) -> void:
 	draw_circle(center, radius + 1.0, BARK_DARK)
 	draw_circle(center, radius, Color("276b2b"))
 	draw_arc(center, radius, 0, TAU, 28, GOLD, 2.0)
-	var font_size := 11 if compact else 15
+	var font_size := 14 if compact else 18
 	draw_string(ThemeDB.fallback_font, center + Vector2(-radius, font_size * 0.35), str(int(card.get("cost", 0))), HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, font_size, Color("fff0b8"))
 
 func _draw_title(rect: Rect2) -> void:
@@ -247,12 +247,15 @@ func _draw_non_creature_footer(rect: Rect2, card_type: String) -> void:
 	draw_string(ThemeDB.fallback_font, Vector2(rect.position.x, rect.position.y + rect.size.y * 0.65), kind, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 8 if compact else 11, INK)
 
 func _draw_stat_orb(center: Vector2, value: int, attack_stat: bool) -> void:
-	var radius := 10.0 if compact else 14.0
+	var radius := 12.0 if compact else 16.0
 	var fill := Color("202018") if attack_stat else BLOOD
 	draw_circle(center, radius + 2.0, BARK_DARK)
 	draw_circle(center, radius, fill)
 	draw_arc(center, radius, 0, TAU, 24, GOLD, 1.6)
-	draw_string(ThemeDB.fallback_font, center + Vector2(-radius, 4 if compact else 5), str(value), HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, 10 if compact else 14, Color("fff1bd"))
+	var font_size := 16 if compact else 18
+	while font_size > 10 and ThemeDB.fallback_font.get_string_size(str(value), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > radius * 2.0 - 2.0:
+		font_size -= 1
+	draw_string(ThemeDB.fallback_font, center + Vector2(-radius, font_size * 0.35), str(value), HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, font_size, Color("fff1bd"))
 
 func _draw_keyword_rune(rect: Rect2) -> void:
 	var keywords: Array = card.get("keywords", [])

@@ -458,6 +458,10 @@ func _card_text(card: Dictionary) -> String:
 func _event_name(code: String) -> String:
 	match code:
 		"CARD_PLAYED": return "Carta jugada"
+		"CARD_DRAWN": return "Carta robada"
+		"CARD_DISCARDED": return "Carta descartada"
+		"COMBAT_STARTED": return "Inicio de combate"
+		"COMBAT_ENDED": return "Fin de combate"
 		"ABILITY_TRIGGERED": return "Habilidad"
 		"EFFECT_APPLIED": return "Efecto"
 		"UNIT_DIED": return "Unidad destruida"

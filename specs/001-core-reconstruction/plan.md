@@ -39,6 +39,7 @@
 - Primera Colección en Presentation: Bosque, búsqueda/filtros, selección y detalle compartido con batalla; sin inferir propiedad desde el catálogo.
 - Constructor Bosque reutiliza el catálogo visual y añade cantidades, curva, guardado y salida a la batalla existente. No duplica reglas de copias en UI.
 - El cierre Vs CPU consume el resultado del snapshot y ofrece revancha, tablero final de sólo lectura y menú; conserva los ornamentos actuales sin simular recompensas.
+- La siguiente pasada móvil amplía cifras/rótulos del HUD y texto de habilidades en Presentation, reutilizando el contrato de texto del detalle sin cambiar reglas ni la composición de cinco carriles.
 - Presentation consume snapshots y `GameEvent`; `ABILITY_TRIGGERED` y `EFFECT_APPLIED` serán la base para animaciones de habilidad.
 - `presentation/themes/domain_theme_registry.gd` desacopla identidad visual de reglas.
 - Nuevos assets canónicos se integran aquí, no en Domain.

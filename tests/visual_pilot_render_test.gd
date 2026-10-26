@@ -5,6 +5,7 @@ extends SceneTree
 const ViewScript = preload("res://scripts/presentation/battle/vertical_battle_view_faithful.gd")
 const Catalog = preload("res://scripts/domain/canonical_card_catalog.gd")
 const CardScript = preload("res://scripts/presentation/battle/vertical_battle_card_faithful.gd")
+const TextScript = preload("res://scripts/presentation/cards/card_text.gd")
 const PILOT: Array[String] = ["bs_001_brote_del_claro", "bs_006_lobo_de_manada", "bs_013_avatar_del_bosque"]
 
 var view
@@ -29,6 +30,7 @@ func check(condition: bool, message: String) -> void:
 func _run() -> void:
 	await process_frame
 	view.start_battle("forest")
+	await _check_mobile_legibility()
 	var deck: Array[String] = Catalog.starter_deck("forest")
 	deck.erase(PILOT[0])
 	deck.erase(PILOT[1])
@@ -87,6 +89,7 @@ func _run() -> void:
 	view._on_hand_card_pressed(0)
 	view._on_lane_pressed("player", 1)
 	check(view.session.snapshot().get("energy_current") == 2, "Real Brote and Lobo summons pay 1 + 3 Energy")
+	check(view.energy_label.text == "2/6", "Large Energy readout updates after real card payments")
 	var wolf: Dictionary = view.session.snapshot()["player_lanes"][1]
 	check(wolf.get("attack") == 4 and wolf.get("hp") == 4, "Lobo's existing adjacency effect remains dynamic at 4/4")
 	view._on_end_turn_pressed()
@@ -94,6 +97,7 @@ func _run() -> void:
 	view._on_hand_card_pressed(0)
 	view._on_lane_pressed("player", 4)
 	check(view.session.snapshot().get("energy_current") == 0, "Avatar pays its actual six Energy")
+	check(view.energy_label.text == "0/6", "Zero Energy remains visible after the Avatar summon")
 	await _capture("02_board_three_cards.png")
 	var lanes: Array = view.session.snapshot().get("player_lanes", [])
 	for index in range(3):
@@ -129,6 +133,75 @@ func _run() -> void:
 	view.queue_free()
 	await process_frame
 	quit(1 if failures else 0)
+
+func _check_mobile_legibility() -> void:
+	# Every canonical rule is wrapped using actual font widths. A long rule is
+	# visibly abbreviated only in the hand; full inspection remains available.
+	var renderer = CardScript.new()
+	for card in Catalog.all_cards():
+		renderer.configure(card)
+		var all_lines: Array[String] = renderer._effect_lines(164.0)
+		var rules := TextScript.rules_text(card)
+		check(" ".join(all_lines) == (rules if not rules.is_empty() else TextScript.type_label(card)).replace("\n", " "), "Hand retains detail ability copy or its existing type fallback: %s" % card.get("id"))
+		for line in renderer._visible_effect_lines(Vector2(176, 78)):
+			check(renderer._effect_width(line) <= 164.1, "Readable ability text stays within the parchment width")
+		if PILOT.has(str(card.get("id"))):
+			check(not " ".join(renderer._visible_effect_lines(Vector2(176, 78))).contains("…"), "The three pilot abilities are fully visible in the hand")
+	renderer.configure(Catalog.find_by_id("bs_004_cierva_guardabosques"))
+	check(" ".join(renderer._effect_lines()).contains("cura 1"), "Cierva displays its actual heal instead of a creature-type placeholder")
+	renderer.configure(Catalog.find_by_id("bs_015_crecimiento_repentino"))
+	check(" ".join(renderer._effect_lines()).contains("+1/+1"), "Crecimiento displays the current foundational effect")
+	renderer.free()
+	for domain in ["forest", "crypt", "tower", "forge"]:
+		view.start_battle(domain)
+		await process_frame
+		await process_frame
+		_check_hud_bounds()
+	# Exercise the absolute Energy cap and full permanent/discard counters as
+	# a presentation fixture, without changing or granting production rules.
+	view._snapshot["energy_current"] = 12
+	view._snapshot["energy_capacity"] = 12
+	view._snapshot["active_seals"] = ["one", "two", "three"]
+	view._snapshot["active_relics"] = ["one", "two"]
+	view._snapshot["discard"] = ["one", "two", "three"]
+	view._snapshot["draw_count"] = 12
+	view._render()
+	await process_frame
+	await process_frame
+	_check_hud_bounds()
+	check(view.energy_label.text == "12/12" and view._energy_pips.text.length() == 12, "Absolute Energy cap fits as numbers and runes")
+	check(view.seals_label.text == "3/3" and view._relics_count.text == "RELIQUIAS 2/2", "Both permanent counters remain visible")
+	check(view.deck_label.text == "12" and view._discard_count.text == "DESCARTE 3", "Deck and discard stay distinct")
+	view._snapshot["impulse_available"] = true
+	view._snapshot["message"] = "Debes elegir una carta de tu mano antes de seleccionar un objetivo."
+	view.event_label.text = "Fin de combate · Carta robada · Nuevo turno"
+	view._render()
+	await process_frame
+	await process_frame
+	var footer: Control = view.find_child("BattleFooter", true, false)
+	for control in [view.status_label, view.event_label, view.impulse_button, view.end_turn_button]:
+		check(footer.get_global_rect().grow(0.1).encloses(control.get_global_rect()), "Long messages, events and Impulse fit together inside the footer")
+	check(Rect2(Vector2.ZERO, Vector2(root.size)).grow(0.1).encloses(footer.get_global_rect()), "All footer actions remain reachable at 16:9")
+	view.start_battle("forest")
+	# Render a hand that previously displayed only generic type labels.
+	view.session._engine.hand = ["bs_004_cierva_guardabosques", "bs_014_savia_vital", "bs_015_crecimiento_repentino", "bs_017_raices_invasoras"] as Array[String]
+	view._snapshot = view.session.snapshot()
+	view._render()
+	await _capture("07_readable_hand_abilities.png")
+	view._inspect_hand_card(3)
+	await _capture("08_readable_full_ability.png")
+	view.card_detail.hide_detail()
+	view.start_battle("forest")
+
+func _check_hud_bounds() -> void:
+	var strip: Control = view.find_child("HudStrip", true, false)
+	var viewport := Rect2(Vector2.ZERO, Vector2(root.size)).grow(0.1)
+	check(viewport.encloses(strip.get_global_rect()), "HUD fits the narrow portrait viewport in every domain")
+	for panel in strip.get_children():
+		var labels := panel.find_children("*", "Label", true, false)
+		for label in labels:
+			check(panel.get_global_rect().grow(0.1).encloses(label.get_global_rect()), "HUD labels remain inside their own module")
+			check(label.get_minimum_size().x <= label.size.x + 0.1, "Long resource names and counts fit without clipping")
 
 func _click_control(control: Control) -> void:
 	var point := control.get_global_rect().get_center()
