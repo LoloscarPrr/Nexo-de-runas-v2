@@ -126,6 +126,10 @@ func _run() -> void:
 	check(Rect2(Vector2.ZERO, Vector2(root.size)).encloses(bounds), "Tall portrait detail remains inside the viewport")
 	view.card_detail.hide_detail()
 	await _capture("06_tall_portrait_board.png")
+	var tall_hand := view.find_child("HandFrame", true, false) as Control
+	check(tall_hand != null and tall_hand.custom_minimum_size.y >= 420.0, "Tall phone expands the hand into spare portrait space")
+	if view.hand_strip.get_child_count() > 0:
+		check(view.hand_strip.get_child(0).custom_minimum_size.x >= 250.0, "Tall phone uses the readable wide-hand card size")
 	for node_name in ["PlayerNexus", "EndTurnButton", "SettingsGear"]:
 		var control: Control = view.find_child(node_name, true, false)
 		check(Rect2(Vector2.ZERO, Vector2(root.size)).encloses(control.get_global_rect()), "%s stays fully inside tall portrait" % node_name)
