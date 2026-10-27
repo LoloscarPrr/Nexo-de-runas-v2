@@ -11,7 +11,7 @@ const TEXT_INK := Color("21160d")
 const FRAME_GOLD := Color("d7a044")
 const FRAME_DARK := Color("2c1709")
 const TextScript = preload("res://scripts/presentation/cards/card_text.gd")
-const EFFECT_FONT_SIZE := 14
+const EFFECT_FONT_SIZE := 15
 
 func _draw() -> void:
 	if compact:
@@ -61,7 +61,7 @@ func _draw_title_plaque(rect: Rect2) -> void:
 	draw_rect(rect, Color("160f08"))
 	draw_rect(rect, Color("80592a"), false, 1.5)
 	var title := str(card.get("name", "CARTA"))
-	var font_size := 13
+	var font_size := 15
 	while font_size > 8 and ThemeDB.fallback_font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > rect.size.x - 4:
 		font_size -= 1
 	draw_string(ThemeDB.fallback_font, Vector2(rect.position.x + 2, rect.position.y + rect.size.y * 0.70), title, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x - 4, font_size, Color("f5dfad"))
