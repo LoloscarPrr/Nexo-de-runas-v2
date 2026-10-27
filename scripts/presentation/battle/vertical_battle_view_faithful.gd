@@ -350,7 +350,7 @@ func _build_rival_header() -> Control:
 ## Taller phones allocate some of their extra vertical area to the hand.
 func _build_hand() -> Control:
 	var frame := super._build_hand()
-	frame.custom_minimum_size = Vector2(0, 356)
+	frame.custom_minimum_size = Vector2(0, 300)
 	return frame
 
 func _notification(what: int) -> void:
@@ -364,7 +364,7 @@ func _apply_legibility_layout() -> void:
 	var frame := find_child("HandFrame", true, false) as Control
 	var content := find_child("MockupComposition", true, false) as Control
 	if frame != null:
-		frame.custom_minimum_size = Vector2(0, 422 if tall else 356)
+		frame.custom_minimum_size = Vector2(0, 422 if tall else 300)
 	if content != null:
 		content.custom_minimum_size = Vector2(0, 1680 if tall else 1512)
 	for item in hand_strip.get_children():
