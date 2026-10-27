@@ -346,6 +346,32 @@ func _build_rival_header() -> Control:
 	row.add_child(life_frame)
 	return wrapper
 
+## Hand cards grow for readability; the compact five-lane board remains unchanged.
+## Taller phones allocate some of their extra vertical area to the hand.
+func _build_hand() -> Control:
+	var frame := super._build_hand()
+	frame.custom_minimum_size = Vector2(0, 356)
+	return frame
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED and is_inside_tree():
+		call_deferred("_apply_legibility_layout")
+
+func _apply_legibility_layout() -> void:
+	if hand_strip == null or _hand_scroll == null:
+		return
+	var tall := get_viewport_rect().size.y >= 1740.0
+	var frame := find_child("HandFrame", true, false) as Control
+	var content := find_child("MockupComposition", true, false) as Control
+	if frame != null:
+		frame.custom_minimum_size = Vector2(0, 422 if tall else 356)
+	if content != null:
+		content.custom_minimum_size = Vector2(0, 1680 if tall else 1512)
+	for item in hand_strip.get_children():
+		var visual := item as Control
+		if visual != null:
+			visual.custom_minimum_size = Vector2(250, 370) if tall else FaithfulCardScript.HAND_CARD_SIZE
+
 func _build_hud() -> Control:
 	var strip := HBoxContainer.new()
 	strip.name = "HudStrip"
@@ -489,6 +515,7 @@ func _rebuild_hand() -> void:
 		hand_strip.add_child(visual)
 	if _hand_scroll != null:
 		_hand_scroll.set_deferred("scroll_horizontal", scroll_position)
+	_apply_legibility_layout()
 
 func _set_lane_state(button: Button, lane: int, side: String, unit, valid_target: bool) -> void:
 	for child in button.get_children():
