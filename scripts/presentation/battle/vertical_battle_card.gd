@@ -186,7 +186,9 @@ func _draw_cost_badge(center: Vector2, radius: float) -> void:
 	draw_circle(center, radius, Color("276b2b"))
 	draw_arc(center, radius, 0, TAU, 28, GOLD, 2.0)
 	var font_size := 14 if compact else 19
-	draw_string(ThemeDB.fallback_font, center + Vector2(-radius, font_size * 0.35), str(int(card.get("cost", 0))), HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, font_size, func _draw_title(rect: Rect2) -> void:
+	draw_string(ThemeDB.fallback_font, center + Vector2(-radius, font_size * 0.35), str(int(card.get("cost", 0))), HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, font_size, Color("fff0b8"))
+
+func _draw_title(rect: Rect2) -> void:
 	var name := str(card.get("name", "CARTA"))
 	var font := ThemeDB.fallback_font
 	if not compact:
@@ -195,9 +197,7 @@ func _draw_cost_badge(center: Vector2, radius: float) -> void:
 			font_size -= 1
 		draw_string(font, Vector2(rect.position.x, rect.position.y + rect.size.y * 0.68), name, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, font_size, Color("f4dfaa"))
 		return
-	# Compact cards have very little width (five lanes on Android).
-	# Two short lines preserve the canonical full name instead of shrinking
-	# a long single line to illegible 6-pixel text.
+	# On a five-lane board, preserve the complete canonical name in two lines.
 	var words := name.split(" ", false)
 	var best_lines: Array[String] = [name]
 	var font_size := 11
@@ -227,7 +227,6 @@ func _draw_cost_badge(center: Vector2, radius: float) -> void:
 	var first_baseline := rect.position.y + (rect.size.y - text_height) * 0.5 + font.get_ascent(font_size)
 	for line_index in range(best_lines.size()):
 		draw_string(font, Vector2(rect.position.x, first_baseline + line_index * line_height), best_lines[line_index], HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, font_size, Color("fff0c8"))
- Color("f4dfaa"))
 
 func _draw_art(rect: Rect2) -> void:
 	draw_rect(rect.grow(2), BARK_DARK)
