@@ -12,6 +12,7 @@ const FRAME_GOLD := Color("d7a044")
 const FRAME_DARK := Color("2c1709")
 const TextScript = preload("res://scripts/presentation/cards/card_text.gd")
 const EFFECT_FONT_SIZE := 14
+const EFFECT_PADDING_X := 14.0
 
 func _draw() -> void:
 	if compact:
@@ -80,11 +81,11 @@ func _draw_effect_panel(rect: Rect2) -> void:
 	var block_h := float(lines.size()) * line_h
 	var y := rect.position.y + (rect.size.y - block_h) * 0.5 + font.get_ascent(font_size)
 	for line in lines:
-		draw_string(font, Vector2(rect.position.x + 6, y), line, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x - 12, font_size, TEXT_INK)
+		draw_string(font, Vector2(rect.position.x + EFFECT_PADDING_X, y), line, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x - EFFECT_PADDING_X * 2.0, font_size, TEXT_INK)
 		y += line_h
 
 func _visible_effect_lines(panel_size: Vector2) -> Array[String]:
-	var width := maxf(panel_size.x - 12.0, 1.0)
+	var width := maxf(panel_size.x - EFFECT_PADDING_X * 2.0, 1.0)
 	var lines := _effect_lines(width)
 	var max_lines := maxi(1, floori((panel_size.y - 10.0) / ThemeDB.fallback_font.get_height(_readable_effect_font_size())))
 	if lines.size() <= max_lines:
@@ -119,4 +120,4 @@ func _effect_width(value: String) -> float:
 	return ThemeDB.fallback_font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1, _readable_effect_font_size()).x
 
 func _readable_effect_font_size() -> int:
-	return 16 if size.x >= 240.0 else EFFECT_FONT_SIZE
+	return 15 if size.x >= 240.0 else EFFECT_FONT_SIZE
