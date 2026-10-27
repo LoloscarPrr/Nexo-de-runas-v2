@@ -87,7 +87,7 @@ func _draw_effect_panel(rect: Rect2) -> void:
 func _visible_effect_lines(panel_size: Vector2) -> Array[String]:
 	var width := maxf(panel_size.x - _effect_padding_x() * 2.0, 1.0)
 	var lines := _effect_lines(width)
-	var max_lines := maxi(1, floori((panel_size.y - 10.0) / ThemeDB.fallback_font.get_height(_readable_effect_font_size())))
+	var max_lines := maxi(1, floori((panel_size.y - 18.0) / ThemeDB.fallback_font.get_height(_readable_effect_font_size())))
 	if lines.size() <= max_lines:
 		return lines
 	lines.resize(max_lines)
