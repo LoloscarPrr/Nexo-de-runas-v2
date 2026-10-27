@@ -364,13 +364,13 @@ func _apply_legibility_layout() -> void:
 	var frame := find_child("HandFrame", true, false) as Control
 	var content := find_child("MockupComposition", true, false) as Control
 	if frame != null:
-		frame.custom_minimum_size = Vector2(0, 422 if tall else 300)
+		frame.custom_minimum_size = Vector2(0, 480 if tall else 300)
 	if content != null:
 		content.custom_minimum_size = Vector2(0, 1680 if tall else 1512)
 	for item in hand_strip.get_children():
 		var visual := item as Control
 		if visual != null:
-			visual.custom_minimum_size = Vector2(250, 370) if tall else FaithfulCardScript.HAND_CARD_SIZE
+			visual.custom_minimum_size = Vector2(274, 425) if tall else FaithfulCardScript.HAND_CARD_SIZE
 
 func _build_hud() -> Control:
 	var strip := HBoxContainer.new()
