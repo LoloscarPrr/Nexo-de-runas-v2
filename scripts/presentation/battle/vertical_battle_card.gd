@@ -9,7 +9,7 @@ signal inspection_requested
 const FRAME_TEXTURE_PATH := "res://assets/domains/forest/cards/card_frame_overlay.svg"
 const CardArtRegistryScript = preload("res://scripts/presentation/battle/card_art_registry.gd")
 const COMPACT_CARD_SIZE := Vector2(156, 230)
-const HAND_CARD_SIZE := Vector2(198, 286)
+const HAND_CARD_SIZE := Vector2(222, 312)  # Larger touch/read area; scrollable hand
 
 const LEGACY_ART := {
 	"ardilla_vigilante": "ardilla",
@@ -185,7 +185,7 @@ func _draw_cost_badge(center: Vector2, radius: float) -> void:
 	draw_circle(center, radius + 1.0, BARK_DARK)
 	draw_circle(center, radius, Color("276b2b"))
 	draw_arc(center, radius, 0, TAU, 28, GOLD, 2.0)
-	var font_size := 14 if compact else 18
+	var font_size := 14 if compact else 19
 	draw_string(ThemeDB.fallback_font, center + Vector2(-radius, font_size * 0.35), str(int(card.get("cost", 0))), HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, font_size, Color("fff0b8"))
 
 func _draw_title(rect: Rect2) -> void:
@@ -252,7 +252,7 @@ func _draw_stat_orb(center: Vector2, value: int, attack_stat: bool) -> void:
 	draw_circle(center, radius + 2.0, BARK_DARK)
 	draw_circle(center, radius, fill)
 	draw_arc(center, radius, 0, TAU, 24, GOLD, 1.6)
-	var font_size := 16 if compact else 18
+	var font_size := 16 if compact else 19
 	while font_size > 10 and ThemeDB.fallback_font.get_string_size(str(value), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > radius * 2.0 - 2.0:
 		font_size -= 1
 	draw_string(ThemeDB.fallback_font, center + Vector2(-radius, font_size * 0.35), str(value), HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, font_size, Color("fff1bd"))
