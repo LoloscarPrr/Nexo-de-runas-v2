@@ -11,7 +11,7 @@ const TEXT_INK := Color("21160d")
 const FRAME_GOLD := Color("d7a044")
 const FRAME_DARK := Color("2c1709")
 const TextScript = preload("res://scripts/presentation/cards/card_text.gd")
-const EFFECT_FONT_SIZE := 15
+const EFFECT_FONT_SIZE := 14
 
 func _draw() -> void:
 	if compact:
@@ -61,7 +61,7 @@ func _draw_title_plaque(rect: Rect2) -> void:
 	draw_rect(rect, Color("160f08"))
 	draw_rect(rect, Color("80592a"), false, 1.5)
 	var title := str(card.get("name", "CARTA"))
-	var font_size := 15
+	var font_size := 16 if size.x >= 240.0 else 13
 	while font_size > 8 and ThemeDB.fallback_font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > rect.size.x - 4:
 		font_size -= 1
 	draw_string(ThemeDB.fallback_font, Vector2(rect.position.x + 2, rect.position.y + rect.size.y * 0.70), title, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x - 4, font_size, Color("f5dfad"))
@@ -75,17 +75,18 @@ func _draw_effect_panel(rect: Rect2) -> void:
 
 	var lines := _visible_effect_lines(rect.size)
 	var font := ThemeDB.fallback_font
-	var line_h := font.get_height(EFFECT_FONT_SIZE)
+	var font_size := _readable_effect_font_size()
+	var line_h := font.get_height(font_size)
 	var block_h := float(lines.size()) * line_h
-	var y := rect.position.y + (rect.size.y - block_h) * 0.5 + font.get_ascent(EFFECT_FONT_SIZE)
+	var y := rect.position.y + (rect.size.y - block_h) * 0.5 + font.get_ascent(font_size)
 	for line in lines:
-		draw_string(font, Vector2(rect.position.x + 6, y), line, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x - 12, EFFECT_FONT_SIZE, TEXT_INK)
+		draw_string(font, Vector2(rect.position.x + 6, y), line, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x - 12, font_size, TEXT_INK)
 		y += line_h
 
 func _visible_effect_lines(panel_size: Vector2) -> Array[String]:
 	var width := maxf(panel_size.x - 12.0, 1.0)
 	var lines := _effect_lines(width)
-	var max_lines := maxi(1, floori((panel_size.y - 10.0) / ThemeDB.fallback_font.get_height(EFFECT_FONT_SIZE)))
+	var max_lines := maxi(1, floori((panel_size.y - 10.0) / ThemeDB.fallback_font.get_height(_readable_effect_font_size())))
 	if lines.size() <= max_lines:
 		return lines
 	lines.resize(max_lines)
@@ -115,4 +116,7 @@ func _effect_lines(width: float = 164.0) -> Array[String]:
 	return result
 
 func _effect_width(value: String) -> float:
-	return ThemeDB.fallback_font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1, EFFECT_FONT_SIZE).x
+	return ThemeDB.fallback_font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1, _readable_effect_font_size()).x
+
+func _readable_effect_font_size() -> int:
+	return 16 if size.x >= 240.0 else EFFECT_FONT_SIZE
