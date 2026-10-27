@@ -9,7 +9,7 @@ signal inspection_requested
 const FRAME_TEXTURE_PATH := "res://assets/domains/forest/cards/card_frame_overlay.svg"
 const CardArtRegistryScript = preload("res://scripts/presentation/battle/card_art_registry.gd")
 const COMPACT_CARD_SIZE := Vector2(156, 230)
-const HAND_CARD_SIZE := Vector2(222, 312)  # Larger touch/read area; scrollable hand
+const HAND_CARD_SIZE := Vector2(198, 286)  # Standard portrait; taller viewports opt into a larger hand
 
 const LEGACY_ART := {
 	"ardilla_vigilante": "ardilla",
