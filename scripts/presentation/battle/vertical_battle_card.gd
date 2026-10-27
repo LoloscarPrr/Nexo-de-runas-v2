@@ -155,7 +155,7 @@ func _draw() -> void:
 	draw_rect(inner, BARK)
 	draw_rect(inner, GOLD_DARK, false, 2.0)
 
-	var header_h := 28.0 if compact else 40.0
+	var header_h := 34.0 if compact else 40.0
 	var stats_h := 30.0 if compact else 42.0
 	var art_rect := Rect2(11, header_h + 5, w - 22, h - header_h - stats_h - 13)
 
@@ -163,7 +163,7 @@ func _draw() -> void:
 	_draw_canonical_frame(Rect2(0, 0, w, h))
 	# Ornamentation stays behind dynamic labels and values.
 	_draw_cost_badge(Vector2(20, 19) if compact else Vector2(26, 25), 11.0 if compact else 15.0)
-	_draw_title(Rect2(37 if compact else 48, 6, w - (47 if compact else 61), header_h - 3))
+	_draw_title(Rect2(37 if compact else 48, 3 if compact else 6, w - (47 if compact else 61), header_h - 4))
 
 	var card_type := str(card.get("type", ""))
 	if card_type == "creature":
@@ -186,14 +186,48 @@ func _draw_cost_badge(center: Vector2, radius: float) -> void:
 	draw_circle(center, radius, Color("276b2b"))
 	draw_arc(center, radius, 0, TAU, 28, GOLD, 2.0)
 	var font_size := 14 if compact else 19
-	draw_string(ThemeDB.fallback_font, center + Vector2(-radius, font_size * 0.35), str(int(card.get("cost", 0))), HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, font_size, Color("fff0b8"))
-
-func _draw_title(rect: Rect2) -> void:
+	draw_string(ThemeDB.fallback_font, center + Vector2(-radius, font_size * 0.35), str(int(card.get("cost", 0))), HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, font_size, func _draw_title(rect: Rect2) -> void:
 	var name := str(card.get("name", "CARTA"))
-	var font_size := 9 if compact else 13
-	while font_size > (6 if compact else 8) and ThemeDB.fallback_font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > rect.size.x - 4:
+	var font := ThemeDB.fallback_font
+	if not compact:
+		var font_size := 13
+		while font_size > 8 and font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > rect.size.x - 4:
+			font_size -= 1
+		draw_string(font, Vector2(rect.position.x, rect.position.y + rect.size.y * 0.68), name, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, font_size, Color("f4dfaa"))
+		return
+	# Compact cards have very little width (five lanes on Android).
+	# Two short lines preserve the canonical full name instead of shrinking
+	# a long single line to illegible 6-pixel text.
+	var words := name.split(" ", false)
+	var best_lines: Array[String] = [name]
+	var font_size := 11
+	if font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > rect.size.x - 2 and words.size() > 1:
+		var best_width := INF
+		for split in range(1, words.size()):
+			var left := " ".join(words.slice(0, split))
+			var right := " ".join(words.slice(split))
+			var widest := maxf(
+				font.get_string_size(left, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x,
+				font.get_string_size(right, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+			)
+			if widest < best_width:
+				best_width = widest
+				best_lines = [left, right]
+	while font_size > 8:
+		var all_fit := true
+		for line in best_lines:
+			if font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > rect.size.x - 2:
+				all_fit = false
+				break
+		if all_fit:
+			break
 		font_size -= 1
-	draw_string(ThemeDB.fallback_font, Vector2(rect.position.x, rect.position.y + rect.size.y * 0.68), name, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, maxi(font_size, 6), Color("f4dfaa"))
+	var line_height := font.get_height(font_size)
+	var text_height := float(best_lines.size()) * line_height
+	var first_baseline := rect.position.y + (rect.size.y - text_height) * 0.5 + font.get_ascent(font_size)
+	for line_index in range(best_lines.size()):
+		draw_string(font, Vector2(rect.position.x, first_baseline + line_index * line_height), best_lines[line_index], HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, font_size, Color("fff0c8"))
+ Color("f4dfaa"))
 
 func _draw_art(rect: Rect2) -> void:
 	draw_rect(rect.grow(2), BARK_DARK)
