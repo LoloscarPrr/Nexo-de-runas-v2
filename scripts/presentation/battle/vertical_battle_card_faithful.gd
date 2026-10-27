@@ -81,11 +81,11 @@ func _draw_effect_panel(rect: Rect2) -> void:
 	var block_h := float(lines.size()) * line_h
 	var y := rect.position.y + (rect.size.y - block_h) * 0.5 + font.get_ascent(font_size)
 	for line in lines:
-		draw_string(font, Vector2(rect.position.x + EFFECT_PADDING_X, y), line, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x - EFFECT_PADDING_X * 2.0, font_size, TEXT_INK)
+		draw_string(font, Vector2(rect.position.x + _effect_padding_x(), y), line, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x - _effect_padding_x() * 2.0, font_size, TEXT_INK)
 		y += line_h
 
 func _visible_effect_lines(panel_size: Vector2) -> Array[String]:
-	var width := maxf(panel_size.x - EFFECT_PADDING_X * 2.0, 1.0)
+	var width := maxf(panel_size.x - _effect_padding_x() * 2.0, 1.0)
 	var lines := _effect_lines(width)
 	var max_lines := maxi(1, floori((panel_size.y - 10.0) / ThemeDB.fallback_font.get_height(_readable_effect_font_size())))
 	if lines.size() <= max_lines:
@@ -121,3 +121,6 @@ func _effect_width(value: String) -> float:
 
 func _readable_effect_font_size() -> int:
 	return 15 if size.x >= 240.0 else EFFECT_FONT_SIZE
+
+func _effect_padding_x() -> float:
+	return EFFECT_PADDING_X if size.x >= 240.0 else 6.0
