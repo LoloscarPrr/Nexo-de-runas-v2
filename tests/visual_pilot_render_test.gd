@@ -146,6 +146,8 @@ func _run() -> void:
 	var hand_scroll := view.hand_strip.get_parent() as ScrollContainer
 	check(empty_hand_frame != null and empty_hand_frame.custom_minimum_size.y <= 100.0, "Empty hand collapses to a slim row on tall Android")
 	check(empty_hint != null and empty_hint.visible and not hand_scroll.visible, "Empty hand shows a discrete label without a black card well")
+	var empty_footer := view.find_child("BattleFooter", true, false) as Control
+	check(empty_footer != null and empty_footer.get_global_rect().end.y >= float(root.size.y) * 0.78, "End Turn and Nexus stay near the bottom when the tall hand collapses")
 	check(view.hand_strip.get_child_count() == 0, "No decorative card gets invented by the empty-hand UI")
 	await _capture("09_empty_hand_tall.png")
 	# Tapping the occupied lane still opens full canonical art and live stats.
