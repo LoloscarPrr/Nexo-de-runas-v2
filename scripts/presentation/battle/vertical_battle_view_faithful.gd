@@ -30,6 +30,7 @@ var battle_menu: Control
 var result_screen
 var _result_presented := false
 var _hand_scroll: ScrollContainer
+var _empty_hand_hint: Label
 var _essence_caption: Label
 var _energy_pips: Label
 var _relics_count: Label
@@ -351,6 +352,14 @@ func _build_rival_header() -> Control:
 func _build_hand() -> Control:
 	var frame := super._build_hand()
 	frame.custom_minimum_size = Vector2(0, 300)
+	# Reuse the existing ornate hand panel; do not show a large empty black box.
+	var stack := frame.get_child(0) as VBoxContainer
+	_empty_hand_hint = _label("SIN CARTAS EN LA MANO", 21, PARCHMENT_F, HORIZONTAL_ALIGNMENT_CENTER)
+	_empty_hand_hint.name = "EmptyHandHint"
+	_empty_hand_hint.custom_minimum_size = Vector2(0, 44)
+	_empty_hand_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_empty_hand_hint.hide()
+	stack.add_child(_empty_hand_hint)
 	return frame
 
 func _notification(what: int) -> void:
@@ -361,12 +370,18 @@ func _apply_legibility_layout() -> void:
 	if hand_strip == null or _hand_scroll == null:
 		return
 	var tall := get_viewport_rect().size.y >= 1740.0
+	var empty := hand_strip.get_child_count() == 0
 	var frame := find_child("HandFrame", true, false) as Control
 	var content := find_child("MockupComposition", true, false) as Control
+	# The normal game never loses its hand scrolling; only the genuinely empty
+	# hand collapses, revealing the same atmospheric battlefield behind it.
+	_hand_scroll.visible = not empty
+	if _empty_hand_hint != null:
+		_empty_hand_hint.visible = empty
 	if frame != null:
-		frame.custom_minimum_size = Vector2(0, 480 if tall else 300)
+		frame.custom_minimum_size = Vector2(0, 92 if empty else (480 if tall else 300))
 	if content != null:
-		content.custom_minimum_size = Vector2(0, 1680 if tall else 1512)
+		content.custom_minimum_size = Vector2(0, (1512 if empty else 1680) if tall else 1512)
 	for item in hand_strip.get_children():
 		var visual := item as Control
 		if visual != null:
