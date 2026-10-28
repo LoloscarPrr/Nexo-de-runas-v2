@@ -31,6 +31,7 @@ var result_screen
 var _result_presented := false
 var _hand_scroll: ScrollContainer
 var _empty_hand_hint: Label
+var _empty_hand_spacer: Control
 var _essence_caption: Label
 var _energy_pips: Label
 var _relics_count: Label
@@ -38,6 +39,16 @@ var _discard_count: Label
 
 func _build_view() -> void:
 	super._build_view()
+	# When there are no cards, leave the ornate card well compact but keep the
+	# player's Nexo and End Turn controls near the lower screen edge.
+	var composition := find_child("MockupComposition", true, false) as VBoxContainer
+	_empty_hand_spacer = Control.new()
+	_empty_hand_spacer.name = "EmptyHandFlexibleSpace"
+	_empty_hand_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_empty_hand_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_empty_hand_spacer.hide()
+	composition.add_child(_empty_hand_spacer)
+	composition.move_child(_empty_hand_spacer, composition.get_child_count() - 2)
 	card_detail = DetailScript.new()
 	add_child(card_detail)
 	_hand_scroll = hand_strip.get_parent() as ScrollContainer
@@ -378,10 +389,12 @@ func _apply_legibility_layout() -> void:
 	_hand_scroll.visible = not empty
 	if _empty_hand_hint != null:
 		_empty_hand_hint.visible = empty
+	if _empty_hand_spacer != null:
+		_empty_hand_spacer.visible = empty
 	if frame != null:
 		frame.custom_minimum_size = Vector2(0, 92 if empty else (480 if tall else 300))
 	if content != null:
-		content.custom_minimum_size = Vector2(0, (1512 if empty else 1680) if tall else 1512)
+		content.custom_minimum_size = Vector2(0, 1680 if tall else 1512)
 	for item in hand_strip.get_children():
 		var visual := item as Control
 		if visual != null:
