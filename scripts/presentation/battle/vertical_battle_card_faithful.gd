@@ -35,7 +35,7 @@ func _draw() -> void:
 
 	var header_h := 40.0
 	var stats_h := 42.0
-	var text_h := 82.0
+	var text_h := 112.0 if h >= 390.0 else 82.0
 	var art_top := header_h + 4.0
 	var art_h := h - header_h - text_h - stats_h - 17.0
 	var art_rect := Rect2(11, art_top, w - 22, art_h)
