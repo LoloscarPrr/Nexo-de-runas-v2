@@ -133,6 +133,46 @@ func _run() -> void:
 	for node_name in ["PlayerNexus", "EndTurnButton", "SettingsGear"]:
 		var control: Control = view.find_child(node_name, true, false)
 		check(Rect2(Vector2.ZERO, Vector2(root.size)).encloses(control.get_global_rect()), "%s stays fully inside tall portrait" % node_name)
+	# Empty-hand responsive UI must not waste a third of the tall screen.
+	# Use a deterministic UI fixture; restore the same hand immediately after.
+	var saved_pilot_hand: Array[String] = view.session._engine.hand.duplicate()
+	view.session._engine.hand.clear()
+	view._snapshot = view.session.snapshot()
+	view._render()
+	await process_frame
+	await process_frame
+	var empty_hand_frame := view.find_child("HandFrame", true, false) as Control
+	var empty_hint := view.find_child("EmptyHandHint", true, false) as Label
+	var hand_scroll := view.hand_strip.get_parent() as ScrollContainer
+	check(empty_hand_frame != null and empty_hand_frame.custom_minimum_size.y <= 100.0, "Empty hand collapses to a slim row on tall Android")
+	check(empty_hint != null and empty_hint.visible and not hand_scroll.visible, "Empty hand shows a discrete label without a black card well")
+	check(view.hand_strip.get_child_count() == 0, "No decorative card gets invented by the empty-hand UI")
+	await _capture("09_empty_hand_tall.png")
+	# Tapping the occupied lane still opens full canonical art and live stats.
+	await _click_control(view.player_lane_buttons[4])
+	check(view.card_detail.visible, "Board card is inspectable by a real click with an empty hand")
+	view.card_detail.hide_detail()
+	view.session._engine.hand = saved_pilot_hand
+	view._snapshot = view.session.snapshot()
+	view._render()
+	await process_frame
+	check(hand_scroll.visible and not empty_hint.visible, "Drawing cards restores the actual hand scroller")
+	check(empty_hand_frame.custom_minimum_size.y >= 470.0, "Drawing restores large hand cards on tall Android")
+	await _capture("10_restored_hand_tall.png")
+	root.size = Vector2i(864, 1536)
+	view.session._engine.hand.clear()
+	view._snapshot = view.session.snapshot()
+	view._render()
+	await process_frame
+	check(empty_hand_frame.custom_minimum_size.y <= 100.0, "Empty hand also collapses on standard portrait")
+	for node_name in ["PlayerNexus", "EndTurnButton", "SettingsGear"]:
+		var control: Control = view.find_child(node_name, true, false)
+		check(Rect2(Vector2.ZERO, Vector2(root.size)).encloses(control.get_global_rect()), "Collapsed hand preserves standard portrait bounds: %s" % node_name)
+	await _capture("11_empty_hand_standard.png")
+	view.session._engine.hand = saved_pilot_hand
+	view._snapshot = view.session.snapshot()
+	view._render()
+
 	print("Visual pilot rendered checks: %d failures; captures in %s" % [failures, output_directory])
 	view.queue_free()
 	await process_frame
