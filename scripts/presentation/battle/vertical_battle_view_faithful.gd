@@ -15,12 +15,13 @@ const GREEN_F := Color("62df58")
 const ORANGE_F := Color("ec762d")
 const PANEL_DARK_F := Color(0.025, 0.022, 0.016, 0.92)
 
-## Optional review deck. Uses existing canonical IDs and ordinary battle rules.
+## Optional review deck. Four approved illustrations appear in the opening hand.
+## Uses existing canonical IDs and ordinary battle rules.
 const VISUAL_PILOT_DECK: Array[String] = [
-	"bs_001_brote_del_claro", "bs_006_lobo_de_manada", "bs_013_avatar_del_bosque", "bs_001_brote_del_claro",
+	"bs_001_brote_del_claro", "bs_006_lobo_de_manada", "bs_013_avatar_del_bosque", "bs_010_oso_musgoso",
 	"bs_003_lobo_joven", "bs_003_lobo_joven", "bs_004_cierva_guardabosques", "bs_004_cierva_guardabosques",
 	"bs_006_lobo_de_manada", "bs_007_chaman_del_roble", "bs_007_chaman_del_roble",
-	"bs_008_jabali_de_corteza", "bs_008_jabali_de_corteza", "bs_010_oso_musgoso", "bs_010_oso_musgoso",
+	"bs_008_jabali_de_corteza", "bs_008_jabali_de_corteza", "bs_010_oso_musgoso", "bs_001_brote_del_claro",
 	"bs_014_savia_vital", "bs_014_savia_vital", "bs_015_crecimiento_repentino", "bs_015_crecimiento_repentino",
 	"bs_019_totem_de_savia"
 ]

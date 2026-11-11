@@ -17,7 +17,8 @@ func _initialize() -> void:
 	var pilot := {
 		"bs_001_brote_del_claro": ["BS-001", 1, 1, 2, "BROTE DEL CLARO"],
 		"bs_006_lobo_de_manada": ["BS-006", 3, 3, 3, "LOBO DE MANADA"],
-		"bs_013_avatar_del_bosque": ["BS-013", 6, 6, 8, "AVATAR DEL BOSQUE"]
+		"bs_013_avatar_del_bosque": ["BS-013", 6, 6, 8, "AVATAR DEL BOSQUE"],
+		"bs_010_oso_musgoso": ["BS-010", 4, 4, 6, "OSO MUSGOSO"]
 	}
 	for card_id in pilot:
 		var expected: Array = pilot[card_id]
@@ -34,15 +35,16 @@ func _initialize() -> void:
 		check(ResourceLoader.exists(path), "Actual imported art exists for %s" % card_id)
 		var texture := Art.load_art(card_id)
 		check(texture != null, "Actual illustration loads for %s" % card_id)
+		var expected_size := Vector2(256, 342) if card_id == "bs_010_oso_musgoso" else Vector2(384, 512)
 		if texture != null:
-			check(texture.get_size() == Vector2(384, 512), "Supplied portrait resolution preserved for %s" % card_id)
+			check(texture.get_size() == expected_size, "Supplied portrait resolution preserved for %s" % card_id)
 		for slot in [Vector2(174, 115), Vector2(132, 157), Vector2(246, 298)]:
-			var source_rect := Art.art_crop(card_id, Vector2(384, 512), slot)
+			var source_rect := Art.art_crop(card_id, expected_size, slot)
 			check(source_rect.size.x > 0 and source_rect.size.y > 0, "Valid art crop for %s" % card_id)
 			check(source_rect.position.x >= 0 and source_rect.position.y >= 0, "Crop stays in illustration for %s" % card_id)
-			check(source_rect.end.x <= 384.001 and source_rect.end.y <= 512.001, "Crop does not overrun image for %s" % card_id)
+			check(source_rect.end.x <= expected_size.x + 0.001 and source_rect.end.y <= expected_size.y + 0.001, "Crop does not overrun image for %s" % card_id)
 			var normalized: Rect2 = Art.PILOT_ART[card_id]["subject"]
-			var subject := Rect2(normalized.position * Vector2(384, 512), normalized.size * Vector2(384, 512))
+			var subject := Rect2(normalized.position * expected_size, normalized.size * expected_size)
 			check(source_rect.grow(0.01).encloses(subject), "Head, paws and roots survive crop for %s" % card_id)
 			var fitted := Art.art_destination(source_rect.size, Rect2(Vector2.ZERO, slot))
 			check(absf(fitted.size.aspect() - source_rect.size.aspect()) < 0.001, "No stretching in hand, board or detail for %s" % card_id)
@@ -63,5 +65,5 @@ func _initialize() -> void:
 	check(Art.art_path("ch_001_rata_de_osario").is_empty(), "Other domains retain existing fallback")
 	check(Art.load_art("unknown_card") == null, "Unknown artwork safely uses the fallback")
 	check(Art.art_crop("", Vector2(384, 512), Vector2(134, 159)).size.x > 0, "Compact art crop valid")
-	print("Visual pilot three cards: %d failures" % failures)
+	print("Visual pilot four cards: %d failures" % failures)
 	quit(1 if failures else 0)

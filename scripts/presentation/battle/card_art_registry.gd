@@ -20,6 +20,12 @@ const PILOT_ART = {
 		"path": "res://assets/domains/forest/cards/art/bs_013_avatar_del_bosque.webp",
 		"focus": Vector2(0.52, 0.37),
 		"subject": Rect2(0.02, 0.0, 0.96, 0.96)
+	},
+	"bs_010_oso_musgoso": {
+		"path": "res://assets/domains/forest/cards/art/bs_010_oso_musgoso.webp",
+		"focus": Vector2(0.61, 0.43),
+		# Mouth, face and leading paw are protected at every render size.
+		"subject": Rect2(0.02, 0.01, 0.96, 0.98)
 	}
 }
 

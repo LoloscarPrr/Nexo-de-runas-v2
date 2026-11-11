@@ -45,3 +45,14 @@ The three supplied WebP files are included unchanged. Protected subject bounds p
 The complete Nexus and end-turn controls fit inside the 864×1536 portrait viewport. The gear opens Continue / Return to menu; Android Back closes inspection first, then toggles the battle menu. Continuing keeps the current battle unchanged. Returning to the main menu retains the existing behavior: starting another match creates a fresh one.
 
 Eight-card hands retain their scroll position after selection. Pointer drags and native touch-scroll signals cancel inspection and selection; a stationary hold still opens detail. The rendered regression covers these inputs, full-hand selection and footer bounds in both 16:9 and tall portrait. Physical Android behavior is still unverified.
+
+## Extension 0.3 — Oso Musgoso (BS-010)
+
+Added the fourth approved Bosque Salvaje illustration to the same feature branch, without changing the canonical battle engine, signing configuration or saved games.
+
+- Canonical ID: `bs_010_oso_musgoso`; common creature; cost 4, ATQ 4, SAL 6, no effect.
+- Art source: selected Canva card `Oso Musgoso v2`, approved 2026-11-10. The `bs_010_oso_musgoso.webp` asset contains the illustrated bear alone, not the card frame or baked-in labels.
+- Rendering: `CardArtRegistry.PILOT_ART` maps the canonical ID, with a protected subject rectangle including its mouth and front paw; dynamic stats remain in renderer code.
+- Accessibility: `PILOTO BOSQUE` opens with the existing three illustrations plus Oso Musgoso as its fourth card. Playing it still requires four energy.
+- Tests: existing pilot contract now checks all four assets, art crop bounds, renderer resolution and canonical values. The three original cards and their visuals are preserved.
+- Pending release gate: confirm Godot 4.3 import, GitHub Actions signed Android APK and **physical Android visual verification** of mouth and front paw in hand, board and detail.
