@@ -122,3 +122,15 @@
 - [ ] J903 Retirar recursos/reglas legado ya no usados.
 - [x] J904 APK verde y validación automatizada después de la migración inicial de cinco carriles.
 - [ ] J905 Cambiar orientación runtime final a vertical sólo cuando Presentation vertical tenga equivalencia funcional.
+
+
+## Etapa 00 — Consolidación controlada (27-11-2026)
+- [x] Verificar historial: `main` es ancestro de `feature/visual-pilot-three-cards`, con 31 commits de avance y 0 por detrás; no se necesita fusión de líneas divergentes.
+- [x] Abrir una rama aislada `feature/p0-consolidation-20261127` desde el piloto visual; mantener `main` intacta hasta la revisión.
+- [x] Incorporar regresión específica: catálogo de cuatro dominios, 5 carriles, 4 ilustraciones piloto y datos canónicos.
+- [x] Corregir el subtítulo del piloto para mostrar Oso Musgoso; extender prueba de navegación existente.
+- [ ] Exigir que la integración supere todas las pruebas Godot 4.3, renders y export Android firmada.
+- [ ] Revisar controles y recortes en teléfono físico, incluida boca de Oso Musgoso, sin regresiones táctiles.
+- [ ] Aplicar protección de `main` y revisión de PR cuando la configuración del repositorio lo permita.
+- [ ] Aprobar y fusionar sólo después de cumplir los controles anteriores.
+- [ ] Etapa 01: conectar expedición/recompensas al motor canónico sin reutilizar reglas de campaña legado.

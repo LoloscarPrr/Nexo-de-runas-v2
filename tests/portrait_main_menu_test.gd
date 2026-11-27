@@ -64,7 +64,8 @@ func _run_checks() -> void:
 		await process_frame
 		var opening: Dictionary = app.battle_screen.current_snapshot()
 		check(app.battle_screen.visible and not menu.visible, "Pilot button opens the actual battle screen")
-		check(Array(opening.get("hand", [])).slice(0, 3) == ["bs_001_brote_del_claro", "bs_006_lobo_de_manada", "bs_013_avatar_del_bosque"], "All three pilot cards are accessible in the opening hand")
+		check(Array(opening.get("hand", [])).slice(0, 4) == ["bs_001_brote_del_claro", "bs_006_lobo_de_manada", "bs_013_avatar_del_bosque", "bs_010_oso_musgoso"], "All four approved pilot cards are accessible in the opening hand")
+		check(pilot.text.contains("Oso"), "Pilot menu explicitly identifies its fourth illustrated card")
 		check(opening.get("energy_capacity") == 1 and opening.get("player_integrity") == 20, "Pilot mode keeps ordinary starting resources and Integrity")
 		check(not quit_on_go_back, "Android Back is handled by navigation before quitting")
 		app._notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)

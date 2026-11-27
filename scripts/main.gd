@@ -183,7 +183,7 @@ func _build_menu() -> void:
 	play.pressed.connect(_start_canonical_battle)
 	root.add_child(play)
 
-	var pilot := _menu_button("PILOTO BOSQUE", "Brote · Lobo · Avatar")
+	var pilot := _menu_button("PILOTO BOSQUE", "Brote · Lobo · Avatar · Oso")
 	pilot.name = "MainVisualPilotButton"
 	pilot.custom_minimum_size = Vector2(0, 72)
 	pilot.pressed.connect(_start_visual_pilot_battle)
