@@ -38,6 +38,8 @@ func _build_view() -> void:
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	outer.add_theme_constant_override("margin_left", 8)
 	outer.add_theme_constant_override("margin_right", 8)
+	outer.add_theme_constant_override("margin_top", 8)
+	outer.add_theme_constant_override("margin_bottom", 8)
 	add_child(outer)
 
 	# En un móvil 20.5:9 el viewport virtual es más alto que 1536. Estos dos
@@ -279,11 +281,12 @@ func _build_hand() -> Control:
 	stack.add_theme_constant_override("separation", 2)
 	frame.add_child(stack)
 
-	var title := _label("MANO", 14, Color("e0ab50"), HORIZONTAL_ALIGNMENT_CENTER)
+	var title := _label("MANO · MANTÉN PULSADO PARA AMPLIAR", 16, Color("e0ab50"), HORIZONTAL_ALIGNMENT_CENTER)
 	title.custom_minimum_size = Vector2(0, 20)
 	stack.add_child(title)
 
 	var scroll := ScrollContainer.new()
+	scroll.name = "HandScroll"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED

@@ -1,12 +1,15 @@
 class_name VerticalBattleCard
 extends Button
 
+signal inspection_requested
+
 ## Renderer físico de cartas para la Presentation vertical.
 ## Sólo consume datos ya resueltos por Application; no conoce reglas del Domain.
 
 const FRAME_TEXTURE_PATH := "res://assets/domains/forest/cards/card_frame_overlay.svg"
+const CardArtRegistryScript = preload("res://scripts/presentation/battle/card_art_registry.gd")
 const COMPACT_CARD_SIZE := Vector2(156, 230)
-const HAND_CARD_SIZE := Vector2(198, 286)
+const HAND_CARD_SIZE := Vector2(198, 286)  # Standard portrait; taller viewports opt into a larger hand
 
 const LEGACY_ART := {
 	"ardilla_vigilante": "ardilla",
@@ -43,6 +46,9 @@ var ready_for_action := true
 var _cached_art_id := ""
 var _cached_texture: Texture2D
 var _frame_texture: Texture2D
+var _inspection_timer: Timer
+var _inspection_consumed := false
+var _press_origin := Vector2.ZERO
 
 func _ready() -> void:
 	focus_mode = Control.FOCUS_NONE
@@ -55,6 +61,11 @@ func _ready() -> void:
 	button_up.connect(_restore_pose)
 	mouse_entered.connect(_hover_pose)
 	mouse_exited.connect(_restore_pose)
+	_inspection_timer = Timer.new()
+	_inspection_timer.wait_time = 0.45
+	_inspection_timer.one_shot = true
+	_inspection_timer.timeout.connect(_request_inspection)
+	add_child(_inspection_timer)
 	_restore_pose()
 
 func configure(data: Dictionary, atk: int = -1, hp: int = -1, is_selected: bool = false, is_compact: bool = false, is_ready: bool = true) -> void:
@@ -94,14 +105,42 @@ func _hover_pose() -> void:
 func _press_pose() -> void:
 	if disabled or compact:
 		return
+	_inspection_consumed = false
+	_inspection_timer.start()
 	pivot_offset = size * 0.5
 	create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).tween_property(self, "scale", Vector2(0.965, 0.965), 0.05)
 
 func _restore_pose() -> void:
+	if _inspection_timer != null:
+		_inspection_timer.stop()
 	pivot_offset = size * 0.5
 	var target := Vector2(1.055, 1.055) if selected and not compact else Vector2.ONE
 	create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).tween_property(self, "scale", target, 0.08)
 	queue_redraw()
+
+func _request_inspection() -> void:
+	if not button_pressed or compact or disabled:
+		return
+	_inspection_consumed = true
+	_restore_pose()
+	inspection_requested.emit()
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		_press_origin = event.position
+	if event is InputEventMouseMotion and _inspection_timer != null and not _inspection_timer.is_stopped():
+		if event.position.distance_to(_press_origin) > 16.0:
+			cancel_pointer_gesture()
+
+func cancel_pointer_gesture() -> void:
+	# Scrolling the hand must not inspect or select the card under the finger.
+	_inspection_consumed = true
+	_restore_pose()
+
+func consume_inspection_press() -> bool:
+	var consumed := _inspection_consumed
+	_inspection_consumed = false
+	return consumed
 
 func _draw() -> void:
 	if card.is_empty() or size.x < 58.0 or size.y < 80.0:
@@ -116,21 +155,21 @@ func _draw() -> void:
 	draw_rect(inner, BARK)
 	draw_rect(inner, GOLD_DARK, false, 2.0)
 
-	var header_h := 28.0 if compact else 40.0
+	var header_h := 34.0 if compact else 40.0
 	var stats_h := 30.0 if compact else 42.0
 	var art_rect := Rect2(11, header_h + 5, w - 22, h - header_h - stats_h - 13)
 
-	_draw_cost_badge(Vector2(20, 19) if compact else Vector2(26, 25), 11.0 if compact else 15.0)
-	_draw_title(Rect2(37 if compact else 48, 6, w - (47 if compact else 61), header_h - 3))
 	_draw_art(art_rect)
+	_draw_canonical_frame(Rect2(0, 0, w, h))
+	# Ornamentation stays behind dynamic labels and values.
+	_draw_cost_badge(Vector2(20, 19) if compact else Vector2(26, 25), 11.0 if compact else 15.0)
+	_draw_title(Rect2(37 if compact else 48, 3 if compact else 6, w - (47 if compact else 61), header_h - 4))
 
 	var card_type := str(card.get("type", ""))
 	if card_type == "creature":
 		_draw_creature_stats(Rect2(10, h - stats_h - 5, w - 20, stats_h))
 	else:
 		_draw_non_creature_footer(Rect2(10, h - stats_h - 5, w - 20, stats_h), card_type)
-
-	_draw_canonical_frame(Rect2(0, 0, w, h))
 
 	if not ready_for_action and card_type == "creature":
 		draw_rect(art_rect, Color(0.02, 0.03, 0.02, 0.35))
@@ -146,17 +185,48 @@ func _draw_cost_badge(center: Vector2, radius: float) -> void:
 	draw_circle(center, radius + 1.0, BARK_DARK)
 	draw_circle(center, radius, Color("276b2b"))
 	draw_arc(center, radius, 0, TAU, 28, GOLD, 2.0)
-	var font_size := 11 if compact else 15
+	var font_size := 14 if compact else 19
 	draw_string(ThemeDB.fallback_font, center + Vector2(-radius, font_size * 0.35), str(int(card.get("cost", 0))), HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, font_size, Color("fff0b8"))
 
 func _draw_title(rect: Rect2) -> void:
 	var name := str(card.get("name", "CARTA"))
-	var font_size := 7 if compact else 11
-	if name.length() > 17:
+	var font := ThemeDB.fallback_font
+	if not compact:
+		var font_size := 13
+		while font_size > 8 and font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > rect.size.x - 4:
+			font_size -= 1
+		draw_string(font, Vector2(rect.position.x, rect.position.y + rect.size.y * 0.68), name, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, font_size, Color("f4dfaa"))
+		return
+	# On a five-lane board, preserve the complete canonical name in two lines.
+	var words := name.split(" ", false)
+	var best_lines: Array[String] = [name]
+	var font_size := 11
+	if font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > rect.size.x - 2 and words.size() > 1:
+		var best_width := INF
+		for split in range(1, words.size()):
+			var left := " ".join(words.slice(0, split))
+			var right := " ".join(words.slice(split))
+			var widest := maxf(
+				font.get_string_size(left, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x,
+				font.get_string_size(right, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+			)
+			if widest < best_width:
+				best_width = widest
+				best_lines = [left, right]
+	while font_size > 8:
+		var all_fit := true
+		for line in best_lines:
+			if font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > rect.size.x - 2:
+				all_fit = false
+				break
+		if all_fit:
+			break
 		font_size -= 1
-	if name.length() > 23:
-		font_size -= 1
-	draw_string(ThemeDB.fallback_font, Vector2(rect.position.x, rect.position.y + rect.size.y * 0.68), name, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, maxi(font_size, 6), Color("f4dfaa"))
+	var line_height := font.get_height(font_size)
+	var text_height := float(best_lines.size()) * line_height
+	var first_baseline := rect.position.y + (rect.size.y - text_height) * 0.5 + font.get_ascent(font_size)
+	for line_index in range(best_lines.size()):
+		draw_string(font, Vector2(rect.position.x, first_baseline + line_index * line_height), best_lines[line_index], HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, font_size, Color("fff0c8"))
 
 func _draw_art(rect: Rect2) -> void:
 	draw_rect(rect.grow(2), BARK_DARK)
@@ -166,17 +236,24 @@ func _draw_art(rect: Rect2) -> void:
 		_draw_rune_art(rect)
 	else:
 		var source_size := texture.get_size()
-		var src := Rect2(source_size.x * 0.055, source_size.y * 0.185, source_size.x * 0.89, source_size.y * 0.565)
 		var dst := rect.grow(-1)
-		var src_aspect := src.size.x / src.size.y
-		var dst_aspect := dst.size.x / dst.size.y
-		var fit := dst.size
-		if src_aspect > dst_aspect:
-			fit.y = dst.size.x / src_aspect
+		if not CardArtRegistryScript.art_path(str(card.get("id", ""))).is_empty():
+			# Keep the protected portrait subject visible even in a wide hand slot.
+			var src := CardArtRegistryScript.art_crop(str(card.get("id", "")), source_size, dst.size)
+			var fitted := CardArtRegistryScript.art_destination(src.size, dst)
+			draw_texture_rect_region(texture, fitted, src, Color(0.96, 1.0, 0.92, 1.0), false, true)
 		else:
-			fit.x = dst.size.y * src_aspect
-		var pos := dst.position + (dst.size - fit) * 0.5
-		draw_texture_rect_region(texture, Rect2(pos, fit), src, Color(0.96, 1.0, 0.92, 1.0), false, true)
+			# Migration-only: old card sheets contain baked borders and statistics.
+			var src := Rect2(source_size.x * 0.055, source_size.y * 0.185, source_size.x * 0.89, source_size.y * 0.565)
+			var src_aspect := src.size.x / src.size.y
+			var dst_aspect := dst.size.x / dst.size.y
+			var fit := dst.size
+			if src_aspect > dst_aspect:
+				fit.y = dst.size.x / src_aspect
+			else:
+				fit.x = dst.size.y * src_aspect
+			var pos := dst.position + (dst.size - fit) * 0.5
+			draw_texture_rect_region(texture, Rect2(pos, fit), src, Color(0.96, 1.0, 0.92, 1.0), false, true)
 		draw_rect(rect, Color(0.03, 0.08, 0.02, 0.09))
 	draw_rect(rect, GOLD_DARK, false, 1.4)
 
@@ -203,12 +280,15 @@ func _draw_non_creature_footer(rect: Rect2, card_type: String) -> void:
 	draw_string(ThemeDB.fallback_font, Vector2(rect.position.x, rect.position.y + rect.size.y * 0.65), kind, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 8 if compact else 11, INK)
 
 func _draw_stat_orb(center: Vector2, value: int, attack_stat: bool) -> void:
-	var radius := 10.0 if compact else 14.0
+	var radius := 12.0 if compact else 16.0
 	var fill := Color("202018") if attack_stat else BLOOD
 	draw_circle(center, radius + 2.0, BARK_DARK)
 	draw_circle(center, radius, fill)
 	draw_arc(center, radius, 0, TAU, 24, GOLD, 1.6)
-	draw_string(ThemeDB.fallback_font, center + Vector2(-radius, 4 if compact else 5), str(value), HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, 10 if compact else 14, Color("fff1bd"))
+	var font_size := 16 if compact else 19
+	while font_size > 10 and ThemeDB.fallback_font.get_string_size(str(value), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > radius * 2.0 - 2.0:
+		font_size -= 1
+	draw_string(ThemeDB.fallback_font, center + Vector2(-radius, font_size * 0.35), str(value), HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, font_size, Color("fff1bd"))
 
 func _draw_keyword_rune(rect: Rect2) -> void:
 	var keywords: Array = card.get("keywords", [])
@@ -248,6 +328,13 @@ func _draw_canonical_frame(rect: Rect2) -> void:
 
 func _get_art_texture() -> Texture2D:
 	var card_id := str(card.get("id", ""))
+	var canonical_path := CardArtRegistryScript.art_path(card_id)
+	if not canonical_path.is_empty():
+		if _cached_art_id == canonical_path:
+			return _cached_texture
+		_cached_art_id = canonical_path
+		_cached_texture = CardArtRegistryScript.load_art(card_id)
+		return _cached_texture
 	var art_id := str(LEGACY_ART.get(card_id, ""))
 	if art_id.is_empty():
 		return null

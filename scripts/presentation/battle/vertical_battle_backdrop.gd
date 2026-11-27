@@ -18,6 +18,8 @@ const BONE := Color("b5aa83")
 const BONE_DARK := Color("5d533c")
 const EYE_GLOW := Color("72f14d")
 
+var show_guardian := true
+
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process(false)
@@ -44,7 +46,8 @@ func _draw() -> void:
 
 	# El Guardabosques ocupa el centro superior del mockup. Se dibuja como
 	# silueta ritual para que el fondo siga siendo liviano y no dependa de arte.
-	_draw_guardian(Vector2(w * 0.50, minf(h * 0.095, 195.0)), minf(w * 0.18, 150.0))
+	if show_guardian:
+		_draw_guardian(Vector2(w * 0.50, minf(h * 0.095, 195.0)), minf(w * 0.18, 150.0))
 	_draw_candle_cluster(Vector2(w * 0.18, minf(h * 0.12, 235.0)), 1.0)
 	_draw_candle_cluster(Vector2(w * 0.82, minf(h * 0.12, 235.0)), 0.95)
 

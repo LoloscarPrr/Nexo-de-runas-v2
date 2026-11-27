@@ -100,7 +100,17 @@ Elegir dominio → mazo/Guardián/dificultad → mapa → nodos. Nodos canónico
 
 Las mejoras de campaña deben dirigirse a instancias concretas o a modificaciones persistibles explícitas; no se deben aplicar accidentalmente a todas las copias que compartan `card_id`.
 
+## Colección — primer bloque funcional
+La entrada Colección abre el catálogo consultable de las 20 cartas fundacionales de Bosque Salvaje, ordenadas por ID, con búsqueda por nombre/ID y filtros combinables por tipo y coste. Permite ampliar cualquier carta con sus valores base y texto del contrato de efectos actual; reutiliza las tres ilustraciones del piloto y el respaldo existente para las demás. El contador representa entradas del catálogo, no propiedad ni desbloqueos. Esta etapa no modifica mazos, progresión, guardados ni reglas de combate.
+
+## Constructor — primer mazo de Bosque
+El Constructor permite editar un mazo local de Bosque de 20 cartas con los límites de copias ya vigentes (dos normales y una para cartas únicas). Incluye nombre, cantidades, curva de costes y filtros del catálogo compartido. Sólo se guarda o juega un mazo válido. Guardar activa ese mazo para JUGAR; sin uno guardado se conserva el inicial. Los cambios sin guardar permanecen como borrador durante la sesión. El piloto visual mantiene su entrada independiente. Se usa un slot nuevo versionado mediante el puerto de persistencia, sin modificar archivos de campaña ni inferir propiedad/desbloqueos. Esta etapa no añade Guardianes ni cambia combate, CPU o las 80 definiciones.
+
+## Cierre de partida Vs CPU
+El resultado real del motor abre una pantalla vertical de victoria o derrota con turno final e Integridad de ambos Nexos. Ofrece revancha con los mismos mazos/dominios de esa partida, revisión del tablero final y regreso al menú. Revisar cartas no reactiva acciones de combate. La revancha comienza con los recursos iniciales normales y limpia estados transitorios. No concede recompensas ni modifica mazos guardados, progresión o reglas de resolución.
+
 ## Requisitos técnicos
+- Legibilidad de batalla: valores del HUD separados de sus rótulos, contadores de Sellos y Reliquias y de mazo/descarte visibles; habilidades de la mano comparten el texto del detalle, con ajuste por ancho real y elipsis cuando exceden el pergamino. La pulsación larga conserva el texto completo y las estadísticas actuales.
 - Godot 4.3 + GDScript.
 - Estado desacoplado de UI.
 - Datos serializables.

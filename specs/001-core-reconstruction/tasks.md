@@ -76,6 +76,7 @@
 - [x] E411 Crear renderer vertical de batalla en Presentation basado en mockup aprobado.
 - [x] E412 Resolver mano de 5–8 cartas con desplazamiento/solapamiento táctil legible.
 - [x] E413 Consumir `ABILITY_TRIGGERED`/`EFFECT_APPLIED` para animaciones sin lógica de reglas en Presentation.
+- [x] E414 Pulir piloto visual de tres cartas: controles completos en 16:9, menú de batalla, navegación Atrás y gestos de mano con ocho cartas; usuario confirma funcionamiento de build 622 en Android.
 
 ## Fase F — Flujo principal
 - [ ] F501 Splash cuatro dominios.
@@ -84,10 +85,14 @@
 - [ ] F504 Elegir dominio.
 - [x] F505 Vs CPU funcional como vertical slice legado.
 - [x] F506 Vs CPU vertical de cinco carriles conectado únicamente a Application.
+- [x] F507 Cierre Vs CPU con victoria/derrota reales, revisión del tablero y revancha que conserva los mazos sin tocar guardados.
+- [x] F508 Mejorar legibilidad móvil del HUD, habilidades y estadísticas con texto compartido, comprobación de encuadre y capturas reales en Godot.
 
 ## Fase G — Metajuego
 - [ ] G601 Constructor de Mazos.
+- [x] G601a Constructor Bosque: editar cantidades/nombre, validar 20 cartas y copias, persistir un mazo activo y usarlo en Vs CPU con pruebas de recarga y renderizado.
 - [ ] G602 Colección y detalle de carta.
+- [x] G602a Conectar catálogo Bosque de 20 cartas con búsqueda, filtros y detalle compartido, sin modificar propiedad ni mazos.
 - [ ] G603 Perfil.
 - [ ] G604 Logros.
 - [ ] G605 Ajustes y Reducir movimiento.
@@ -117,3 +122,15 @@
 - [ ] J903 Retirar recursos/reglas legado ya no usados.
 - [x] J904 APK verde y validación automatizada después de la migración inicial de cinco carriles.
 - [ ] J905 Cambiar orientación runtime final a vertical sólo cuando Presentation vertical tenga equivalencia funcional.
+
+
+## Etapa 00 — Consolidación controlada (27-11-2026)
+- [x] Verificar historial: `main` es ancestro de `feature/visual-pilot-three-cards`, con 31 commits de avance y 0 por detrás; no se necesita fusión de líneas divergentes.
+- [x] Abrir una rama aislada `feature/p0-consolidation-20261127` desde el piloto visual; mantener `main` intacta hasta la revisión.
+- [x] Incorporar regresión específica: catálogo de cuatro dominios, 5 carriles, 4 ilustraciones piloto y datos canónicos.
+- [x] Corregir el subtítulo del piloto para mostrar Oso Musgoso; extender prueba de navegación existente.
+- [ ] Exigir que la integración supere todas las pruebas Godot 4.3, renders y export Android firmada.
+- [ ] Revisar controles y recortes en teléfono físico, incluida boca de Oso Musgoso, sin regresiones táctiles.
+- [ ] Aplicar protección de `main` y revisión de PR cuando la configuración del repositorio lo permita.
+- [ ] Aprobar y fusionar sólo después de cumplir los controles anteriores.
+- [ ] Etapa 01: conectar expedición/recompensas al motor canónico sin reutilizar reglas de campaña legado.

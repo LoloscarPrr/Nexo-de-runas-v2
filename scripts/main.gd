@@ -7,6 +7,10 @@ extends Control
 const CampaignViewScript = preload("res://scripts/ui/mockup_campaign_view.gd")
 const CanonicalBattleViewScript = preload("res://scripts/presentation/battle/vertical_battle_view_faithful.gd")
 const MenuBackdropScript = preload("res://scripts/ui/canonical_main_menu_backdrop.gd")
+const CollectionViewScript = preload("res://scripts/presentation/collection/forest_collection_view.gd")
+const DeckbuilderViewScript = preload("res://scripts/presentation/decks/forest_deckbuilder_view.gd")
+const DeckEditorScript = preload("res://scripts/application/decks/forest_deck_editor.gd")
+const SaveRepositoryScript = preload("res://scripts/infrastructure/persistence/json_save_repository.gd")
 
 const INK := Color("eadca8")
 const MUTED := Color("a9a17b")
@@ -18,16 +22,41 @@ const BLOOD := Color("743126")
 var menu_screen: Control
 var campaign_screen
 var battle_screen: Control
+var collection_screen: Control
+var deckbuilder_screen: Control
+var deck_repository: SaveRepositoryPort
+var deck_editor: DeckEditorScript
 var menu_status: Label
 var status_tween: Tween
 
 func _ready() -> void:
+	get_tree().quit_on_go_back = false
+	if deck_repository == null:
+		deck_repository = SaveRepositoryScript.new()
+	deck_editor = DeckEditorScript.new(deck_repository)
 	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_PORTRAIT)
 	_build_background()
 	_build_menu()
 	_build_campaign()
 	_build_canonical_battle()
+	_build_collection()
+	_build_deckbuilder()
+	_refresh_play_label()
 	_show(menu_screen)
+
+func _notification(what: int) -> void:
+	if what != NOTIFICATION_WM_GO_BACK_REQUEST:
+		return
+	if is_instance_valid(battle_screen) and battle_screen.visible:
+		battle_screen.handle_back()
+	elif is_instance_valid(collection_screen) and collection_screen.visible:
+		collection_screen.handle_back()
+	elif is_instance_valid(deckbuilder_screen) and deckbuilder_screen.visible:
+		deckbuilder_screen.handle_back()
+	elif is_instance_valid(campaign_screen) and campaign_screen.visible:
+		_return_to_menu()
+	else:
+		get_tree().quit()
 
 func _build_background() -> void:
 	var background := ColorRect.new()
@@ -47,6 +76,21 @@ func _build_canonical_battle() -> void:
 	battle_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	battle_screen.connect("exit_requested", _return_to_menu)
 	add_child(battle_screen)
+
+func _build_collection() -> void:
+	collection_screen = CollectionViewScript.new()
+	collection_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	collection_screen.connect("exit_requested", _return_to_menu)
+	add_child(collection_screen)
+
+func _build_deckbuilder() -> void:
+	deckbuilder_screen = DeckbuilderViewScript.new()
+	deckbuilder_screen.editor = deck_editor
+	deckbuilder_screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	deckbuilder_screen.connect("exit_requested", _return_to_menu)
+	deckbuilder_screen.connect("deck_saved", _refresh_play_label)
+	deckbuilder_screen.connect("battle_requested", _start_canonical_battle)
+	add_child(deckbuilder_screen)
 
 func _build_menu() -> void:
 	menu_screen = Control.new()
@@ -139,6 +183,12 @@ func _build_menu() -> void:
 	play.pressed.connect(_start_canonical_battle)
 	root.add_child(play)
 
+	var pilot := _menu_button("PILOTO BOSQUE", "Brote · Lobo · Avatar · Oso")
+	pilot.name = "MainVisualPilotButton"
+	pilot.custom_minimum_size = Vector2(0, 72)
+	pilot.pressed.connect(_start_visual_pilot_battle)
+	root.add_child(pilot)
+
 	var grid := GridContainer.new()
 	grid.name = "MainMenuGrid"
 	grid.columns = 2
@@ -150,13 +200,13 @@ func _build_menu() -> void:
 	var deckbuilder := _menu_button("◇  CONSTRUCTOR", "Mazos")
 	deckbuilder.name = "MainDeckbuilderButton"
 	deckbuilder.custom_minimum_size = Vector2(0, 72)
-	deckbuilder.pressed.connect(func(): _notice("El Constructor de Mazos será la siguiente sala en conectarse al nuevo core."))
+	deckbuilder.pressed.connect(_open_deckbuilder)
 	grid.add_child(deckbuilder)
 
 	var collection := _menu_button("◇  COLECCIÓN", "Cartas")
 	collection.name = "MainCollectionButton"
 	collection.custom_minimum_size = Vector2(0, 72)
-	collection.pressed.connect(func(): _notice("La Colección conservará el mismo lenguaje físico de cartas."))
+	collection.pressed.connect(_open_collection)
 	grid.add_child(collection)
 
 	var profile := _menu_button("◇  PERFIL", "Viajero")
@@ -187,12 +237,29 @@ func _build_menu() -> void:
 
 func _start_canonical_battle() -> void:
 	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_PORTRAIT)
-	battle_screen.start_battle()
+	battle_screen.start_battle("forest", deck_editor.deck_for_battle())
+	_show(battle_screen)
+
+func _start_visual_pilot_battle() -> void:
+	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_PORTRAIT)
+	battle_screen.start_visual_pilot_battle()
 	_show(battle_screen)
 
 func _return_to_menu() -> void:
 	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_PORTRAIT)
 	_show(menu_screen)
+
+func _open_collection() -> void:
+	collection_screen.open_collection()
+	_show(collection_screen)
+
+func _open_deckbuilder() -> void:
+	deckbuilder_screen.open_editor()
+	_show(deckbuilder_screen)
+
+func _refresh_play_label() -> void:
+	var active_name := deck_editor.active_name()
+	find_child("MainPlayButton", true, false).text = "JUGAR\n%s" % (active_name if not active_name.is_empty() else "Entrar al Nexo")
 
 func _notice(text_value: String) -> void:
 	if menu_status == null:
@@ -209,6 +276,8 @@ func _show(target: Control) -> void:
 	menu_screen.visible = target == menu_screen
 	campaign_screen.visible = target == campaign_screen
 	battle_screen.visible = target == battle_screen
+	collection_screen.visible = target == collection_screen
+	deckbuilder_screen.visible = target == deckbuilder_screen
 
 func _menu_button(title_text: String, subtitle_text: String, primary: bool = false) -> Button:
 	var button := Button.new()

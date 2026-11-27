@@ -44,11 +44,11 @@ func _ready() -> void:
 	_build_view()
 	visible = false
 
-func start_battle(domain: String = "forest") -> void:
+func start_battle(domain: String = "forest", player_deck: Array[String] = []) -> void:
 	if session == null:
 		session = SessionScript.new()
 	selected_hand_index = -1
-	var opening: Dictionary = session.start_vs_cpu(domain)
+	var opening: Dictionary = session.start_vs_cpu(domain, player_deck)
 	_snapshot = opening.duplicate(true)
 	_render()
 	visible = true
@@ -458,6 +458,10 @@ func _card_text(card: Dictionary) -> String:
 func _event_name(code: String) -> String:
 	match code:
 		"CARD_PLAYED": return "Carta jugada"
+		"CARD_DRAWN": return "Carta robada"
+		"CARD_DISCARDED": return "Carta descartada"
+		"COMBAT_STARTED": return "Inicio de combate"
+		"COMBAT_ENDED": return "Fin de combate"
 		"ABILITY_TRIGGERED": return "Habilidad"
 		"EFFECT_APPLIED": return "Efecto"
 		"UNIT_DIED": return "Unidad destruida"
